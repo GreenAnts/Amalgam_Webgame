@@ -38,48 +38,7 @@ window.onload = function() {
     
     // Make these available to AILogic
     window.matchHistoryTracker = matchHistoryTracker;
-    window.trackEliminationsFromCoord = trackEliminationsFromCoord;
     
-    // Helper to track eliminations after attacks
-    function trackEliminationsFromCoord(coordStr) {
-        const coord = gameLogic.boardUtils.stringToCoord(coordStr);
-        const directions = [
-            {x: 1, y: 0}, {x: 1, y: 1}, {x: 0, y: 1}, {x: -1, y: 1},
-            {x: -1, y: 0}, {x: -1, y: -1}, {x: 0, y: -1}, {x: 1, y: -1}
-        ];
-        
-        const piece = gameLogic.getState().pieces[coordStr];
-        if (!piece) return;
-        
-        const attackingPlayer = piece.type.includes('Square') ? 'player1' : 'player2';
-        
-        // Check each adjacent space for pieces that will be eliminated
-        for (const dir of directions) {
-            const targetX = coord.x + dir.x;
-            const targetY = coord.y + dir.y;
-            const targetCoordStr = gameLogic.boardUtils.coordToString(targetX, targetY);
-            const targetPiece = gameLogic.getState().pieces[targetCoordStr];
-            
-            if (targetPiece) {
-                const targetPlayer = targetPiece.type.includes('Square') ? 'player1' : 'player2';
-                
-                // Check if this piece will be eliminated based on attack rules
-                if (targetPlayer !== attackingPlayer) {
-                    const isVoid = piece.type.includes('void');
-                    const isPortal = piece.type.includes('portal');
-                    const targetIsPortal = targetPiece.type.includes('portal');
-                    
-                    if (isVoid || 
-                        (isPortal && targetIsPortal) || 
-                        (!isPortal && !targetIsPortal)) {
-                        // Before the attack happens, save the piece info
-                        matchHistoryTracker.trackElimination(targetPiece.type, targetCoordStr);
-                    }
-                }
-            }
-        }
-    }
-
     // AI difficulty
     const easyBtn = document.getElementById('easyBtn');
     const mediumBtn = document.getElementById('mediumBtn');
@@ -1235,9 +1194,16 @@ window.onload = function() {
                         movedToCoord
                     );
                     
-                    // Track eliminations
-                    if (window.trackEliminationsFromCoord) {
-                        window.trackEliminationsFromCoord(movedToCoord);
+                    // FIX: Use actual elimination data from result, same as human player
+                    if (result.eliminated && result.eliminated.length > 0) {
+                        const eliminatedSet = new Set();
+                        result.eliminated.forEach(elim => {
+                            const key = `${elim.type}:${elim.coord}`;
+                            if (!eliminatedSet.has(key)) {
+                                eliminatedSet.add(key);
+                                matchHistoryTracker.trackElimination(elim.type, elim.coord);
+                            }
+                        });
                     }
                 }
                 
@@ -1414,65 +1380,6 @@ window.onload = function() {
         }
     
         return result.success;
-    }
-
-    // Helper to check if any abilities are available for the AI loop
-    function hasAnyAvailableAbilities() {
-        // We check the systems directly. 
-        // Note: They rely on 'moveMadeThisTurn' and 'lastMovedPieceCoord' 
-        // being correctly updated by executeAIMove.
-        
-        // We use the lastMovedPieceCoord to check validity for chain reactions
-        const moved = lastMovedPieceCoord;
-
-        return rubyFireballSystem.checkFireball(moved) ||
-            pearlTidalwaveSystem.checkTidalwave(moved) ||
-            amberSapSystem.checkSap(moved) ||
-            jadeLaunchSystem.checkLaunch(moved);
-    }
-
-    async function executeAITurnWithChaining() {
-        let turnContext = {
-            movedPieceCoord: null,
-            usedAbilities: new Set()
-        };
-        
-        let isTurnActive = true;
-        while (isTurnActive) {
-            // 1. Get Move (Pass current context)
-            const move = await aiController.findBestMove(turnContext, window.currentGameRNG);
-            
-            if (!move || move.type === 'PASS') {
-                isTurnActive = false;
-                break;
-            }
-    
-            const coords = aiController.convertMoveToCoordinates(move);
-            let success = false;
-    
-            // 2. Execute Action
-            if (coords.type === 'ABILITY') {
-                success = await executeAIAbility(coords);
-                turnContext.usedAbilities.add(coords.abilityType);
-                // If it was a Launch, update the movedPieceCoord to follow the piece
-                if (coords.abilityType === 'LAUNCH') turnContext.movedPieceCoord = coords.target;
-            } else {
-                success = await executeAIMove(coords);
-                turnContext.movedPieceCoord = `${coords.moveX},${coords.moveY}`;
-            }
-    
-            if (!success) break; // Stop if something failed
-    
-            // 3. UI Feedback
-            drawBoard();
-            updateAbilityButtonStates();
-            
-            // Check if abilities are even possible before looping
-            if (!hasAnyAvailableAbilities()) break; 
-        }
-    
-        // 4. Final Transition
-        await endTurn();
     }
 
     // Handle reset click
