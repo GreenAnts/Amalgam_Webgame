@@ -1,0 +1,143 @@
+Our current AI player system is very poor and needs a complete rework (can't play against even the worst of players, doesn't use abilities even when its lined up, etc).
+
+
+This is a large task and we should handle it carefully, methodically, and incrementally.
+
+Instead of jumping right into trying to edit the files, I think we should think about it from the big picture sense - organize our thoughts and logic, then begin to implement one step at a time.
+
+While I am unaware of best practices for how to implement this, my first inclination is that we should set up some type of JSON that organizes the gameplay tactics, logic strategies, etc that can easily be parsed by the AI logic.
+
+I would like your feedback after thoughtful consideration and a thorough analysis of the current project, but this is my initial draft recommendation:
+
+Step 1:
+- Do multiple analysis' of the game flow to understand movement options/combinations, priorities, potential issues, tactics, strategies, setup options, etc.
+	- This should be extremely thorough and thought about from multiple perspectives and should set the foundation for the entire AI player.
+	- Be meticulous and question everything (play devils advocate) - look for holes or loopholes. If we miss something here, it could domino negative effects to later steps 
+Step 2:
+- Build up a network of JSON files (or some type of organized, optimized, and modular system that can be updated and added to easily as needed to improve AI gameplay) that will be the foundation for the AI to gather neccessary data about the importance of moves, positioning, and etc.
+	- My thought is that we can pre-map a lot of this info so that the AI more effeciently and accurately decide on the best moves, without needing to try and handle all of this logic in real time. (let the real time logic optimize for what is important and unable to predetermine)
+	- This network of data will be based on the thorough analysis of information gathered in Step 1.
+Step 3:
+- Incrementally build up all of the actual files and logic that integrate the system into our game.
+	- While the code that integrates into the project will be intertwined with the system, the core of the AI system should be isolated to carry over to other project integrations. (In short: have one AI controller handle all of the communication between the AI player and the rest of the project - this controller should be as minimal as possible)
+	- Keep the files organized in a way that makes future updates and adaptations easy to implement without needing to rework the whole system. (future proof it)
+
+
+
+
+
+
+
+
+
+
+I need to completely rework our current AI player system. It is currently non-functional and fails to use abilities or basic tactics.
+
+The Game Context:
+    Genre: Abstract Strategy (similar to Shogi/Go but with unique unit abilities).
+    Board Size: Very Large (~24x24 grid) compared to a smaller chess board.
+    Pacing: Long setup horizons, BUT units have high-mobility abilities (swap, launch, nexus, portal movement along golden lines) that allow rapid repositioning, meaning the "threat range" of a unit can be much larger than its physical movement range.
+
+The Goal: I want to design a robust, future-proof AI architecture. Instead of jumping into code, I want to plan this methodically.
+
+Please help me plan this using the following three-phase approach:
+
+Step 1: Game State & Spatial Analysis
+    Analyze the game flow to determine high-level strategy.
+    Given the large board size and high mobility, explore Influence Maps (Tactical Analysis Maps). We need to map "Threat Ranges" based on abilities (e.g., a teleporter exerts influence over a wide area) not just walking distance.
+    Include short-horizon future influence (e.g., 1–2 turns) to account for ability setup and etc.
+    Define the Evaluation Function: What makes a board state "good"?
+NOTE: Step one should be thorough and carefully analyzed - play devils advocate and look for holes in the analysis - if this is done poorly, the future steps will suffer.
+
+Step 2: Architecture & Data Structure
+    Design a Hierarchical AI system:
+        Strategic Layer: Decides high-level goals (e.g., 'Control areas of the board', 'reach win condition', etc - these are the types of things I will need you to analyze, and see what is important during step 1).
+        Tactical Layer: Executes movement. Crucially, this layer must handle Multi-Modal Pathfinding (choosing between standard movement vs. various abilties/movements to reach the target).
+    Design a modular, data-driven system (JSON/Scriptable Objects) to tune weights (e.g., mobility_value: 1.2) without hard-coding logic. [A seperate config file should be used for easy tweaking]
+    Constraint: Deep Minimax search is likely infeasible. We need to prioritize spatial reasoning (Influence Maps) and utility scoring over raw brute-force calculation.
+NOTE: The Strategic Layer should maintain goals over multiple turns and only re-evaluate them when certain thresholds are crossed.
+
+Step 3: Incremental Implementation
+    Plan an isolated AI controller that extracts features from the game state, scores them, and communicates decisions cleanly.
+NOTE: All AI related files will pass the data to the controller, and only the controller will interact with the rest of the game files.
+    
+    
+ Side Thought: If it helps, I could supply match history notation against the current AI system - but it might not be very useful since the current AI system doesn't function. . . it would be completely one sided data for the square player only
+
+Before we start on step 1, I want your input and feedback for potential issues or alternative approaches. Do some deep research on game AI patterns, models, and best practices that relate to our game, and be thoughtful in your analysis of this plan. After we agree on the 3 step plan, then we will move on to step 1. We are in the initial planning stages, and now is your time to really reflect on how this 3 step proccess will work with our current project. Please ground your analysis in best practices from Go engines, RTS AI, and influence-map-based systems, etc rather than deep minimax search.
+
+
+AI Thinking:
+Let me analyze this carefully. The user wants to completely rebuild their AI system for what appears to be a complex abstract strategy game with:
+
+Game Characteristics:
+
+Large board (24x24 grid)
+Multiple piece types with unique abilities (Portal, Void, Ruby, Pearl, Amber, Jade, Amalgam)
+High mobility through abilities (swaps, launches, golden line teleportation, phasing through pieces)
+Two win conditions:
+
+Void reaches opponent's Amalgam starting position
+Eliminate all opponent non-portal pieces
+
+
+Ability-based combat (Fireball, Tidalwave, Sap, Launch)
+Complex movement systems (standard, nexus, portal, phasing)
+
+
+Current AI Problems:
+
+Doesn't use abilities
+Poor tactical awareness
+The existing code shows some attempt at evaluation (material, position, void advancement, tactics) but it's clearly not working well
+
+
+User's Proposed Plan:
+
+Step 1: Game State & Spatial Analysis with Influence Maps
+Step 2: Hierarchical AI (Strategic + Tactical layers)
+Step 3: Incremental Implementation with AI Controller
+
+
+
+The user wants me to critique and enhance this plan BEFORE implementation, drawing on best practices from Go engines, RTS AI, and influence-map systems.
+Let me think deeply about this...
+Critical Analysis of the Proposed Plan
+Strengths:
+
+Influence maps are appropriate - Given the high mobility and area-of-effect abilities, traditional minimax won't scale well
+Hierarchical architecture is good - Separating strategic and tactical concerns is essential for this complexity
+Data-driven configuration - Makes tuning easier
+Incremental approach - Reduces risk
+
+Potential Issues & Concerns:
+1. Influence Maps Alone May Be Insufficient
+Looking at the game mechanics:
+The initial placement phase introduces unique challenges that demand specialized reasoning. Ability interactions create complex decision trees where simple spatial influence fails to capture the nuanced strategic potential. The game's dynamic mobility networks - especially through Nexus formations and Portal networks - require a more sophisticated approach that can model conditional, multi-turn ability sequences and potential combinatorial opportunities.
+I'll need to design a more adaptive reasoning framework that can:
+
+Model ability combo potential
+Track dynamic connectivity networks
+Evaluate conditional ability executions
+Predict emergent strategic configurations
+
+The core challenge is creating an AI that can see beyond immediate spatial influence and understand the game's deep, interconnected tactical landscape. Strategic goals should focus on:
+
+Evaluating Void race progress
+Assessing material advantage potential
+Analyzing piece ability synergies
+Protecting critical Amalgam positioning
+
+Pathfinding reveals complex movement dynamics. Pieces navigate through multiple potential routes: standard movement, Nexus formations, portal teleportation, strategic swaps, and special piece launches. This creates a sophisticated planning challenge involving coordinated piece interactions, conditional ability triggers, and turn-based resource management.
+The core complexity lies in anticipating multi-modal movement strategies that balance immediate tactical positioning with long-term strategic objectives. Each movement option carries nuanced trade-offs between speed, risk, and potential future opportunities.
+Ability execution introduces intricate sequencing challenges. Actions aren't isolated events but interconnected potential chains where move-ability combinations create cascading tactical transformations. The system must dynamically evaluate action sequences, understanding how initial movements unlock subsequent strategic possibilities.
+The search strategy must prioritize immediate actionable states over exhaustive global path optimization. By focusing on turn-specific potential rather than comprehensive lookahead, the tactical layer can generate more responsive and contextually relevant movement decisions.
+Critical setup sequences demand nuanced recognition. Certain ability configurations require precise piece positioning - like aligning Rubies or strategically placing Jades. A hybrid approach balancing immediate threat assessment with pattern recognition can capture these subtle tactical opportunities without deep computational exploration.
+The initial game phase fundamentally differs from mid-game movement. Piece placement becomes a strategic puzzle emphasizing synergy, defensive positioning, and territorial control. Distinct AI modules for setup and active play phases will enable more sophisticated, context-aware decision-making.
+A modular architecture emerges: separating phase management, strategic reasoning, tactical detection, and evaluation systems. Each component specializes in specific game understanding - from win condition tracking to opportunity recognition, ensuring comprehensive yet targeted analysis.
+The design emphasizes dynamic interaction between layers: tactical pattern search interlinks with move generation, while threat analysis informs strategic goal management. Unique game mechanics demand nuanced tracking - especially around non-local abilities and conditional interactions.
+Influence mapping requires reimagining traditional spatial control, focusing on discrete capture dynamics and ability-triggered interactions. The approach prioritizes identifying immediate threats and potential mobility across the game's complex interaction space.
+Key research insights suggest a hybrid model: limited depth search combined with pattern recognition, drawing from chess AI strategies but adapted to this game's unique ability-driven mechanics. Neural network approaches seem less viable due to limited training data.
+The core challenge lies in developing an adaptive system that can recognize emergent tactical opportunities while maintaining computational efficiency across different game phases.
+A phased implementation strategy emerges: start with setup AI, progress to basic movement logic, then incrementally integrate ability interactions. Critical focus areas include threat detection, win condition analysis, and identifying piece synergies that enable strategic formations.
+The approach requires building sophisticated pattern libraries that can dynamically assess board states, detect immediate dangers, and evaluate potential move sequences without exhaustive computation.

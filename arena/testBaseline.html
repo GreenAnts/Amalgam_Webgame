@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arena Baseline Test (Non-Authoritative)</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0a0;
+        }
+        button:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+        .output {
+            background: #000;
+            padding: 15px;
+            border: 1px solid #0f0;
+            margin: 20px 0;
+            white-space: pre-wrap;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-left: 3px solid #0f0;
+        }
+        .pass { color: #0f0; }
+        .fail { color: #f00; }
+        .config {
+            background: #222;
+            padding: 15px;
+            margin: 20px 0;
+            border: 1px solid #0f0;
+        }
+        .config input {
+            background: #000;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 5px;
+            margin: 5px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Arena Baseline Test <span style="color: #f00;">(Non-Authoritative)</span></h1>
+        <p><strong>⚠️ WARNING:</strong> This tool is for debugging and visualization only.</p>
+        <p>Results from this tool are <strong>informational</strong> and <strong>non-authoritative</strong>.</p>
+        <p>For baseline promotion, use the CLI: <code>node arena/runBaseline.js</code></p>
+        <hr style="border-color: #0f0; margin: 20px 0;">
+        <p>Phase 2: Baseline Evaluation - Random AI Self-Play</p>
+        
+        <div class="config">
+            <h3>Configuration</h3>
+            <label>Base Seed: <input type="number" id="baseSeed" value="12345"></label>
+            <label>Number of Games: <input type="number" id="numGames" value="100" min="10" max="1000"></label>
+        </div>
+        
+        <div>
+            <button id="runTest" onclick="runTest()">Run Quick Test (100 games)</button>
+            <button id="runBaseline" onclick="runBaseline()">Run Full Baseline (500 games)</button>
+            <button onclick="clearOutput()">Clear Output</button>
+        </div>
+        
+        <div id="status" class="status"></div>
+        <div id="output" class="output">Ready to run test...\n</div>
+    </div>
+
+    <script type="module">
+        // Import necessary modules
+        import { GameLogic } from '../GameLogic.js';
+        import { PlayerManager } from '../systems/PlayerManager.js';
+        import { ArenaAIPlayer } from './players/ArenaAIPlayer.js';
+        import { RandomPolicy } from '../ai_system/decision/RandomPolicy.js';
+        import { runArena } from './ArenaRunner.js';
+
+        window.GameLogic = GameLogic;
+        window.PlayerManager = PlayerManager;
+        window.ArenaAIPlayer = ArenaAIPlayer;
+        window.RandomPolicy = RandomPolicy;
+        window.runArena = runArena;
+
+        window.log = function(message) {
+            const output = document.getElementById('output');
+            output.textContent += message + '\n';
+            output.scrollTop = output.scrollHeight;
+        };
+
+        window.clearOutput = function() {
+            document.getElementById('output').textContent = '';
+            document.getElementById('status').textContent = '';
+        };
+
+        window.updateStatus = function(message, isPass) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + (isPass ? 'pass' : 'fail');
+        };
+
+        window.runTest = async function() {
+            const baseSeed = parseInt(document.getElementById('baseSeed').value);
+            const numberOfGames = parseInt(document.getElementById('numGames').value);
+            
+            const runButton = document.getElementById('runTest');
+            const baselineButton = document.getElementById('runBaseline');
+            runButton.disabled = true;
+            baselineButton.disabled = true;
+            
+            window.log('=== Phase 2: Baseline Evaluation Test ===\n');
+            window.log(`Configuration:`);
+            window.log(`- Base Seed: ${baseSeed}`);
+            window.log(`- Number of Games: ${numberOfGames}\n`);
+            
+            try {
+                const playerManager = new PlayerManager();
+                const gameLogic = new GameLogic(playerManager);
+                
+                const randomPolicy = new RandomPolicy();
+                const playerA = new ArenaAIPlayer({ id: 'AI_v0.0_RANDOM', policy: randomPolicy });
+                const playerB = new ArenaAIPlayer({ id: 'AI_v0.0_RANDOM', policy: randomPolicy });
+                
+                window.log('Running Arena match...\n');
+                const startTime = Date.now();
+                
+                const results = await runArena({
+                    gameLogic,
+                    playerA,
+                    playerB,
+                    baseSeed,
+                    numberOfGames
+                });
+                
+                const endTime = Date.now();
+                const duration = ((endTime - startTime) / 1000).toFixed(2);
+                
+                window.log('=== Results ===\n');
+                window.log(`Duration: ${duration} seconds`);
+                window.log(`Games Played: ${results.results.gamesPlayed}`);
+                window.log(`Average Turns: ${results.results.averageTurns}`);
+                window.log(`\nWins:`);
+                window.log(`  ${results.playerA}: ${results.results.winsByAI[results.playerA] || 0}`);
+                window.log(`  ${results.playerB}: ${results.results.winsByAI[results.playerB] || 0}`);
+                window.log(`\nLosses:`);
+                window.log(`  ${results.playerA}: ${results.results.lossesByAI[results.playerA] || 0}`);
+                window.log(`  ${results.playerB}: ${results.results.lossesByAI[results.playerB] || 0}`);
+                window.log(`\nDraws: ${results.results.draws}`);
+                window.log(`Crashes: ${results.results.crashes}`);
+                window.log(`Illegal Moves: ${results.results.illegalMoves}`);
+                
+                const playerAWins = results.results.winsByAI[results.playerA] || 0;
+                const playerBWins = results.results.winsByAI[results.playerB] || 0;
+                const totalWins = playerAWins + playerBWins;
+                
+                if (totalWins > 0) {
+                    const playerAWinRate = ((playerAWins / totalWins) * 100).toFixed(2);
+                    const playerBWinRate = ((playerBWins / totalWins) * 100).toFixed(2);
+                    
+                    window.log(`\nWin Rates (excluding draws):`);
+                    window.log(`  ${results.playerA}: ${playerAWinRate}%`);
+                    window.log(`  ${results.playerB}: ${playerBWinRate}%`);
+                }
+                
+                // Validation
+                window.log('\n=== Validation ===\n');
+                
+                const checks = {
+                    'No crashes': results.results.crashes === 0,
+                    'No illegal moves': results.results.illegalMoves === 0,
+                    'Games completed': results.results.gamesPlayed === numberOfGames,
+                    'Win rate ~50%': totalWins > 0 && Math.abs(playerAWins - playerBWins) <= numberOfGames * 0.15
+                };
+                
+                let allPassed = true;
+                for (const [check, passed] of Object.entries(checks)) {
+                    const status = passed ? '✓ PASS' : '✗ FAIL';
+                    window.log(`${status}: ${check}`);
+                    if (!passed) allPassed = false;
+                }
+                
+                // Determinism test
+                window.log('\n=== Determinism Test ===\n');
+                window.log('Running same match again with same seed...');
+                
+                const results2 = await runArena({
+                    gameLogic,
+                    playerA,
+                    playerB,
+                    baseSeed,
+                    numberOfGames
+                });
+                
+                const deterministic = 
+                    results.results.gamesPlayed === results2.results.gamesPlayed &&
+                    results.results.winsByAI[results.playerA] === results2.results.winsByAI[results.playerA] &&
+                    results.results.winsByAI[results.playerB] === results2.results.winsByAI[results.playerB] &&
+                    results.results.draws === results2.results.draws &&
+                    results.results.crashes === results2.results.crashes &&
+                    results.results.illegalMoves === results2.results.illegalMoves;
+                
+                const detStatus = deterministic ? '✓ PASS' : '✗ FAIL';
+                window.log(`${detStatus}: Results are deterministic`);
+                
+                if (!deterministic) {
+                    allPassed = false;
+                    window.log('\nWarning: Results differ between runs! Determinism is broken.');
+                }
+                
+                window.log('\n=== Final Verdict ===\n');
+                if (allPassed) {
+                    window.log('✓ ALL CHECKS PASSED');
+                    window.log('\nThe random AI baseline is working correctly.');
+                    window.updateStatus('✓ ALL CHECKS PASSED - Baseline is ready', true);
+                } else {
+                    window.log('✗ SOME CHECKS FAILED');
+                    window.log('\nPlease fix the issues before setting the baseline.');
+                    window.updateStatus('✗ SOME CHECKS FAILED - Fix issues before proceeding', false);
+                }
+                
+            } catch (error) {
+                window.log('ERROR: ' + error.message);
+                window.log(error.stack);
+                window.updateStatus('✗ ERROR OCCURRED', false);
+            } finally {
+                runButton.disabled = false;
+                baselineButton.disabled = false;
+            }
+        };
+
+        window.runBaseline = async function() {
+            const baseSeed = parseInt(document.getElementById('baseSeed').value);
+            const numberOfGames = 500; // Force 500 for baseline
+            
+            const runButton = document.getElementById('runTest');
+            const baselineButton = document.getElementById('runBaseline');
+            runButton.disabled = true;
+            baselineButton.disabled = true;
+            
+            window.log('=== Running Full Baseline Match ===\n');
+            window.log(`Games: ${numberOfGames}, Seed: ${baseSeed}\n`);
+            window.log('This may take several minutes...\n');
+            
+            try {
+                const playerManager = new PlayerManager();
+                const gameLogic = new GameLogic(playerManager);
+                
+                const randomPolicy = new RandomPolicy();
+                const playerA = new ArenaAIPlayer({ id: 'AI_v0.0_RANDOM', policy: randomPolicy });
+                const playerB = new ArenaAIPlayer({ id: 'AI_v0.0_RANDOM', policy: randomPolicy });
+                
+                const startTime = Date.now();
+                const results = await runArena({
+                    gameLogic,
+                    playerA,
+                    playerB,
+                    baseSeed,
+                    numberOfGames
+                });
+                const endTime = Date.now();
+                const duration = ((endTime - startTime) / 1000).toFixed(2);
+                
+                window.log('=== Baseline Results ===\n');
+                window.log(`Duration: ${duration} seconds`);
+                window.log(`Games: ${results.results.gamesPlayed}`);
+                window.log(`Average Turns: ${results.results.averageTurns}`);
+                window.log(`Wins - ${results.playerA}: ${results.results.winsByAI[results.playerA] || 0}`);
+                window.log(`Wins - ${results.playerB}: ${results.results.winsByAI[results.playerB] || 0}`);
+                window.log(`Draws: ${results.results.draws}`);
+                window.log(`Crashes: ${results.results.crashes}`);
+                window.log(`Illegal Moves: ${results.results.illegalMoves}`);
+                
+                window.log('\n=== Copy this to BASELINES.md ===\n');
+                window.log(JSON.stringify(results, null, 2));
+                
+                window.updateStatus('✓ Baseline match complete - Record results in BASELINES.md', true);
+                
+            } catch (error) {
+                window.log('ERROR: ' + error.message);
+                window.log(error.stack);
+                window.updateStatus('✗ ERROR OCCURRED', false);
+            } finally {
+                runButton.disabled = false;
+                baselineButton.disabled = false;
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+{
+  "runtime_mode": "trace",
+  "modes": {
+    "trace": {
+      "description": "Full pipeline execution with logging",
+      "show_caches": true,
+      "enable_evaluation": true,
+      "enable_decision": true,
+      "log_level": "verbose"
+    },
+    "fallback": {
+      "description": "Bypass architecture, immediate random move",
+      "show_caches": false,
+      "enable_evaluation": false,
+      "enable_decision": false,
+      "log_level": "minimal"
+    },
+    "debug_idle": {
+      "description": "Returns null, no AI action",
+      "show_caches": false,
+      "enable_evaluation": false,
+      "enable_decision": false,
+      "log_level": "none"
+    }
+  },
+  "evaluation": {
+    "weights_file": "config/EvaluationWeights.json"
+  },
+  "decision": {
+    "strategy": "random"
+  }
+}

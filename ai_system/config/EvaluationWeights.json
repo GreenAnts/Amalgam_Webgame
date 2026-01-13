@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1-skeleton",
+  "description": "Placeholder for future tunable parameters",
+  "categories": {
+    "material": {},
+    "position": {},
+    "mobility": {},
+    "control": {},
+    "threats": {}
+  },
+  "note": "All weights are undefined until strategy research begins"
+}

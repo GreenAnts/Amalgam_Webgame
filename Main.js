@@ -1,0 +1,1691 @@
+// main.js - Main game orchestrator
+import { GameLogic } from './GameLogic.js';
+import { PlayerManager } from './systems/PlayerManager.js';
+import { BoardRenderer } from './ui/BoardRenderer.js';
+import { PieceRenderer } from './ui/PieceRenderer.js';
+import { IndicatorRenderer } from './ui/IndicatorRenderer.js';
+import { UIManager } from './ui/UIManager.js';
+import { AbilityButtons } from './ui/AbilityButtons.js';
+import { SetupManager } from './systems/SetupManager.js';
+import { SetupUI } from './ui/SetupUI.js';
+import { MatchHistoryTracker } from './systems/MatchHistoryTracker.js';
+import { AIController } from './ai_system/controller/AIController.js';  //AI System
+
+window.onload = function() {
+    // Get canvas and UI elements
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    const uiElements = {
+        turnCounterDisplay: document.getElementById('turnCounterDisplay')
+    };
+    
+    const resetButton = document.getElementById('confirmRestart');
+
+    // Initialize systems
+    const playerManager = new PlayerManager();
+    const gameLogic = new GameLogic(playerManager);
+    const boardRenderer = new BoardRenderer(ctx, canvas);
+    let { originX, originY } = boardRenderer.getOrigin();
+    const pieceRenderer = new PieceRenderer(ctx, originX, originY, boardRenderer.scale);
+    const indicatorRenderer = new IndicatorRenderer(ctx, originX, originY, boardRenderer.scale);
+    const uiManager = new UIManager(uiElements);
+    const aiController = new AIController(gameLogic, playerManager);
+    const abilityButtons = new AbilityButtons(canvas, ctx);
+    const setupManager = new SetupManager(gameLogic.getGameState(), playerManager);
+    const setupUI = new SetupUI(canvas, ctx);
+    const matchHistoryTracker = new MatchHistoryTracker();
+    
+    // Make these available to AILogic
+    window.matchHistoryTracker = matchHistoryTracker;
+    window.trackEliminationsFromCoord = trackEliminationsFromCoord;
+    
+    // Helper to track eliminations after attacks
+    function trackEliminationsFromCoord(coordStr) {
+        const coord = gameLogic.boardUtils.stringToCoord(coordStr);
+        const directions = [
+            {x: 1, y: 0}, {x: 1, y: 1}, {x: 0, y: 1}, {x: -1, y: 1},
+            {x: -1, y: 0}, {x: -1, y: -1}, {x: 0, y: -1}, {x: 1, y: -1}
+        ];
+        
+        const piece = gameLogic.getState().pieces[coordStr];
+        if (!piece) return;
+        
+        const attackingPlayer = piece.type.includes('Square') ? 'player1' : 'player2';
+        
+        // Check each adjacent space for pieces that will be eliminated
+        for (const dir of directions) {
+            const targetX = coord.x + dir.x;
+            const targetY = coord.y + dir.y;
+            const targetCoordStr = gameLogic.boardUtils.coordToString(targetX, targetY);
+            const targetPiece = gameLogic.getState().pieces[targetCoordStr];
+            
+            if (targetPiece) {
+                const targetPlayer = targetPiece.type.includes('Square') ? 'player1' : 'player2';
+                
+                // Check if this piece will be eliminated based on attack rules
+                if (targetPlayer !== attackingPlayer) {
+                    const isVoid = piece.type.includes('void');
+                    const isPortal = piece.type.includes('portal');
+                    const targetIsPortal = targetPiece.type.includes('portal');
+                    
+                    if (isVoid || 
+                        (isPortal && targetIsPortal) || 
+                        (!isPortal && !targetIsPortal)) {
+                        // Before the attack happens, save the piece info
+                        matchHistoryTracker.trackElimination(targetPiece.type, targetCoordStr);
+                    }
+                }
+            }
+        }
+    }
+
+    // AI difficulty
+    const easyBtn = document.getElementById('easyBtn');
+    const mediumBtn = document.getElementById('mediumBtn');
+    const hardBtn = document.getElementById('hardBtn');
+    
+    function setDifficulty(difficulty) {
+        aiController.setDifficulty(difficulty);
+        
+        // Update UI
+        [easyBtn, mediumBtn, hardBtn].forEach(btn => btn.classList.remove('active'));
+        if (difficulty === 'Easy') easyBtn.classList.add('active');
+        else if (difficulty === 'Medium') mediumBtn.classList.add('active');
+        else hardBtn.classList.add('active');
+    }
+    
+    easyBtn.addEventListener('click', () => setDifficulty('Easy'));
+    mediumBtn.addEventListener('click', () => setDifficulty('Medium'));
+    hardBtn.addEventListener('click', () => setDifficulty('Hard'));
+
+    // Ability system references
+    const portalSwapSystem = gameLogic.getPortalSwapSystem();
+    const rubyFireballSystem = gameLogic.getRubyFireballSystem();
+    const pearlTidalwaveSystem = gameLogic.getPearlTidalwaveSystem();
+    const amberSapSystem = gameLogic.getAmberSapSystem();
+    const jadeLaunchSystem = gameLogic.getJadeLaunchSystem();
+    const winConditionSystem = gameLogic.getWinConditionSystem();
+    
+    // Track game state
+    let moveMadeThisTurn = false;
+    let lastMovedPieceCoord = null;
+    let launchUsedThisTurn = false;
+    
+    function drawBoard() {
+        boardRenderer.render();
+        const gameState = gameLogic.getState();
+        
+        // Update both renderers' origins and scale in case canvas resized
+        const { originX, originY } = boardRenderer.getOrigin();
+        pieceRenderer.updateOrigin(originX, originY, boardRenderer.scale);
+        indicatorRenderer.updateOrigin(originX, originY, boardRenderer.scale);
+        
+        // If in setup phase, draw placement regions BEFORE pieces
+        if (setupManager.isSetupPhase) {
+            setupUI.renderPlacementRegions(setupManager, originX, originY, boardRenderer.scale);
+        }
+        
+        // Draw all pieces
+        for (const coordStr in gameState.pieces) {
+            pieceRenderer.drawPiece(coordStr, gameState.pieces[coordStr]);
+        }
+        
+        // If in setup phase, show setup tray
+        if (setupManager.isSetupPhase) {
+            setupUI.render(setupManager);
+        } else {
+            // Normal game - draw selected piece highlight
+            indicatorRenderer.drawSelectedPieceHighlight(
+                gameState.selectedPieceCoord, 
+                gameState.pieces
+            );
+            // Draw movement indicators for selected piece
+            if (gameState.selectedPieceCoord && !setupManager.isSetupPhase) {
+                const currentPlayer = playerManager.getCurrentPlayer();
+                const selectedPiece = gameState.pieces[gameState.selectedPieceCoord];
+                
+                // Only show if it's the player's piece, no abilities are active, AND no move made yet
+                if (selectedPiece && 
+                    playerManager.canMovePiece(selectedPiece.type) &&
+                    !moveMadeThisTurn &&  // NEW: Don't show if move already made
+                    !portalSwapSystem.isSwapActive() &&
+                    !rubyFireballSystem.isFireballActive() &&
+                    !pearlTidalwaveSystem.isTidalwaveActive() &&
+                    !amberSapSystem.isSapActive() &&
+                    !jadeLaunchSystem.isLaunchActive()) {
+                    
+                    const validMoves = gameLogic.getValidMoves(gameState.selectedPieceCoord);
+                    
+                    // DEDUPLICATE: Use Set to remove duplicate coordinates
+                    const uniqueMoveCoords = [...new Set(validMoves.map(move => `${move.x},${move.y}`))];
+                    
+                    indicatorRenderer.drawMovementIndicators(uniqueMoveCoords);
+                }
+            }
+            
+            // Draw ability target indicators
+            if (rubyFireballSystem.isFireballActive()) {
+                const targets = rubyFireballSystem.getAllTargets();
+                indicatorRenderer.drawTargetIndicators(targets);
+            }
+            
+            if (pearlTidalwaveSystem.isTidalwaveActive()) {
+                const tidalwaveData = pearlTidalwaveSystem.getAllTidalwaveData();
+                indicatorRenderer.drawTidalwaveIndicators(tidalwaveData);
+            }
+            
+            if (amberSapSystem.isSapActive()) {
+                const sapData = amberSapSystem.getAllSapData();
+                indicatorRenderer.drawAmberSapIndicators(sapData);
+            }
+            
+            if (jadeLaunchSystem.isLaunchActive()) {
+                if (jadeLaunchSystem.isPieceSelectionPhase()) {
+                    const launchablePieces = jadeLaunchSystem.getLaunchablePieces();
+                    indicatorRenderer.drawJadeLaunchPieceIndicators(launchablePieces, gameState.pieces);
+                } else if (jadeLaunchSystem.isTargetSelectionPhase()) {
+                    indicatorRenderer.drawJadeLaunchTargetIndicators(jadeLaunchSystem.selectedTargets);
+                }
+            }
+            
+            if (portalSwapSystem.isSwapActive()) {
+                const swapTargets = portalSwapSystem.getTargets();
+                indicatorRenderer.drawPortalSwapIndicators(swapTargets);
+            }
+            
+            // Draw ability buttons
+            abilityButtons.render();
+        }
+    }
+
+    // AI Setup Logic
+    async function handleAISetup() {
+        if (!setupManager.isSetupPhase) return;
+        
+        // --- GUARD 1: Ensure it's still the AI's turn before starting ---
+        if (setupManager.getCurrentPlayer() !== 'circle') return;
+        
+        if (window.updateTurnIndicator) {
+            window.updateTurnIndicator('Player 2 (AI)');
+        }
+        
+        // await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // --- GUARD 2: Check again after the first delay ---
+        if (setupManager.getCurrentPlayer() !== 'circle') return;
+        
+        // await new Promise(resolve => setTimeout(resolve, 600));
+
+        // --- GUARD 3: Final check before actually placing the piece ---
+        if (setupManager.getCurrentPlayer() !== 'circle') return;
+        
+        const gemTypes = ['ruby', 'pearl', 'amber', 'jade'];
+        const counts = setupManager.getPieceCounts('circle');
+        const availableGems = gemTypes.filter(gem => counts[gem] < 2);
+        
+        if (availableGems.length === 0) return;
+        
+        const selectedGem = availableGems[Math.floor(Math.random() * availableGems.length)];
+        setupManager.selectPiece(selectedGem);
+        
+        const validPositions = setupManager.getValidPlacementPositions();
+        if (validPositions.length === 0) return;
+        
+        const selectedPosition = validPositions[Math.floor(Math.random() * validPositions.length)];
+        const setupPlayer = setupManager.getCurrentPlayer();
+        const selectedPieceType = setupManager.selectedPieceType;
+        
+        const result = setupManager.placePiece(selectedPosition);
+    
+        if (result.success) {
+            // Track AI setup placement
+            matchHistoryTracker.trackSetupPlacement(
+                setupPlayer,
+                selectedPieceType,
+                selectedPosition
+            );
+            
+            drawBoard();
+            
+            if (result.setupComplete) {
+                matchHistoryTracker.finalizeSetup();
+                
+                // Initialize the tracker for Turn 1
+                const firstPlayer = playerManager.getCurrentPlayer();
+                matchHistoryTracker.startTurn(1, firstPlayer.name);
+                
+                updateLogDisplay();
+                
+                // Update turn indicator to show who goes first
+                if (window.updateTurnIndicator) {
+                    window.updateTurnIndicator(playerManager.getCurrentPlayer().name);
+                }
+                uiManager.updatePlayerInfo(
+                    playerManager.getTurnCount(),
+                    playerManager.getCurrentPlayer()
+                );
+                updateAbilityButtonStates();
+            } else {
+                // Update indicator for next turn BEFORE continuing
+                const nextSetupPlayer = setupManager.getCurrentPlayer();
+                const nextPlayerName = nextSetupPlayer === 'square' ? 'Player 1' : 'Player 2 (AI)';
+                
+                if (window.updateTurnIndicator) {
+                    window.updateTurnIndicator(nextPlayerName);
+                }
+                
+                // Continue to next setup turn with delay
+                setTimeout(handleAISetup, 200);
+            }
+        }
+    }
+
+    // Update ability button states based on game state
+    function updateAbilityButtonStates() {
+        const gameState = gameLogic.getState();
+        
+        // CRITICAL: Only show abilities if it's the current player's turn
+        const currentPlayer = playerManager.getCurrentPlayer();
+        
+        // If it's AI's turn, disable all buttons
+        if (currentPlayer.isAI) {
+            abilityButtons.setButtonState('portalSwap', 'disabled');
+            abilityButtons.setButtonState('rubyFireball', 'disabled');
+            abilityButtons.setButtonState('pearlTidalwave', 'disabled');
+            abilityButtons.setButtonState('amberSap', 'disabled');
+            abilityButtons.setButtonState('jadeLaunch', 'disabled');
+            abilityButtons.setEndTurnVisible(false);
+            return;
+        }
+        
+        // Portal Swap button
+        if (gameState.selectedPieceCoord) {
+            const selectedPiece = gameState.pieces[gameState.selectedPieceCoord];
+            
+            // GUARD: Disable portal swap if move already made
+            if (moveMadeThisTurn) {
+                abilityButtons.setButtonState('portalSwap', 'disabled');
+            } else if (selectedPiece) {
+                const isPortal = selectedPiece.type === 'portalCircle' || 
+                                selectedPiece.type === 'portalSquare';
+                const isOnGoldenLine = gameLogic.boardUtils.isGoldenCoordinate(gameState.selectedPieceCoord);
+                
+                if (isPortal) {
+                    // Normal mode: portal can initiate swap
+                    if (portalSwapSystem.selectPortal(gameState.selectedPieceCoord)) {
+                        const currentState = abilityButtons.getButtonState('portalSwap');
+                        if (currentState !== 'active') {
+                            abilityButtons.setButtonState('portalSwap', 'available');
+                        }
+                    } else {
+                        abilityButtons.setButtonState('portalSwap', 'disabled');
+                    }
+                } else if (isOnGoldenLine && playerManager.canMovePiece(selectedPiece.type)) {
+                    // Reverse mode: non-portal on golden line can be swap target
+                    const tempSelectedPortal = portalSwapSystem.selectedPortal;
+                    const tempSwapTargets = portalSwapSystem.swapTargets;
+                    const tempReverseMode = portalSwapSystem.reverseMode;
+                    const tempSelectedTarget = portalSwapSystem.selectedTarget;
+                    const tempAvailablePortals = portalSwapSystem.availablePortals;
+                    
+                    const canReverseSwap = portalSwapSystem.selectTarget(gameState.selectedPieceCoord);
+                    
+                    // Restore state (don't actually select yet)
+                    portalSwapSystem.selectedPortal = tempSelectedPortal;
+                    portalSwapSystem.swapTargets = tempSwapTargets;
+                    portalSwapSystem.reverseMode = tempReverseMode;
+                    portalSwapSystem.selectedTarget = tempSelectedTarget;
+                    portalSwapSystem.availablePortals = tempAvailablePortals;
+                    
+                    if (canReverseSwap) {
+                        const currentState = abilityButtons.getButtonState('portalSwap');
+                        if (currentState !== 'active') {
+                            abilityButtons.setButtonState('portalSwap', 'available');
+                        }
+                    } else {
+                        abilityButtons.setButtonState('portalSwap', 'disabled');
+                    }
+                } else {
+                    abilityButtons.setButtonState('portalSwap', 'disabled');
+                }
+            } else {
+                abilityButtons.setButtonState('portalSwap', 'disabled');
+            }
+        } else {
+            abilityButtons.setButtonState('portalSwap', 'disabled');
+        }
+        
+        // Ruby Fireball button
+        const movedPiece = moveMadeThisTurn ? lastMovedPieceCoord : null;
+        if (rubyFireballSystem.checkFireball(movedPiece)) {
+            const currentState = abilityButtons.getButtonState('rubyFireball');
+            if (currentState !== 'active') {
+                abilityButtons.setButtonState('rubyFireball', 'available');
+            }
+            
+            if (moveMadeThisTurn) {
+                abilityButtons.setEndTurnVisible(true);
+            }
+        } else {
+            abilityButtons.setButtonState('rubyFireball', 'disabled');
+        }
+        
+        // Pearl Tidal Wave button
+        const movedPieceForPearl = moveMadeThisTurn ? lastMovedPieceCoord : null;
+        if (pearlTidalwaveSystem.checkTidalwave(movedPieceForPearl)) {
+            const currentState = abilityButtons.getButtonState('pearlTidalwave');
+            if (currentState !== 'active') {
+                abilityButtons.setButtonState('pearlTidalwave', 'available');
+            }
+            
+            if (moveMadeThisTurn) {
+                abilityButtons.setEndTurnVisible(true);
+            }
+        } else {
+            abilityButtons.setButtonState('pearlTidalwave', 'disabled');
+        }
+        
+        // Amber Sap button
+        const movedPieceForAmber = moveMadeThisTurn ? lastMovedPieceCoord : null;
+        if (amberSapSystem.checkSap(movedPieceForAmber)) {
+            const currentState = abilityButtons.getButtonState('amberSap');
+            if (currentState !== 'active') {
+                abilityButtons.setButtonState('amberSap', 'available');
+            }
+            
+            if (moveMadeThisTurn) {
+                abilityButtons.setEndTurnVisible(true);
+            }
+        } else {
+            abilityButtons.setButtonState('amberSap', 'disabled');
+        }
+        
+        // Jade Launch button - skip if already used this turn
+        if (!launchUsedThisTurn) {
+            const movedPieceForJade = moveMadeThisTurn ? lastMovedPieceCoord : null;
+            if (jadeLaunchSystem.checkLaunch(movedPieceForJade)) {
+                const currentState = abilityButtons.getButtonState('jadeLaunch');
+                if (currentState !== 'active') {
+                    abilityButtons.setButtonState('jadeLaunch', 'available');
+                }
+                
+                if (moveMadeThisTurn) {
+                    abilityButtons.setEndTurnVisible(true);
+                }
+            } else {
+                abilityButtons.setButtonState('jadeLaunch', 'disabled');
+            }
+        } else {
+            abilityButtons.setButtonState('jadeLaunch', 'disabled');
+        }
+    }
+
+    async function handleCanvasClick(event) {
+        // GUARD: Block all clicks during AI's turn
+        const currentPlayerTurn = playerManager.getCurrentPlayer();
+        if (currentPlayerTurn.isAI) {
+            return; // Silently ignore clicks during AI's turn
+        }
+        
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const mouseX = (event.clientX - rect.left) * scaleX;
+        const mouseY = (event.clientY - rect.top) * scaleY;
+
+        // SETUP PHASE HANDLING
+        if (setupManager.isSetupPhase) {
+            const currentPlayer = setupManager.getCurrentPlayer();
+            
+            // AI's turn - ignore clicks
+            if (currentPlayer === 'circle') {
+                return;
+            }
+            
+            // Check if clicked on piece selector in tray
+            const clickedPieceType = setupUI.isClickOnTray(mouseX, mouseY, setupManager);
+            if (clickedPieceType) {
+                const counts = setupManager.getPieceCounts(currentPlayer);
+                
+                if (counts[clickedPieceType] >= 2) {
+                    // Already placed 2 of this type
+                } else {
+                    setupManager.selectPiece(clickedPieceType);
+                }
+                drawBoard();
+                return;
+            }
+            
+            // Check if clicked on valid placement position
+            const { originX, originY } = boardRenderer.getOrigin();
+            const gameX = Math.round((mouseX - originX) / boardRenderer.scale);
+            const gameY = Math.round((originY - mouseY) / boardRenderer.scale);
+            const clickedCoordStr = `${gameX},${gameY}`;
+            
+            // Capture the piece type BEFORE placing (it gets cleared in placePiece)
+            const setupPlayer = setupManager.getCurrentPlayer();
+            const selectedPieceType = setupManager.selectedPieceType;
+
+            const result = setupManager.placePiece(clickedCoordStr);
+            if (result.success) {
+                // Ensure we track placement BEFORE the setup manager potentially clears state
+                matchHistoryTracker.trackSetupPlacement(
+                    setupPlayer, 
+                    selectedPieceType,
+                    clickedCoordStr
+                );
+                
+                drawBoard();
+                
+                if (result.setupComplete) {
+                    matchHistoryTracker.finalizeSetup();
+                    
+                    // Initialize the tracker for Turn 1
+                    const firstPlayer = playerManager.getCurrentPlayer();
+                    matchHistoryTracker.startTurn(1, firstPlayer.name);
+                    
+                    updateLogDisplay();
+                    
+                    // Update turn indicator to show who goes first
+                    if (window.updateTurnIndicator) {
+                        window.updateTurnIndicator(playerManager.getCurrentPlayer().name);
+                    }
+                    uiManager.updatePlayerInfo(
+                        playerManager.getTurnCount(),
+                        playerManager.getCurrentPlayer()
+                    );
+                    updateAbilityButtonStates();
+                } else {
+                    // During setup - update turn indicator based on setup manager
+                    const nextPlayer = setupManager.getCurrentPlayer() === 'square' ? 'Player 1' : 'Player 2 (AI)';
+                    if (window.updateTurnIndicator) {
+                        window.updateTurnIndicator(nextPlayer);
+                    }
+                    
+                    // ONLY call handleAISetup if next turn is actually AI's turn
+                    if (setupManager.getCurrentPlayer() === 'circle') {
+                        setTimeout(() => {
+                            handleAISetup();
+                        }, 200);
+                    }
+                }
+            }
+            return;
+        }
+
+        // NORMAL GAME HANDLING
+        const currentPlayer = playerManager.getCurrentPlayer();
+        if (currentPlayer.isAI) {
+            return;
+        }
+
+        // Check if clicked on ability button
+        const clickedButton = abilityButtons.getClickedButton(mouseX, mouseY);
+        if (clickedButton) {
+            await handleAbilityButtonClick(clickedButton);
+            updateAbilityButtonStates();
+            drawBoard();
+            return;
+        }
+
+        // Convert to game coordinates
+        const { originX, originY } = boardRenderer.getOrigin();
+        const gameX = Math.round((mouseX - originX) / boardRenderer.scale);
+        const gameY = Math.round((originY - mouseY) / boardRenderer.scale);
+
+        // Handle portal swap execution if active
+        if (portalSwapSystem.isSwapActive()) {
+            if (moveMadeThisTurn) {
+                return;
+            }
+            const gameState = gameLogic.getState();
+            const targetCoordStr = `${gameX},${gameY}`;
+            
+            // Start turn if not already started
+            if (!moveMadeThisTurn) {
+                matchHistoryTracker.startTurn(
+                    playerManager.getTurnCount(),
+                    playerManager.getCurrentPlayer().name
+                );
+            }
+            
+            let result;
+            let swapPortalCoord, swapTargetCoord, targetPiece;
+            
+            if (portalSwapSystem.reverseMode) {
+                // Reverse mode: clicking on portal to complete swap
+                swapPortalCoord = targetCoordStr;
+                swapTargetCoord = portalSwapSystem.selectedTarget;
+                targetPiece = gameState.pieces[swapTargetCoord];
+                result = portalSwapSystem.executeSwap(targetCoordStr);
+            } else {
+                // Normal mode: clicking on target to complete swap
+                swapPortalCoord = portalSwapSystem.selectedPortal;
+                swapTargetCoord = targetCoordStr;
+                targetPiece = gameState.pieces[targetCoordStr];
+                result = portalSwapSystem.executeSwap(targetCoordStr);
+            }
+            
+            if (result.success) {
+                // CRITICAL: Use the GameState method to properly deselect
+                gameLogic.getGameState().deselectPiece();
+                abilityButtons.setButtonState('portalSwap', 'disabled');
+                
+                if (result.moveMade) {
+                    // Track swap in history
+                    if (targetPiece) {
+                        matchHistoryTracker.trackSwap(
+                            swapPortalCoord,
+                            targetPiece.type,
+                            swapTargetCoord
+                        );
+                    }
+                    
+                    // Track eliminations from swap
+                    if (result.eliminated && result.eliminated.length > 0) {
+                        const eliminatedSet = new Set();
+                        result.eliminated.forEach(elim => {
+                            const key = `${elim.type}:${elim.coord}`;
+                            if (!eliminatedSet.has(key)) {
+                                eliminatedSet.add(key);
+                                matchHistoryTracker.trackElimination(elim.type, elim.coord);
+                            }
+                        });
+                    }
+                    
+                    moveMadeThisTurn = true;
+                    
+                    // Check for abilities on BOTH swapped pieces
+                    const portalMovedCheck = rubyFireballSystem.checkFireball(swapTargetCoord) || 
+                                            pearlTidalwaveSystem.checkTidalwave(swapTargetCoord) ||
+                                            amberSapSystem.checkSap(swapTargetCoord) ||
+                                            jadeLaunchSystem.checkLaunch(swapTargetCoord);
+                    const pieceMovedCheck = rubyFireballSystem.checkFireball(swapPortalCoord) || 
+                                           pearlTidalwaveSystem.checkTidalwave(swapPortalCoord) ||
+                                           amberSapSystem.checkSap(swapPortalCoord) ||
+                                           jadeLaunchSystem.checkLaunch(swapPortalCoord);
+                                           
+                    if (portalMovedCheck) {
+                        lastMovedPieceCoord = swapTargetCoord;
+                    } else if (pieceMovedCheck) {
+                        lastMovedPieceCoord = swapPortalCoord;
+                    } else {
+                        lastMovedPieceCoord = swapTargetCoord;
+                    }
+                    
+                    updateAbilityButtonStates();
+                    
+                    // CHECK WIN BEFORE ENDING
+                    if (checkForWin()) {
+                        matchHistoryTracker.commitTurnActions(); // Ensure swap is logged on win
+                        updateLogDisplay();
+                        drawBoard();
+                        return;
+                    }
+                    
+                    if (!rubyFireballSystem.isAvailable() && 
+                        !pearlTidalwaveSystem.isAvailable() && 
+                        !amberSapSystem.isAvailable() &&
+                        !jadeLaunchSystem.isAvailable()) {
+                        
+                        matchHistoryTracker.commitTurnActions(); 
+                        updateLogDisplay();
+                        await endTurn();
+                    }
+                    // REMOVED: The redundant else clause that was clearing selection again
+                }
+                drawBoard();
+            }
+            return;
+        }
+        
+        // Handle Ruby Fireball target selection if active
+        if (rubyFireballSystem.isFireballActive()) {
+            const targetCoordStr = `${gameX},${gameY}`;
+            
+            // Find the fireball data BEFORE execution (piece gets destroyed)
+            const fireballData = rubyFireballSystem.fireballTargets.find(f => 
+                f.targets.includes(targetCoordStr)
+            );
+            
+            if (!fireballData) {
+                return; // Invalid target
+            }
+            
+            // Collect pieces that will be eliminated
+            const eliminated = [];
+            for (const target of fireballData.targets) {
+                if (target === targetCoordStr) {
+                    const piece = gameLogic.getState().pieces[target];
+                    if (piece) {
+                        eliminated.push({ type: piece.type, coord: target });
+                    }
+                }
+            }
+            
+            // NOW execute the fireball
+            const result = rubyFireballSystem.executeFireball(targetCoordStr);
+
+            if (result.success) {
+                // Track the ability
+                matchHistoryTracker.trackAbility('fireball', {
+                    ruby1: fireballData.ruby1,
+                    ruby2: fireballData.ruby2,
+                    amplified: fireballData.amplified,
+                    eliminated
+                });
+                
+                matchHistoryTracker.commitTurnActions();
+                updateLogDisplay();
+                
+                abilityButtons.setButtonState('rubyFireball', 'disabled');
+                
+                if (checkForWin()) {
+                    drawBoard();
+                    return;
+                }
+                
+                await endTurn();
+            }
+            return;
+        }
+        
+        // Handle Pearl Tidal Wave execution if active
+        if (pearlTidalwaveSystem.isTidalwaveActive()) {
+            const targetCoordStr = `${gameX},${gameY}`;
+            const tidalwaveData = pearlTidalwaveSystem.isCoordInTidalwave(targetCoordStr);
+            
+            if (!tidalwaveData) {
+                return; // Invalid target
+            }
+            
+            // Collect pieces that will be eliminated BEFORE execution
+            const eliminated = [];
+            for (const target of tidalwaveData.targets) {
+                const piece = gameLogic.getState().pieces[target];
+                if (piece) {
+                    eliminated.push({ type: piece.type, coord: target });
+                }
+            }
+            
+            // NOW execute
+            const result = pearlTidalwaveSystem.executeTidalwave(targetCoordStr);
+
+            if (result.success) {
+                // Track the ability
+                matchHistoryTracker.trackAbility('tidalwave', {
+                    pearl1: tidalwaveData.pearl1,
+                    pearl2: tidalwaveData.pearl2,
+                    amplified: tidalwaveData.amplified,
+                    eliminated
+                });
+                
+                matchHistoryTracker.commitTurnActions();
+                updateLogDisplay();
+                
+                abilityButtons.setButtonState('pearlTidalwave', 'disabled');
+                
+                if (checkForWin()) {
+                    drawBoard();
+                    return;
+                }
+                
+                await endTurn();
+            }
+            return;
+        }
+
+        // Handle Amber Sap execution if active
+        if (amberSapSystem.isSapActive()) {
+            const targetCoordStr = `${gameX},${gameY}`;
+            const sapData = amberSapSystem.isCoordInSap(targetCoordStr);
+            
+            if (!sapData) {
+                return; // Invalid target
+            }
+            
+            // Collect pieces that will be eliminated BEFORE execution
+            const eliminated = [];
+            for (const target of sapData.targets) {
+                const piece = gameLogic.getState().pieces[target];
+                if (piece) {
+                    eliminated.push({ type: piece.type, coord: target });
+                }
+            }
+            
+            // NOW execute
+            const result = amberSapSystem.executeSap(targetCoordStr);
+
+            if (result.success) {
+                // Track the ability
+                matchHistoryTracker.trackAbility('sap', {
+                    amber1: sapData.amber1,
+                    amber2: sapData.amber2,
+                    amplified: sapData.amplified,
+                    eliminated
+                });
+                
+                matchHistoryTracker.commitTurnActions();
+                updateLogDisplay();
+                
+                abilityButtons.setButtonState('amberSap', 'disabled');
+                
+                if (checkForWin()) {
+                    drawBoard();
+                    return;
+                }
+                
+                await endTurn();
+            }
+            return;
+        }
+
+        // Handle Jade Launch execution if active
+        if (jadeLaunchSystem.isLaunchActive()) {
+            const targetCoordStr = `${gameX},${gameY}`;
+            
+            if (jadeLaunchSystem.isPieceSelectionPhase()) {
+                if (jadeLaunchSystem.selectPieceToLaunch(targetCoordStr)) {
+                    drawBoard();
+                }
+           } else if (jadeLaunchSystem.isTargetSelectionPhase()) {
+                // Find which launch option this belongs to
+                const launchOption = jadeLaunchSystem.launchOptions.find(opt => 
+                    opt.pieceCoord === jadeLaunchSystem.selectedPiece &&
+                    opt.targets.includes(targetCoordStr)
+                );
+                
+                if (!launchOption) {
+                    return; // Invalid launch
+                }
+                
+                // Get the piece being launched BEFORE it moves
+                const launchedPieceCoord = jadeLaunchSystem.selectedPiece;
+                const launchedPiece = gameLogic.getState().pieces[launchedPieceCoord];
+                
+                if (!launchedPiece) {
+                    return;
+                }
+                
+                // Collect pieces that will be eliminated on landing
+                const eliminated = [];
+                const landingPiece = gameLogic.getState().pieces[targetCoordStr];
+                if (landingPiece) {
+                    eliminated.push({ type: landingPiece.type, coord: targetCoordStr });
+                }
+                
+                // BEFORE executing launch, predict what will be eliminated by attack
+                const coord = gameLogic.boardUtils.stringToCoord(targetCoordStr);
+                const directions = [
+                    {x: 1, y: 0}, {x: 1, y: 1}, {x: 0, y: 1}, {x: -1, y: 1},
+                    {x: -1, y: 0}, {x: -1, y: -1}, {x: 0, y: -1}, {x: 1, y: -1}
+                ];
+                
+                const attackingPlayer = launchedPiece.type.includes('Square') ? 'player1' : 'player2';
+                const isVoid = launchedPiece.type.includes('void');
+                const isPortal = launchedPiece.type.includes('portal');
+                
+                // Predict attack eliminations
+                for (const dir of directions) {
+                    const adjX = coord.x + dir.x;
+                    const adjY = coord.y + dir.y;
+                    const adjCoordStr = gameLogic.boardUtils.coordToString(adjX, adjY);
+                    const adjPiece = gameLogic.getState().pieces[adjCoordStr];
+                    
+                    if (adjPiece) {
+                        const targetPlayer = adjPiece.type.includes('Square') ? 'player1' : 'player2';
+                        const targetIsPortal = adjPiece.type.includes('portal');
+                        
+                        if (targetPlayer !== attackingPlayer) {
+                            // Check if this piece will be eliminated based on attack rules
+                            if (isVoid || 
+                                (isPortal && targetIsPortal) || 
+                                (!isPortal && !targetIsPortal)) {
+                                eliminated.push({ type: adjPiece.type, coord: adjCoordStr });
+                            }
+                        }
+                    }
+                }
+                
+                const attackSystem = gameLogic.attackSystem;
+                const result = jadeLaunchSystem.executeLaunch(targetCoordStr, attackSystem);
+
+                if (result.success) {
+                    // Check if amplified
+                    let isAmplified = false;
+                    const jade1Coord = gameLogic.boardUtils.stringToCoord(launchOption.jade1);
+                    const jade2Coord = gameLogic.boardUtils.stringToCoord(launchOption.jade2);
+                    
+                    for (const dir of directions) {
+                        const check1 = gameLogic.boardUtils.coordToString(jade1Coord.x + dir.x, jade1Coord.y + dir.y);
+                        const check2 = gameLogic.boardUtils.coordToString(jade2Coord.x + dir.x, jade2Coord.y + dir.y);
+                        
+                        const piece1 = gameLogic.getState().pieces[check1];
+                        const piece2 = gameLogic.getState().pieces[check2];
+                        
+                        if ((piece1 && piece1.type.includes('void')) || (piece2 && piece2.type.includes('void'))) {
+                            isAmplified = true;
+                            break;
+                        }
+                    }
+                    
+                    matchHistoryTracker.trackAbility('launch', {
+                        jade1: launchOption.jade1,
+                        jade2: launchOption.jade2,
+                        amplified: isAmplified,
+                        launchedPieceType: launchedPiece.type,
+                        fromCoord: launchedPieceCoord,
+                        toCoord: targetCoordStr,
+                        eliminated
+                    });
+                    
+                    // DON'T commit yet - might have follow-up abilities
+                    // matchHistoryTracker.commitTurnActions();  // REMOVE THIS LINE
+                    // updateLogDisplay();  // REMOVE THIS LINE
+                    
+                    abilityButtons.setButtonState('jadeLaunch', 'disabled');
+                    
+                    moveMadeThisTurn = true;
+                    lastMovedPieceCoord = result.launchedPieceCoord;
+                    launchUsedThisTurn = true;
+                    
+                    rubyFireballSystem.checkFireball(result.launchedPieceCoord);
+                    pearlTidalwaveSystem.checkTidalwave(result.launchedPieceCoord);
+                    amberSapSystem.checkSap(result.launchedPieceCoord);
+                    
+                    updateAbilityButtonStates();
+                    
+                    if (checkForWin()) {
+                        drawBoard();
+                        return;
+                    }
+                    
+                    if (!rubyFireballSystem.isAvailable() && 
+                        !pearlTidalwaveSystem.isAvailable() && 
+                        !amberSapSystem.isAvailable()) {
+                        // NOW commit when turn actually ends
+                        matchHistoryTracker.commitTurnActions();
+                        updateLogDisplay();
+                        await endTurn();
+                    }
+                }
+                return;
+            }
+        }
+
+        // If a move was already made this turn and abilities are available, block all piece interaction
+        if (moveMadeThisTurn && (rubyFireballSystem.isAvailable() || 
+                                pearlTidalwaveSystem.isAvailable() || 
+                                amberSapSystem.isAvailable() || 
+                                jadeLaunchSystem.isAvailable())) {
+            return;
+        }
+
+        // Normal piece selection/movement
+        const result = gameLogic.handleClick(gameX, gameY);
+
+        const gameState = gameLogic.getState();
+        if (gameState.selectedPieceCoord) {
+            const selectedPiece = gameState.pieces[gameState.selectedPieceCoord];
+            if (!selectedPiece) {
+                gameState.selectedPieceCoord = null;
+            }
+        }
+
+        updateAbilityButtonStates();
+        uiManager.updatePlayerInfo(
+            playerManager.getTurnCount(),
+            playerManager.getCurrentPlayer()
+        );
+
+        drawBoard();
+
+        if (result.moveMade) {
+            moveMadeThisTurn = true;
+            lastMovedPieceCoord = `${gameX},${gameY}`;
+            
+            matchHistoryTracker.startTurn(
+                playerManager.getTurnCount(),
+                playerManager.getCurrentPlayer().name
+            );
+
+            const movedPiece = gameLogic.getState().pieces[`${gameX},${gameY}`];
+            matchHistoryTracker.trackMove(
+                movedPiece.type,
+                result.fromCoord,
+                `${gameX},${gameY}`
+            );
+            
+            // Track eliminations from the move
+            if (result.eliminated && result.eliminated.length > 0) {
+                const eliminatedSet = new Set();
+                result.eliminated.forEach(elim => {
+                    const key = `${elim.type}:${elim.coord}`;
+                    if (!eliminatedSet.has(key)) {
+                        eliminatedSet.add(key);
+                        matchHistoryTracker.trackElimination(elim.type, elim.coord);
+                    }
+                });
+            }
+            
+            drawBoard();
+
+            updateAbilityButtonStates();
+            
+            if (checkForWin()) {
+                    matchHistoryTracker.commitTurnActions();
+                    updateLogDisplay();
+                    return;
+                }
+            
+            if (!rubyFireballSystem.isAvailable() && 
+                !pearlTidalwaveSystem.isAvailable() && 
+                !amberSapSystem.isAvailable() && 
+                !jadeLaunchSystem.isAvailable()) {
+                
+                matchHistoryTracker.commitTurnActions();
+                updateLogDisplay();
+                await endTurn();
+            } else {
+                gameLogic.getState().selectedPieceCoord = null;
+            }
+        }
+    }
+
+    // Handle ability button clicks
+    async function handleAbilityButtonClick(buttonKey) {
+        if (buttonKey === 'endTurn') {
+            await endTurn();
+            return;
+        }
+        
+        const currentState = abilityButtons.getButtonState(buttonKey);
+        
+        // Deactivate all other abilities first
+        if (currentState === 'available') {
+            portalSwapSystem.reset();
+            rubyFireballSystem.deactivate();
+            pearlTidalwaveSystem.deactivate();
+            amberSapSystem.deactivate();
+            jadeLaunchSystem.deactivate();
+            
+            // Reset all buttons to available (not active)
+            if (abilityButtons.getButtonState('portalSwap') === 'active') {
+                abilityButtons.setButtonState('portalSwap', 'available');
+            }
+            if (abilityButtons.getButtonState('rubyFireball') === 'active') {
+                abilityButtons.setButtonState('rubyFireball', 'available');
+            }
+            if (abilityButtons.getButtonState('pearlTidalwave') === 'active') {
+                abilityButtons.setButtonState('pearlTidalwave', 'available');
+            }
+            if (abilityButtons.getButtonState('amberSap') === 'active') {
+                abilityButtons.setButtonState('amberSap', 'available');
+            }
+            if (abilityButtons.getButtonState('jadeLaunch') === 'active') {
+                abilityButtons.setButtonState('jadeLaunch', 'available');
+            }
+            
+            // START TURN if no move was made yet (ability at start of turn)
+            if (!moveMadeThisTurn && buttonKey !== 'portalSwap') {
+                matchHistoryTracker.startTurn(
+                    playerManager.getTurnCount(),
+                    playerManager.getCurrentPlayer().name
+                );
+            }
+            
+            // Deselect any selected piece when activating an ability
+            if (buttonKey !== 'portalSwap') {
+                gameLogic.getGameState().deselectPiece();
+            }
+        }
+        
+        if (buttonKey === 'portalSwap') {
+            if (currentState === 'available') {
+                const gameState = gameLogic.getGameState();
+                const selectedCoord = gameState.selectedPieceCoord;
+                
+                if (selectedCoord) {
+                    const selectedPiece = gameState.getPiece(selectedCoord);
+                    
+                    if (selectedPiece) {
+                        const isPortal = selectedPiece.type === 'portalCircle' || 
+                                        selectedPiece.type === 'portalSquare';
+                        
+                        if (isPortal) {
+                            // Normal mode: portal selected first
+                            if (portalSwapSystem.selectPortal(selectedCoord) && 
+                                portalSwapSystem.activate()) {
+                                abilityButtons.setButtonState('portalSwap', 'active');
+                            }
+                        } else {
+                            // Reverse mode: non-portal target selected first
+                            if (portalSwapSystem.selectTarget(selectedCoord) && 
+                                portalSwapSystem.activate()) {
+                                abilityButtons.setButtonState('portalSwap', 'active');
+                            }
+                        }
+                    }
+                }
+            } else if (currentState === 'active') {
+                portalSwapSystem.deactivate();
+                abilityButtons.setButtonState('portalSwap', 'available');
+            }
+        } else if (buttonKey === 'rubyFireball') {
+            if (currentState === 'available') {
+                if (rubyFireballSystem.activate()) {
+                    abilityButtons.setButtonState('rubyFireball', 'active');
+                }
+            } else if (currentState === 'active') {
+                rubyFireballSystem.deactivate();
+                abilityButtons.setButtonState('rubyFireball', 'available');
+            }
+        } else if (buttonKey === 'pearlTidalwave') {
+            if (currentState === 'available') {
+                if (pearlTidalwaveSystem.activate()) {
+                    abilityButtons.setButtonState('pearlTidalwave', 'active');
+                }
+            } else if (currentState === 'active') {
+                pearlTidalwaveSystem.deactivate();
+                abilityButtons.setButtonState('pearlTidalwave', 'available');
+            }
+        } else if (buttonKey === 'amberSap') {
+            if (currentState === 'available') {
+                if (amberSapSystem.activate()) {
+                    abilityButtons.setButtonState('amberSap', 'active');
+                }
+            } else if (currentState === 'active') {
+                amberSapSystem.deactivate();
+                abilityButtons.setButtonState('amberSap', 'available');
+            }
+        } else if (buttonKey === 'jadeLaunch') {
+            if (currentState === 'available') {
+                if (jadeLaunchSystem.activate()) {
+                    abilityButtons.setButtonState('jadeLaunch', 'active');
+                }
+            } else if (currentState === 'active') {
+                jadeLaunchSystem.deactivate();
+                abilityButtons.setButtonState('jadeLaunch', 'available');
+            }
+        }
+    }
+    
+    // End the current turn
+    async function endTurn() {
+        // PRESERVE FIX: Keep commitTurnActions() out of here to prevent "Double Commit" errors.
+        
+        // 1. YOUR RESET LOGIC (Keep this exactly as is)
+        moveMadeThisTurn = false;
+        lastMovedPieceCoord = null;
+        launchUsedThisTurn = false;
+        abilityButtons.setEndTurnVisible(false);
+        
+        // Reset systems
+        portalSwapSystem.reset();
+        rubyFireballSystem.reset();
+        pearlTidalwaveSystem.reset();
+        amberSapSystem.reset();
+        jadeLaunchSystem.reset();
+        
+        // 2. TURN TRANSITION
+        playerManager.switchTurn();
+        uiManager.updatePlayerInfo(
+            playerManager.getTurnCount(),
+            playerManager.getCurrentPlayer()
+        );
+        
+        // Reset button states AFTER switching player
+        abilityButtons.resetAll();
+                
+        // Check abilities at start of new turn
+        updateAbilityButtonStates();
+        
+        // 3. MERGED AI LOGIC
+        if (playerManager.getCurrentPlayer().isAI) {
+            setTimeout(async () => {
+                // 1. Ensure we have an RNG (create a simple one if window.currentGameRNG doesn't exist)
+                if (!window.currentGameRNG) {
+                    // Simple Linear Congruential Generator for UI play if Arena didn't provide one
+                    window.currentGameRNG = {
+                        seed: Date.now(),
+                        nextInt: function(max) {
+                            this.seed = (this.seed * 1664525 + 1013904223) % 4294967296;
+                            return Math.floor((this.seed / 4294967296) * max);
+                        }
+                    };
+                }
+        
+                // 2. Prepare context
+                const turnContext = {
+                    movedPieceCoord: lastMovedPieceCoord, // Passed from global state
+                    usedAbilities: new Set(launchUsedThisTurn ? ['LAUNCH'] : [])
+                };
+        
+                // 3. Pass RNG and Context to findBestMove
+                const move = await aiController.findBestMove(turnContext, window.currentGameRNG);
+                
+                // Handle debug_idle mode or no moves found
+                if (!move) {
+                    console.log('AI returned null move (debug mode) - skipping AI turn');
+                    await endTurn(); // Recursively call to move to next player
+                    updateAbilityButtonStates();
+                    drawBoard();
+                    return;
+                }
+                
+                const coords = aiController.convertMoveToCoordinates(move);
+                if (coords) {
+                    let success = false;
+                    
+                    // NEW: Logic to handle AI Abilities vs Standard Moves
+                    if (coords.type === 'ABILITY') {
+                        success = await executeAIAbility(coords);
+                    } else {
+                        success = await executeAIMove(coords);
+                    }
+                    
+                    // After AI successfully acts, end the turn
+                    if (success) {
+                        await endTurn(); 
+                    }
+                } else {
+                    console.warn('Failed to convert move to coordinates - skipping AI turn');
+                    await endTurn();
+                }
+                
+                updateAbilityButtonStates();
+                drawBoard();
+            }, 50);
+        }
+    }
+    
+    // Execute AI move and handle tracking
+    async function executeAIMove(coords) {
+        const currentPlayer = playerManager.getCurrentPlayer();
+        
+        // --- START TRACKING BEFORE MOVE ---
+        if (window.matchHistoryTracker) {
+            const turnCount = playerManager.getTurnCount();
+            window.matchHistoryTracker.startTurn(turnCount, currentPlayer.name);
+        }
+        
+        // Select the piece
+        let result = gameLogic.handleClick(coords.selectX, coords.selectY);
+        
+        if (!result.success) {
+            console.error('Failed to select piece', coords);
+            return false;
+        }
+        
+        // Move the piece
+        result = gameLogic.handleClick(coords.moveX, coords.moveY);
+        
+        if (result.success && result.moveMade) {
+            // --- TRACK AFTER MOVE ---
+            if (window.matchHistoryTracker) {
+                const movedToCoord = gameLogic.boardUtils.coordToString(coords.moveX, coords.moveY);
+                const movedFromCoord = result.fromCoord;
+                const movedPiece = gameLogic.getState().pieces[movedToCoord];
+                
+                if (movedPiece) {
+                    window.matchHistoryTracker.trackMove(
+                        movedPiece.type,
+                        movedFromCoord,
+                        movedToCoord
+                    );
+                    
+                    // Track eliminations
+                    if (window.trackEliminationsFromCoord) {
+                        window.trackEliminationsFromCoord(movedToCoord);
+                    }
+                }
+                
+                // Commit and display
+                window.matchHistoryTracker.commitTurnActions();
+                if (window.updateLogDisplay) {
+                    window.updateLogDisplay();
+                }
+            }
+            
+            return true;
+        } else {
+            console.error('Failed to execute move', coords, result);
+            return false;
+        }
+    }
+
+    async function executeAIAbility(coords) {
+        console.log("[Main] Executing AI Ability:", coords); // Debug log
+
+        const currentPlayer = playerManager.getCurrentPlayer();
+        if (window.matchHistoryTracker) {
+            const turnCount = playerManager.getTurnCount();
+            window.matchHistoryTracker.startTurn(turnCount, currentPlayer.name);
+        }
+        
+        let result = { success: false, message: "Unknown Ability Type" };
+        
+        // Normalize type (handle 'ABILITY_FIREBALL' vs 'FIREBALL')
+        const type = coords.abilityType || coords.type.replace('ABILITY_', '');
+        const gl = gameLogic; 
+    
+        // Helper: Track eliminated pieces BEFORE they are removed from the board
+        const eliminatedPieces = [];
+        const trackTargets = (targets) => {
+            if (!targets) return;
+            targets.forEach(t => {
+                const p = gl.getState().pieces[t];
+                if (p) eliminatedPieces.push({ type: p.type, coord: t });
+            });
+        };
+    
+        switch (type) {
+            case 'PORTAL_SWAP':
+                // 1. Setup: Select the portal
+                if (gl.getPortalSwapSystem().selectPortal(coords.portalCoord)) {
+                    
+                    // CRITICAL FIX: Fetch the piece type BEFORE executing the swap
+                    // The AI is swapping the Portal with the piece at 'coords.target'
+                    const targetPiece = gl.getState().pieces[coords.target];
+                    const swappedPieceType = targetPiece ? targetPiece.type : "Unknown";
+    
+                    // 2. Execute
+                    result = gl.getPortalSwapSystem().executeSwap(coords.target);
+                    
+                    // 3. Track
+                    if (result.success) {
+                        // Use our pre-fetched type (swappedPieceType)
+                        // This prevents the "pieceType is undefined" error
+                        matchHistoryTracker.trackSwap(
+                            coords.portalCoord, 
+                            swappedPieceType, 
+                            coords.target
+                        );
+    
+                        // Track any side-effect eliminations (telefrags)
+                        if (result.eliminated) {
+                             result.eliminated.forEach(e => matchHistoryTracker.trackElimination(e.type, e.coord));
+                        }
+                    }
+                }
+                break;
+    
+            case 'FIREBALL':
+                const rubySys = gl.getRubyFireballSystem();
+                // Re-validate ability state before execution
+                rubySys.checkFireball(null);
+                const fireballData = rubySys.fireballTargets.find(f => f.targets.includes(coords.target));
+                
+                if (fireballData) {
+                    trackTargets(fireballData.targets);
+                    
+                    rubySys.activate();
+                    result = rubySys.executeFireball(coords.target);
+                    
+                    if (result.success) {
+                        matchHistoryTracker.trackAbility('fireball', {
+                            ruby1: fireballData.ruby1,
+                            ruby2: fireballData.ruby2,
+                            amplified: fireballData.amplified,
+                            eliminated: eliminatedPieces
+                        });
+                    }
+                } else {
+                    console.error("AI tried Fireball but target validation failed", coords);
+                }
+                break;
+    
+            case 'LAUNCH':
+                const jadeSys = gl.getJadeLaunchSystem();
+                // Re-validate ability state before execution
+                jadeSys.checkLaunch(null);
+                jadeSys.activate();
+                jadeSys.selectedPiece = coords.pieceCoord;
+                
+                result = jadeSys.executeLaunch(coords.target, gl.attackSystem);
+                
+                if (result.success) {
+                     matchHistoryTracker.trackAbility('launch', {
+                        jade1: "AI_JADE", // Simplified for AI
+                        jade2: "AI_JADE",
+                        amplified: false,
+                        launchedPieceType: result.launchedPieceType || "Unknown",
+                        fromCoord: coords.pieceCoord,
+                        toCoord: coords.target,
+                        eliminated: [] // AI secondary elims are hard to track perfectly here
+                    });
+                }
+                break;
+    
+            case 'SAP':
+                const amberSys = gl.getAmberSapSystem();
+                // Re-validate ability state before execution
+                amberSys.checkSap(null);
+                const sapData = amberSys.isCoordInSap(coords.target);
+                
+                if (sapData) {
+                    trackTargets(sapData.targets);
+                    amberSys.activate();
+                    result = amberSys.executeSap(coords.target);
+                    
+                    if (result.success) {
+                        matchHistoryTracker.trackAbility('sap', {
+                            amber1: sapData.amber1,
+                            amber2: sapData.amber2,
+                            amplified: sapData.amplified,
+                            eliminated: eliminatedPieces
+                        });
+                    }
+                }
+                break;
+    
+            case 'TIDALWAVE':
+                const pearlSys = gl.getPearlTidalwaveSystem();
+                // Re-validate ability state before execution
+                pearlSys.checkTidalwave(null);
+                const tidalData = pearlSys.isCoordInTidalwave(coords.target);
+                
+                if (tidalData) {
+                    trackTargets(tidalData.targets);
+                    pearlSys.activate();
+                    result = pearlSys.executeTidalwave(coords.target);
+                    
+                    if (result.success) {
+                         matchHistoryTracker.trackAbility('tidalwave', {
+                            pearl1: tidalData.pearl1,
+                            pearl2: tidalData.pearl2,
+                            amplified: tidalData.amplified,
+                            eliminated: eliminatedPieces
+                        });
+                    }
+                }
+                break;
+                
+            default:
+                console.error("Unknown Ability Type in Main:", type);
+                break;
+        }
+    
+        // Finalize Turn if successful
+        if (result.success) {
+            matchHistoryTracker.commitTurnActions();
+            if (window.updateLogDisplay) window.updateLogDisplay();
+        }
+    
+        return result.success;
+    }
+
+    // Helper to check if any abilities are available for the AI loop
+    function hasAnyAvailableAbilities() {
+        // We check the systems directly. 
+        // Note: They rely on 'moveMadeThisTurn' and 'lastMovedPieceCoord' 
+        // being correctly updated by executeAIMove.
+        
+        // We use the lastMovedPieceCoord to check validity for chain reactions
+        const moved = lastMovedPieceCoord;
+
+        return rubyFireballSystem.checkFireball(moved) ||
+            pearlTidalwaveSystem.checkTidalwave(moved) ||
+            amberSapSystem.checkSap(moved) ||
+            jadeLaunchSystem.checkLaunch(moved);
+    }
+
+    async function executeAITurnWithChaining() {
+        let turnContext = {
+            movedPieceCoord: null,
+            usedAbilities: new Set()
+        };
+        
+        let isTurnActive = true;
+        while (isTurnActive) {
+            // 1. Get Move (Pass current context)
+            const move = await aiController.findBestMove(turnContext, window.currentGameRNG);
+            
+            if (!move || move.type === 'PASS') {
+                isTurnActive = false;
+                break;
+            }
+    
+            const coords = aiController.convertMoveToCoordinates(move);
+            let success = false;
+    
+            // 2. Execute Action
+            if (coords.type === 'ABILITY') {
+                success = await executeAIAbility(coords);
+                turnContext.usedAbilities.add(coords.abilityType);
+                // If it was a Launch, update the movedPieceCoord to follow the piece
+                if (coords.abilityType === 'LAUNCH') turnContext.movedPieceCoord = coords.target;
+            } else {
+                success = await executeAIMove(coords);
+                turnContext.movedPieceCoord = `${coords.moveX},${coords.moveY}`;
+            }
+    
+            if (!success) break; // Stop if something failed
+    
+            // 3. UI Feedback
+            drawBoard();
+            updateAbilityButtonStates();
+            
+            // Check if abilities are even possible before looping
+            if (!hasAnyAvailableAbilities()) break; 
+        }
+    
+        // 4. Final Transition
+        await endTurn();
+    }
+
+    // Handle reset click
+    async function handleResetClick() {
+        const result = gameLogic.resetGame();
+        matchHistoryTracker.reset();
+        moveMadeThisTurn = false;
+        lastMovedPieceCoord = null;
+        launchUsedThisTurn = false;
+        portalSwapSystem.reset();
+        rubyFireballSystem.reset();
+        pearlTidalwaveSystem.reset();
+        amberSapSystem.reset();
+        jadeLaunchSystem.reset();
+        abilityButtons.resetAll();
+        setupManager.reset();
+        uiManager.updatePlayerInfo(
+            playerManager.getTurnCount(),
+            playerManager.getCurrentPlayer()
+        );
+        drawBoard();
+        
+        // Start AI setup if needed
+        setTimeout(handleAISetup, 100);
+        
+        updateLogDisplay();
+    }
+    
+    // Handle mouse move for hover effects
+    function handleMouseMove(event) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const mouseX = (event.clientX - rect.left) * scaleX;
+        const mouseY = (event.clientY - rect.top) * scaleY;
+        
+        abilityButtons.updateEndTurnHover(mouseX, mouseY);
+    }
+    
+    // Check for win condition and display result
+    function checkForWin() {
+        const result = winConditionSystem.checkWin();
+        if (result) {
+            // Disable all buttons
+            abilityButtons.resetAll();
+            
+            // Show a more prominent win message
+            alert(`Game Over!\n\n${result.winner} wins by ${result.method}!\n\nClick Reset to play again.`);
+            
+            return true;
+        }
+        return false;
+    }
+
+    function updateLogDisplay() {
+        const history = matchHistoryTracker.getRawHistory();
+        
+        // Ensure the UI-owned array exists
+        if (!Array.isArray(window.rawHistory)) {
+            console.error('window.rawHistory is not initialized or not an array');
+            return;
+        }
+        
+        // 🔒 Preserve the original array reference (CRITICAL)
+        window.rawHistory.length = 0;
+        
+        history.forEach(entry => {
+            window.rawHistory.push(entry);
+        });
+        
+        // Trigger the display update
+        if (typeof window.renderMatchHistory === 'function') {
+            window.renderMatchHistory();
+        } else {
+            console.error('window.renderMatchHistory is not defined');
+        }
+        
+        // Force immediate DOM update
+        requestAnimationFrame(() => {
+            if (typeof window.renderMatchHistory === 'function') {
+                window.renderMatchHistory();
+            }
+        });
+    }
+    
+    window.updateLogDisplay = updateLogDisplay;
+
+    // Event listeners
+    canvas.addEventListener('click', handleCanvasClick);
+    canvas.addEventListener('mousemove', handleMouseMove);
+    resetButton.addEventListener('click', handleResetClick);
+    
+    window.addEventListener('resize', function() {
+        boardRenderer.updateCanvasSize();
+        drawBoard();
+    });
+    
+    // Add these variables inside window.onload if not already there
+    let hotkeyCycleIndex = 0;
+    let lastHotkeyType = null;
+    
+    function isTypingInInput() {
+	    const el = document.activeElement;
+	    if (!el) return false;
+
+	    const tag = el.tagName.toLowerCase();
+	    return (
+		    tag === 'input' ||
+		    tag === 'textarea' ||
+		    el.isContentEditable === true
+	    );
+    }
+
+
+    window.addEventListener('keydown', (event) => {
+        // --- SETUP PHASE HOTKEYS ---
+        if (setupManager.isSetupPhase) {
+	        const currentPlayer = setupManager.getCurrentPlayer();
+
+	        // Only human setup uses hotkeys
+	        if (currentPlayer === 'square') {
+		        const setupKeyMap = {
+			        '1': 'ruby',
+			        '2': 'pearl',
+			        '3': 'amber',
+			        '4': 'jade'
+		        };
+
+		        const pieceType = setupKeyMap[event.key];
+		        if (pieceType) {
+			        const counts = setupManager.getPieceCounts(currentPlayer);
+
+			        if (counts[pieceType] < 2) {
+				        setupManager.selectPiece(pieceType);
+				        drawBoard();
+			        }
+
+			        event.preventDefault();
+			        return; // stop here, do NOT fall into game hotkeys
+		        }
+	        }
+
+	        // If setup phase but key wasn't a setup hotkey, do nothing
+	        return;
+        }
+
+        // Do not trigger hotkeys while typing in chat or inputs
+        if (isTypingInInput()) return;
+
+        const hotkeyMap = {
+            '1': 'ruby',
+            '2': 'pearl',
+            '3': 'amber',
+            '4': 'jade',
+            '5': 'portal',
+            '6': 'amalgam',
+            '7': 'void'
+        };
+
+        const targetType = hotkeyMap[event.key];
+        if (!targetType) return;
+
+        const gameState = gameLogic.getState();
+        const currentPlayer = playerManager.getCurrentPlayer();
+        
+        // Find pieces belonging to the current player
+        const playerPieces = Object.entries(gameState.pieces)
+            .filter(([coord, piece]) => {
+                const isCorrectType = piece.type.toLowerCase().includes(targetType);
+                const isSquare = piece.type.includes('Square');
+                const isCircle = piece.type.includes('Circle');
+                const isOwned = (currentPlayer.name === 'Player 1' && isSquare) ||
+                                (currentPlayer.name === 'Player 2' && isCircle);
+                return isCorrectType && isOwned;
+            });
+
+        if (playerPieces.length === 0) return;
+
+        // Cycling logic
+        if (lastHotkeyType === targetType) {
+            hotkeyCycleIndex = (hotkeyCycleIndex + 1) % playerPieces.length;
+        } else {
+            hotkeyCycleIndex = 0;
+            lastHotkeyType = targetType;
+        }
+
+        // Get the coordinates of the chosen piece
+        const [coordStr] = playerPieces[hotkeyCycleIndex];
+        const [x, y] = coordStr.split(',').map(Number);
+
+        // FIX: Use handleClick to trigger game logic/selection indicators
+        // We pass the coordinates directly to simulate a click on that piece
+        gameLogic.handleClick(x, y);
+
+        // Sync UI components
+        updateAbilityButtonStates();
+        drawBoard();
+        
+    });
+
+    // Animation loop for button pulsing
+    function animate() {
+        drawBoard();
+        requestAnimationFrame(animate);
+    }
+1122
+    // Initial setup
+    animate();
+    uiManager.updatePlayerInfo(
+        playerManager.getTurnCount(),
+        playerManager.getCurrentPlayer()
+    );
+    
+    // Start AI setup if needed
+    setTimeout(handleAISetup, 100);
+};
