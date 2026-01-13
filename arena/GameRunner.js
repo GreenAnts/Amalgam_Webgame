@@ -13,8 +13,6 @@ export async function playGame({ playerA, playerB, seed }) {
     const maxTurns = 1000;
 
     while (!adapter.isTerminal(gameState) && turnCount < maxTurns) {
-        // TRUST THE STATE: Determine active player from the snapshot
-        // This fixes the synchronization issues
         const currentPlayerName = gameState.currentPlayer;
         let activePlayer, inactivePlayer;
         
@@ -35,7 +33,7 @@ export async function playGame({ playerA, playerB, seed }) {
             };
             move = await activePlayer.selectMove(gameState, context);
         } catch (error) {
-            console.error("AI Crash:", error); // Helpful for debugging
+            console.error("AI Crash:", error);
             return createGameResult({
                 winnerId: inactivePlayer.getId(),
                 winConditionType: "CRASH",
@@ -73,7 +71,6 @@ export async function playGame({ playerA, playerB, seed }) {
 
         gameState = adapter.applyMove(gameState, move);
         turnCount++;
-        // NO MANUAL SWAP HERE - The loop calculates activePlayer at the top
     }
 
     if (turnCount >= maxTurns) {

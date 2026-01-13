@@ -1,13 +1,11 @@
 // arena/GameLogicAdapter.js
 // Adapter between Arena's stateless interface and GameLogic's stateful implementation
-// Provides complete state isolation for deterministic Arena matches
 
 import { GameLogic } from '../GameLogic.js';
 import { PlayerManager } from '../systems/PlayerManager.js';
 
 export class GameLogicAdapter {
     constructor() {
-        // Create fresh instances for each adapter
         this.playerManager = new PlayerManager();
         this.gameLogic = new GameLogic(this.playerManager);
     }
@@ -18,13 +16,8 @@ export class GameLogicAdapter {
      * @returns {Object} Initial game state snapshot
      */
     initialize(seed) {
-        // Reset PlayerManager to clean state
         this.playerManager.reset();
-        
-        // Reset GameLogic state
         this.gameLogic.resetGame();
-        
-        // Return current state snapshot
         return this.getStateSnapshot();
     }
 
@@ -34,10 +27,7 @@ export class GameLogicAdapter {
      * @returns {boolean} True if game is over
      */
     isTerminal(gameState) {
-        // Restore state (safe for read-only check)
         this._restoreFromSnapshot(gameState);
-        
-        // Use WinConditionSystem to check for win
         const winResult = this.gameLogic.getWinConditionSystem().checkWin();
         return winResult !== null;
     }
@@ -45,93 +35,129 @@ export class GameLogicAdapter {
     /**
      * Check if move is legal
      * @param {Object} gameState - Game state snapshot
-     * @param {Object} move - Move object {from: "x,y", to: "x,y"}
+     * @param {Object} move - Move object
      * @returns {boolean} True if move is legal
      */
     isLegalMove(gameState, move) {
-        if (!move || !move.from || !move.to) return false;
+        if (!move) return false;
         
-        // Restore state
         this._restoreFromSnapshot(gameState);
         
-        // Parse coordinates
-        const fromCoord = this.gameLogic.boardUtils.stringToCoord(move.from);
-        const toCoord = this.gameLogic.boardUtils.stringToCoord(move.to);
+        // Handle PASS moves (always legal when no other moves available)
+        if (move.type === 'PASS') {
+            return true;
+        }
         
-        // Check if piece exists at 'from' position
+        // Handle ABILITY moves
+        if (move.type === 'ABILITY') {
+            return this._isAbilityLegal(move);
+        }
+        
+        // Standard moves must have from/to
+        if (!move.from || !move.to) return false;
+        
         const piece = this.gameLogic.getState().pieces[move.from];
         if (!piece) return false;
         
-        // Check if piece belongs to current player
         if (!this.playerManager.canMovePiece(piece.type)) return false;
         
-        // Get valid moves for this piece
         const validMoves = this.gameLogic.movementSystem.getValidMoves(move.from);
+        const toCoord = this.gameLogic.boardUtils.stringToCoord(move.to);
         
-        // Check if 'to' position is in valid moves
         return validMoves.some(m => m.x === toCoord.x && m.y === toCoord.y);
+    }
+
+    /**
+     * Check if an ability move is legal
+     * @private
+     */
+    _isAbilityLegal(move) {
+        const gl = this.gameLogic;
+        
+        switch (move.abilityType) {
+            case 'FIREBALL':
+                return gl.getRubyFireballSystem().checkFireball(null);
+            case 'TIDALWAVE':
+                return gl.getPearlTidalwaveSystem().checkTidalwave(null);
+            case 'SAP':
+                return gl.getAmberSapSystem().checkSap(null);
+            case 'LAUNCH':
+                return gl.getJadeLaunchSystem().checkLaunch(null);
+            case 'PORTAL_SWAP':
+                return gl.getPortalSwapSystem().selectedPortal !== null;
+            default:
+                return false;
+        }
     }
 
     /**
      * Apply move and return new state
      * @param {Object} gameState - Current game state snapshot
-     * @param {Object} move - Move object {from: "x,y", to: "x,y"}
+     * @param {Object} move - Move object
      * @returns {Object} New game state snapshot
      */
     applyMove(gameState, move) {
         this._restoreFromSnapshot(gameState);
         
         if (move.type === 'PASS') {
-            this.playerManager.switchTurn(); // Only switch on explicit PASS or end
+            this.playerManager.switchTurn();
         } else if (move.type === 'ABILITY') {
-            this.executeAbilityInAdapter(move);
-            // Check if turn should end after this specific ability
-            if (!this.gameLogic.anyAbilitiesAvailable()) {
-                this.playerManager.switchTurn();
-            }
+            this._executeAbility(move);
+            this.playerManager.switchTurn();
         } else {
-            // Standard Move
-            this.executeStandardMove(move);
-            // Check if chaining is possible
-            if (!this.gameLogic.anyAbilitiesAvailable()) {
-                this.playerManager.switchTurn();
-            }
+            this._executeStandardMove(move);
+            this.playerManager.switchTurn();
         }
         
         return this.getStateSnapshot();
     }
 
-    // Helper to map AI ability actions to GameLogic systems
-    executeAbilityInAdapter(action) {
+    /**
+     * Execute a standard piece move
+     * @private
+     */
+    _executeStandardMove(move) {
+        this.gameLogic.getGameState().selectPiece(move.from);
+        this.gameLogic.getGameState().movePiece(move.from, move.to);
+        this.gameLogic.attackSystem.executeAttackAndReturnEliminated(move.to);
+        this.gameLogic.getGameState().deselectPiece();
+    }
+
+    /**
+     * Execute an ability
+     * @private
+     */
+    _executeAbility(move) {
         const gl = this.gameLogic;
-        switch (action.abilityType) {
-            case 'ABILITY_FIREBALL':
+        
+        switch (move.abilityType) {
+            case 'FIREBALL':
                 gl.getRubyFireballSystem().activate();
-                gl.getRubyFireballSystem().executeFireball(action.target);
+                gl.getRubyFireballSystem().executeFireball(move.target);
                 break;
-            case 'ABILITY_TIDALWAVE':
+            case 'TIDALWAVE':
                 gl.getPearlTidalwaveSystem().activate();
-                gl.getPearlTidalwaveSystem().executeTidalwave(action.target);
+                gl.getPearlTidalwaveSystem().executeTidalwave(move.target);
                 break;
-            case 'ABILITY_SAP':
+            case 'SAP':
                 gl.getAmberSapSystem().activate();
-                gl.getAmberSapSystem().executeSap(action.target);
+                gl.getAmberSapSystem().executeSap(move.target);
                 break;
-            case 'ABILITY_LAUNCH':
+            case 'LAUNCH':
                 gl.getJadeLaunchSystem().activate();
-                gl.getJadeLaunchSystem().selectPieceToLaunch(action.pieceCoord);
-                gl.getJadeLaunchSystem().executeLaunch(action.target, gl.attackSystem);
+                gl.getJadeLaunchSystem().selectPieceToLaunch(move.pieceCoord);
+                gl.getJadeLaunchSystem().executeLaunch(move.target, gl.attackSystem);
                 break;
-            case 'ABILITY_PORTAL_SWAP':
-                gl.getPortalSwapSystem().selectPortal(action.portalCoord);
+            case 'PORTAL_SWAP':
+                gl.getPortalSwapSystem().selectPortal(move.portalCoord);
                 gl.getPortalSwapSystem().activate();
-                gl.getPortalSwapSystem().executeSwap(action.target);
+                gl.getPortalSwapSystem().executeSwap(move.target);
                 break;
         }
     }
 
     /**
-     * Get terminal result (winner info)
+     * Get terminal result
      * @param {Object} gameState - Terminal game state snapshot
      * @returns {Object} {winnerId: string, winConditionType: string}
      */
@@ -144,7 +170,6 @@ export class GameLogicAdapter {
             return { winnerId: null, winConditionType: 'DRAW' };
         }
         
-        // Map winner name to player ID
         let winnerId;
         if (winResult.winner === 'Player 1') {
             winnerId = 'player1';
@@ -161,13 +186,12 @@ export class GameLogicAdapter {
     }
 
     /**
-     * Get current state snapshot (read-only)
+     * Get current state snapshot
      * @returns {Object} Game state snapshot
      */
     getStateSnapshot() {
         const state = this.gameLogic.getState();
         
-        // Deep clone pieces to prevent mutation
         const piecesCopy = {};
         for (const [coord, piece] of Object.entries(state.pieces)) {
             piecesCopy[coord] = { ...piece };
@@ -182,28 +206,23 @@ export class GameLogicAdapter {
     }
 
     /**
-     * Restore game state from snapshot (internal use)
+     * Restore game state from snapshot
      * @private
      */
     _restoreFromSnapshot(snapshot) {
-        // Clear current pieces
         const currentState = this.gameLogic.getGameState();
         const currentPieces = Object.keys(currentState.pieces);
+        
         for (const coord of currentPieces) {
             currentState.removePiece(coord);
         }
         
-        // Restore pieces from snapshot
         for (const [coord, piece] of Object.entries(snapshot.pieces)) {
             currentState.addPiece(coord, { ...piece });
         }
         
-        // Restore turn state
         while (this.playerManager.getCurrentPlayer().name !== snapshot.currentPlayer) {
             this.playerManager.switchTurn();
         }
-        
-        // Note: turnCount restoration would require modifying PlayerManager
-        // For now, we accept this limitation
     }
 }

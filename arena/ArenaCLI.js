@@ -1,17 +1,12 @@
 // arena/ArenaCLI.js
 // CLI entrypoint - parses args, constructs Arena, emits JSON schema
-// NO game logic, NO AI logic, NO printing except JSON to stdout
 
-import { GameLogic } from '../GameLogic.js';
-import { PlayerManager } from '../systems/PlayerManager.js';
 import { ArenaAIPlayer } from './players/ArenaAIPlayer.js';
 import { RandomPolicy } from '../ai_system/decision/RandomPolicy.js';
 import { runArena } from './ArenaRunner.js';
 
 /**
  * Parse command line arguments
- * @param {Array} args - process.argv.slice(2)
- * @returns {Object} Configuration
  */
 function parseArgs(args) {
     const config = {
@@ -39,9 +34,9 @@ function parseArgs(args) {
             console.error('Options:');
             console.error('  --seed <number>              Base seed (default: 12345)');
             console.error('  --games <number>             Number of games (default: 500)');
-            console.error('  --version <string>            AI version ID (default: AI_v0.0_RANDOM)');
+            console.error('  --version <string>           AI version ID (default: AI_v0.0_RANDOM)');
             console.error('  --no-determinism-check       Skip determinism verification');
-            console.error('  --help, -h                    Show this help');
+            console.error('  --help, -h                   Show this help');
             console.error('');
             console.error('Output:');
             console.error('  stdout: Canonical JSON schema');
@@ -55,34 +50,27 @@ function parseArgs(args) {
 
 /**
  * Run baseline evaluation
- * @param {Object} config - Configuration
- * @returns {Object} Canonical result schema
  */
 async function runBaseline(config) {
     const startTime = Date.now();
     
-    // Initialize game systems
-    const gameLogic = null; // Adapter creates its own
-    
-    // Create AI policies
     const randomPolicy = new RandomPolicy();
     
-    // Create Arena players (inject policies)
     const playerA = new ArenaAIPlayer({
-        id: config.aiVersionId,
+        id: 'player1',  // Fixed ID for player slot
+        aiVersionId: config.aiVersionId,  // Version for tracking
         policy: randomPolicy
     });
     const playerB = new ArenaAIPlayer({
-        id: config.aiVersionId,
+        id: 'player2',  // Fixed ID for player slot
+        aiVersionId: config.aiVersionId,  // Version for tracking
         policy: randomPolicy
     });
     
-    // Log to stderr (human-readable, non-authoritative)
     console.error(`Running baseline: ${config.aiVersionId}`);
     console.error(`Games: ${config.numberOfGames}, Seed: ${config.baseSeed}`);
     console.error('Starting match...\n');
     
-    // Run the match
     const results = await runArena({
         playerA,
         playerB,
@@ -93,19 +81,16 @@ async function runBaseline(config) {
     const endTime = Date.now();
     const duration = ((endTime - startTime) / 1000).toFixed(2);
     
-    // Calculate win rates
     const playerAWins = results.results.winsByAI[results.playerA] || 0;
     const playerBWins = results.results.winsByAI[results.playerB] || 0;
     const totalWins = playerAWins + playerBWins;
     const playerAWinRate = totalWins > 0 ? playerAWins / totalWins : 0;
     const playerBWinRate = totalWins > 0 ? playerBWins / totalWins : 0;
     
-    // Determinism check
     let determinismResult = null;
     if (config.determinismCheck) {
         console.error('Running determinism check...');
         const results2 = await runArena({
-            gameLogic,
             playerA,
             playerB,
             baseSeed: config.baseSeed,
@@ -133,7 +118,6 @@ async function runBaseline(config) {
         }
     }
     
-    // Build canonical schema
     const canonicalResult = {
         baseline_id: config.aiVersionId,
         timestamp: new Date().toISOString(),
@@ -163,7 +147,6 @@ async function runBaseline(config) {
         duration_seconds: parseFloat(duration)
     };
     
-    // Output human-readable summary to stderr
     console.error('=== Summary ===');
     console.error(`Duration: ${duration}s`);
     console.error(`Games: ${canonicalResult.games.completed}`);
@@ -176,7 +159,6 @@ async function runBaseline(config) {
     }
     console.error('\n=== Canonical Schema (stdout) ===\n');
     
-    // Output canonical schema to stdout (machine-readable, authoritative)
     console.log(JSON.stringify(canonicalResult, null, 2));
     
     return canonicalResult;

@@ -135,8 +135,6 @@
             window.log(`- Number of Games: ${numberOfGames}\n`);
             
             try {
-                const playerManager = new PlayerManager();
-                const gameLogic = new GameLogic(playerManager);
                 
                 const randomPolicy = new RandomPolicy();
                 const playerA = new ArenaAIPlayer({ id: 'AI_v0.0_RANDOM', policy: randomPolicy });
@@ -146,7 +144,6 @@
                 const startTime = Date.now();
                 
                 const results = await runArena({
-                    gameLogic,
                     playerA,
                     playerB,
                     baseSeed,
@@ -205,7 +202,6 @@
                 window.log('Running same match again with same seed...');
                 
                 const results2 = await runArena({
-                    gameLogic,
                     playerA,
                     playerB,
                     baseSeed,
@@ -263,8 +259,6 @@
             window.log('This may take several minutes...\n');
             
             try {
-                const playerManager = new PlayerManager();
-                const gameLogic = new GameLogic(playerManager);
                 
                 const randomPolicy = new RandomPolicy();
                 const playerA = new ArenaAIPlayer({ id: 'AI_v0.0_RANDOM', policy: randomPolicy });
@@ -272,7 +266,6 @@
                 
                 const startTime = Date.now();
                 const results = await runArena({
-                    gameLogic,
                     playerA,
                     playerB,
                     baseSeed,

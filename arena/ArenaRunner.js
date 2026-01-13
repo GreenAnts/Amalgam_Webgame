@@ -6,7 +6,6 @@ import { runMatch } from "./MatchRunner.js";
 /**
  * Run an Arena match between two AI players
  * @param {Object} params - Arena parameters
- * @param {GameLogic} params.gameLogic - Game logic instance
  * @param {Object} params.playerA - First player (implements getId() and selectMove())
  * @param {Object} params.playerB - Second player (implements getId() and selectMove())
  * @param {number} params.baseSeed - Base seed for match
@@ -19,17 +18,16 @@ export async function runArena({
     baseSeed,
     numberOfGames
 }) {
-	const results = await runMatch({
-		gameLogic,
-		playerA,
-		playerB,
-		baseSeed,
-		numberOfGames
-	});
+    const results = await runMatch({
+        playerA,
+        playerB,
+        baseSeed,
+        numberOfGames
+    });
 
-	return {
-		playerA: playerA.getId(),
-		playerB: playerB.getId(),
-		results
-	};
+    return {
+        playerA: playerA.getId(),
+        playerB: playerB.getId(),
+        results
+    };
 }
