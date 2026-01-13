@@ -1,4 +1,4 @@
-# Amalgam
+# Amalgam · `v0.01 (Development)`
 A two player abstract strategy game that requires you to tactically utilize your pieces  in conjunction with one another to either eliminate the opponents pieces or carefully get a valuable piece to the other side of the board.
 
 
