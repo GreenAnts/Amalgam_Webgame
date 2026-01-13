@@ -1,7 +1,7 @@
 // GameLogic.js - Game logic orchestrator using modular components
 import { GameState } from './core/GameState.js';
 import { BoardUtils } from './core/BoardUtils.js';
-import { MovementSystem } from './movement/MovementSystem.js';
+import { MovementSystem } from './systems/MovementSystem.js';
 import { PlayerManager } from './systems/PlayerManager.js';
 import { AttackSystem } from './systems/AttackSystem.js';
 import { PortalSwapSystem } from './systems/PortalSwapSystem.js';
