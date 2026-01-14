@@ -1,0 +1,34 @@
+{
+  "baseline_id": "AI_v0.0_RANDOM",
+  "timestamp": "2026-01-14T08:04:42.548Z",
+  "seed": {
+    "base": 100,
+    "range": [
+      100,
+      199
+    ]
+  },
+  "games": {
+    "requested": 100,
+    "completed": 100,
+    "crashes": 0,
+    "illegal_moves": 0,
+    "draws": 11
+  },
+  "results": {
+    "wins": {
+      "playerA": 49,
+      "playerB": 40
+    },
+    "win_rate": {
+      "playerA": 0.551,
+      "playerB": 0.449
+    },
+    "average_turns": 3546.77
+  },
+  "determinism_check": {
+    "rerun_match": true,
+    "byte_identical": true
+  },
+  "duration_seconds": 59.68
+}

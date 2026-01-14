@@ -10,9 +10,15 @@ export async function playGame({ playerA, playerB, seed }) {
     
     let gameState = adapter.initialize(seed);
     let turnCount = 0;
-    const maxTurns = 1000;
+    const maxTurns = 5000;
 
     while (!adapter.isTerminal(gameState) && turnCount < maxTurns) {
+        // Debug: Check win every 5000 turns
+        if (turnCount > 0 && turnCount % 5000 === 0) {
+            const terminalCheck = adapter.getTerminalResult(gameState);
+            console.error(`Turn ${turnCount}: Terminal check =`, terminalCheck);
+            console.error(`  Pieces remaining: ${Object.keys(gameState.pieces).length}`);
+        }
         const currentPlayerName = gameState.currentPlayer;
         let activePlayer, inactivePlayer;
         

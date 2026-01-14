@@ -197,11 +197,11 @@ Failures here indicate **architecture bugs**, not AI weakness.
 ```bash
 mkdir -p arena/results
 
-node arena/ArenaCLI.js \
-	--games 500 \
-	--seed-start 300 \
-	--seed-count 500 \
-	> arena/results/AI_v0.0_RANDOM_2026-01-11.json
+# Pure JSON to file, logs to terminal
+node arena/ArenaCLI.js --games 300 --seed 100 > arena/results/baseline_AI_v0.0_RANDOM.json
+
+# OR: Pure JSON to file, suppress logs entirely
+node arena/ArenaCLI.js --games 300 --seed 100 > arena/results/baseline_AI_v0.0_RANDOM.json 2>/dev/null
 ```
 
 **stdout**
