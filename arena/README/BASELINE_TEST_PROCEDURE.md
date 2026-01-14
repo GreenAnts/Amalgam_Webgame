@@ -263,12 +263,21 @@ Once accepted, the baseline becomes immutable.
 ### 8.1 Git Tag (Source of Truth)
 
 ```bash
+# 1. Stage and commit the frozen code and results
 git add .
 git commit -m "AI_v0.0_RANDOM baseline (random legal policy)"
+
+# 2. Create the local immutable tag
 git tag AI_v0.0_RANDOM
+
+# 3. Push the commit to the remote branch
+git push origin main
+
+# 4. Push the tag to the remote (Tags are NOT pushed by default)
+git push origin AI_v0.0_RANDOM
 ```
 
-**The git tag *is* the baseline.**
+**The git tag *is* the baseline.** By pushing both the commit and the tag, you ensure the baseline can be checked out by any agent or developer in any environment.
 
 ---
 
