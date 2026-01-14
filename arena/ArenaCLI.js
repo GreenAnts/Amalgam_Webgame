@@ -4,6 +4,7 @@
 import { ArenaAIPlayer } from './players/ArenaAIPlayer.js';
 import { RandomPolicy } from '../ai_system/decision/RandomPolicy.js';
 import { runArena } from './ArenaRunner.js';
+import { getSeedRange } from './SeedManager.js';
 
 /**
  * Parse command line arguments
@@ -13,7 +14,8 @@ function parseArgs(args) {
         baseSeed: 12345,
         numberOfGames: 500,
         aiVersionId: 'AI_v0.0_RANDOM',
-        determinismCheck: true
+        determinismCheck: true,
+        seedRange: null  // NEW: for named ranges
     };
 
     for (let i = 0; i < args.length; i++) {
@@ -26,6 +28,10 @@ function parseArgs(args) {
         } else if (args[i] === '--version' && args[i + 1]) {
             config.aiVersionId = args[i + 1];
             i++;
+        } else if (args[i] === '--range' && args[i + 1]) {
+            // NEW: Named seed range support
+            config.seedRange = args[i + 1];
+            i++;
         } else if (args[i] === '--no-determinism-check') {
             config.determinismCheck = false;
         } else if (args[i] === '--help' || args[i] === '-h') {
@@ -34,15 +40,29 @@ function parseArgs(args) {
             console.error('Options:');
             console.error('  --seed <number>              Base seed (default: 12345)');
             console.error('  --games <number>             Number of games (default: 500)');
-            console.error('  --version <string>           AI version ID (default: AI_v0.0_RANDOM)');
+            console.error('  --range <name>               Named seed range (DEV, SANITY, BASELINE_v0_1, etc.)');
+            console.error('  --version <string>           AI version ID metadata (default: AI_v0.0_RANDOM)');
             console.error('  --no-determinism-check       Skip determinism verification');
             console.error('  --help, -h                   Show this help');
+            console.error('');
+            console.error('Examples:');
+            console.error('  node arena/ArenaCLI.js --range DEV');
+            console.error('  node arena/ArenaCLI.js --range SANITY');
+            console.error('  node arena/ArenaCLI.js --range BASELINE_v0_1 --version AI_v0.1_VOID_OBJECTIVE');
             console.error('');
             console.error('Output:');
             console.error('  stdout: Canonical JSON schema');
             console.error('  stderr: Human-readable logs');
             process.exit(0);
         }
+    }
+    
+    // NEW: Apply named range if specified
+    if (config.seedRange) {
+        const range = getSeedRange(config.seedRange);
+        config.baseSeed = range.start;
+        config.numberOfGames = range.count;
+        console.error(`Using seed range: ${config.seedRange} (seeds ${range.start}-${range.start + range.count - 1})`);
     }
 
     return config;
