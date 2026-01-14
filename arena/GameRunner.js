@@ -26,6 +26,8 @@ export async function playGame({ playerA, playerB, seed }) {
         
         let move;
         try {
+            adapter._restoreFromSnapshot(gameState);
+            
             const context = {
                 rng,
                 gameLogic: adapter.gameLogic,

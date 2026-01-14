@@ -11,6 +11,91 @@ export class GameLogicAdapter {
     }
 
     /**
+     * Perform deterministic setup phase
+     * Places all 16 gems in valid starting positions based on RNG seed
+     * @param {Object} rng - Random number generator
+     */
+    _performDeterministicSetup(rng) {
+        const gameState = this.gameLogic.getGameState();
+        
+        // Import constants
+        const CIRCLE_START_COORDS = [
+            "1,8", "1,9", "1,10", "1,11", "2,7", "2,9", "2,10", "2,11",
+            "3,7", "3,8", "3,10", "3,11", "4,7", "4,8", "4,9", "4,11",
+            "5,7", "5,8", "5,9", "5,10", "6,7", "6,8", "6,9", "6,10",
+            "7,8", "7,9", "-1,8", "-1,9", "-1,10", "-1,11", "-2,7",
+            "-2,9", "-2,10", "-2,11", "-3,7", "-3,8", "-3,10", "-3,11",
+            "-4,7", "-4,8", "-4,9", "-4,11", "-5,7", "-5,8", "-5,9",
+            "-5,10", "-6,7", "-6,8", "-6,9", "-6,10", "-7,8", "-7,9"
+        ];
+        
+        const SQUARE_START_COORDS = [
+            "-1,-8", "-1,-9", "-1,-10", "-1,-11", "-2,-7", "-2,-9", "-2,-10", "-2,-11",
+            "-3,-7", "-3,-8", "-3,-10", "-3,-11", "-4,-7", "-4,-8", "-4,-9", "-4,-11",
+            "-5,-7", "-5,-8", "-5,-9", "-5,-10", "-6,-7", "-6,-8", "-6,-9", "-6,-10",
+            "-7,-8", "-7,-9", "1,-8", "1,-9", "1,-10", "1,-11", "2,-7", "2,-9",
+            "2,-10", "2,-11", "3,-7", "3,-8", "3,-10", "3,-11", "4,-7", "4,-8",
+            "4,-9", "4,-11", "5,-7", "5,-8", "5,-9", "5,-10", "6,-7", "6,-8",
+            "6,-9", "6,-10", "7,-8", "7,-9"
+        ];
+        
+        // Shuffle positions deterministically
+        const shuffleArray = (arr) => {
+            const shuffled = [...arr];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = rng.nextInt(i + 1);
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        };
+        
+        const circlePositions = shuffleArray(CIRCLE_START_COORDS);
+        const squarePositions = shuffleArray(SQUARE_START_COORDS);
+        
+        // Gem types (2 of each)
+        const gemTypes = ['ruby', 'ruby', 'pearl', 'pearl', 'amber', 'amber', 'jade', 'jade'];
+        
+        // Place Circle gems
+        gemTypes.forEach((gemType, i) => {
+            const coord = circlePositions[i];
+            const piece = this._createGemPiece(gemType, 'circle');
+            gameState.addPiece(coord, piece);
+        });
+        
+        // Place Square gems
+        gemTypes.forEach((gemType, i) => {
+            const coord = squarePositions[i];
+            const piece = this._createGemPiece(gemType, 'square');
+            gameState.addPiece(coord, piece);
+        });
+    }
+
+    /**
+     * Create a gem piece (helper for setup)
+     * @private
+     */
+    _createGemPiece(gemType, player) {
+        const normalPieceSize = 25 * 0.38;
+        
+        const colors = {
+            ruby: { outer: '#b72d4c', inner: '#e4395f' },
+            pearl: { outer: '#c4c2ad', inner: '#f7f4d8' },
+            amber: { outer: '#c19832', inner: '#f4bf3f' },
+            jade: { outer: '#86b76a', inner: '#a8e685' }
+        };
+        
+        const typeStr = player === 'square' ? 'Square' : 'Circle';
+        
+        return {
+            name: `${gemType.charAt(0).toUpperCase() + gemType.slice(1)}-${typeStr}`,
+            type: `${gemType}${typeStr}`,
+            outerColor: colors[gemType].outer,
+            innerColor: colors[gemType].inner,
+            size: normalPieceSize
+        };
+    }
+
+    /**
      * Initialize a new game with given seed
      * @param {number} seed - Game seed (currently unused by main game)
      * @returns {Object} Initial game state snapshot
@@ -18,7 +103,32 @@ export class GameLogicAdapter {
     initialize(seed) {
         this.playerManager.reset();
         this.gameLogic.resetGame();
+        
+        // Create RNG from seed for deterministic setup
+        const rng = this._createSetupRNG(seed);
+        
+        // Perform deterministic setup (place all gems)
+        this._performDeterministicSetup(rng);
+        
         return this.getStateSnapshot();
+    }
+    
+    /**
+     * Create a setup-specific RNG from game seed
+     * @private
+     */
+    _createSetupRNG(seed) {
+        // Simple mulberry32 implementation
+        let state = seed >>> 0;
+        
+        return {
+            nextInt(max) {
+                state = (state + 0x6D2B79F5) >>> 0;
+                let t = Math.imul(state ^ (state >>> 15), state | 1);
+                t = t ^ (t + Math.imul(t ^ (t >>> 7), state | 61));
+                return (((t ^ (t >>> 14)) >>> 0) / 4294967296) * max | 0;
+            }
+        };
     }
 
     /**
@@ -77,14 +187,56 @@ export class GameLogicAdapter {
         switch (move.abilityType) {
             case 'FIREBALL':
                 return gl.getRubyFireballSystem().checkFireball(null);
+                
             case 'TIDALWAVE':
                 return gl.getPearlTidalwaveSystem().checkTidalwave(null);
+                
             case 'SAP':
                 return gl.getAmberSapSystem().checkSap(null);
+                
             case 'LAUNCH':
                 return gl.getJadeLaunchSystem().checkLaunch(null);
+                
             case 'PORTAL_SWAP':
-                return gl.getPortalSwapSystem().selectedPortal !== null;
+                // CRITICAL FIX: Simulate the selection to verify legality
+                // The move contains portalCoord and target from ActionGenerator
+                const portalSystem = gl.getPortalSwapSystem();
+                const piece = gl.getState().pieces[move.portalCoord];
+                
+                // Must be a valid piece
+                if (!piece) return false;
+                
+                // Must belong to current player
+                if (!this.playerManager.canMovePiece(piece.type)) return false;
+                
+                // Temporarily select to check if swap is valid
+                const originalPortal = portalSystem.selectedPortal;
+                const originalTargets = portalSystem.swapTargets;
+                const originalReverseMode = portalSystem.reverseMode;
+                
+                let isValid = false;
+                
+                if (piece.type.includes('portal')) {
+                    // Normal mode: portal swapping with piece
+                    if (portalSystem.selectPortal(move.portalCoord)) {
+                        const targets = portalSystem.getTargets();
+                        isValid = targets.includes(move.target);
+                    }
+                } else {
+                    // Reverse mode: piece on golden line swapping with portal
+                    if (portalSystem.selectTarget(move.portalCoord)) {
+                        const portals = portalSystem.availablePortals || [];
+                        isValid = portals.includes(move.target);
+                    }
+                }
+                
+                // Restore original state
+                portalSystem.selectedPortal = originalPortal;
+                portalSystem.swapTargets = originalTargets;
+                portalSystem.reverseMode = originalReverseMode;
+                
+                return isValid;
+                
             default:
                 return false;
         }
@@ -207,7 +359,7 @@ export class GameLogicAdapter {
 
     /**
      * Restore game state from snapshot
-     * @private
+     * Used by GameRunner to sync state before AI decision
      */
     _restoreFromSnapshot(snapshot) {
         const currentState = this.gameLogic.getGameState();
