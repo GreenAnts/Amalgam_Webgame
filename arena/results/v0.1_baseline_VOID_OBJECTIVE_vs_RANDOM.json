@@ -1,0 +1,36 @@
+{
+  "match_type": "CANDIDATE_VS_BASELINE",
+  "candidate_policy": "VOID_OBJECTIVE",
+  "baseline_id": "AI_v0.0_RANDOM",
+  "timestamp": "2026-01-15T10:40:59.073Z",
+  "seed": {
+    "base": 200,
+    "range": [
+      200,
+      499
+    ]
+  },
+  "games": {
+    "requested": 300,
+    "completed": 300,
+    "crashes": 0,
+    "illegal_moves": 0,
+    "draws": 0
+  },
+  "results": {
+    "wins": {
+      "playerA": 293,
+      "playerB": 7
+    },
+    "win_rate": {
+      "playerA": 0.977,
+      "playerB": 0.023
+    },
+    "average_turns": 159.36
+  },
+  "determinism_check": {
+    "rerun_match": true,
+    "byte_identical": true
+  },
+  "duration_seconds": 8.96
+}

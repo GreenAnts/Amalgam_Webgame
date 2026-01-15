@@ -13,12 +13,6 @@ export async function playGame({ playerA, playerB, seed }) {
     const maxTurns = 5000;
 
     while (!adapter.isTerminal(gameState) && turnCount < maxTurns) {
-        // Debug: Check win every 5000 turns
-        if (turnCount > 0 && turnCount % 5000 === 0) {
-            const terminalCheck = adapter.getTerminalResult(gameState);
-            console.error(`Turn ${turnCount}: Terminal check =`, terminalCheck);
-            console.error(`  Pieces remaining: ${Object.keys(gameState.pieces).length}`);
-        }
         const currentPlayerName = gameState.currentPlayer;
         let activePlayer, inactivePlayer;
         
@@ -94,8 +88,17 @@ export async function playGame({ playerA, playerB, seed }) {
     }
 
     const terminalInfo = adapter.getTerminalResult(gameState);
+    
+    // FIX: Map game's internal player names to Arena player IDs
+    let arenaWinnerId = null;
+    if (terminalInfo.winnerId === 'player1') {
+        arenaWinnerId = playerA.getId();
+    } else if (terminalInfo.winnerId === 'player2') {
+        arenaWinnerId = playerB.getId();
+    }
+    
     return createGameResult({
-        winnerId: terminalInfo.winnerId,
+        winnerId: arenaWinnerId,  // ← Now uses Arena player ID
         winConditionType: terminalInfo.winConditionType,
         turnCount,
         crashed: false,

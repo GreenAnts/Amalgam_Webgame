@@ -38,9 +38,9 @@ export const SEED_RANGES = {
     DEV: { start: -10, count: 5 },
     SANITY: { start: 0, count: 15 },
     BASELINE_v0_0: { start: 100, count: 100 }, // Locked RANDOM
-
+	
 	// Baseline seed batches (300 games each)
-	BASELINE_S01: { start: 200,  count: 300 }, // 200–499
+	BASELINE_S01: { start: 200,  count: 300 }, // 200–499 // Locked VOID_OBJECTIVE
 	BASELINE_S02: { start: 500,  count: 300 }, // 500–799
 	BASELINE_S03: { start: 800,  count: 300 }, // 800–1099
 	BASELINE_S04: { start: 1100, count: 300 }, // 1100–1399
