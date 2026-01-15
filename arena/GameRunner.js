@@ -1,8 +1,19 @@
 // GameRunner.js
 // Executes exactly one game
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { createGameResult } from "./ResultSchemas.js";
 import { createRNG } from "./SeedManager.js";
 import { GameLogicAdapter } from "./GameLogicAdapter.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load ArenaConfig.json
+const ArenaConfig = JSON.parse(
+    readFileSync(join(__dirname, 'ArenaConfig.json'), 'utf8')
+);
 
 export async function playGame({ playerA, playerB, seed }) {
     const rng = createRNG(seed);
@@ -10,7 +21,7 @@ export async function playGame({ playerA, playerB, seed }) {
     
     let gameState = adapter.initialize(seed);
     let turnCount = 0;
-    const maxTurns = 5000;
+    const maxTurns = ArenaConfig.game_settings.max_turns;
 
     while (!adapter.isTerminal(gameState) && turnCount < maxTurns) {
         const currentPlayerName = gameState.currentPlayer;
@@ -89,7 +100,7 @@ export async function playGame({ playerA, playerB, seed }) {
 
     const terminalInfo = adapter.getTerminalResult(gameState);
     
-    // FIX: Map game's internal player names to Arena player IDs
+    // Map game's internal player names to Arena player IDs
     let arenaWinnerId = null;
     if (terminalInfo.winnerId === 'player1') {
         arenaWinnerId = playerA.getId();
@@ -98,7 +109,7 @@ export async function playGame({ playerA, playerB, seed }) {
     }
     
     return createGameResult({
-        winnerId: arenaWinnerId,  // ← Now uses Arena player ID
+        winnerId: arenaWinnerId,
         winConditionType: terminalInfo.winConditionType,
         turnCount,
         crashed: false,

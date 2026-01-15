@@ -1,59 +1,52 @@
 // arena/BaselineRegistry.js
-// Registry for frozen baseline policies
+// Registry for frozen baseline policies - reads from ArenaConfig.json
 
-import { RandomPolicy } from '../ai_system/decision/RandomPolicy.js';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import { createPolicy } from '../ai_system/decision/PolicyRegistry.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load ArenaConfig.json
+const ArenaConfig = JSON.parse(
+    readFileSync(join(__dirname, 'ArenaConfig.json'), 'utf8')
+);
 
 /**
  * Baseline Registry - manages frozen baseline policies
  * 
- * Baselines are immutable references. Once frozen, they never change.
- * New baselines are added, old ones remain accessible.
+ * Baselines are loaded from ArenaConfig.json and reference policies by name.
+ * This decouples Arena from AI implementation details.
  */
 export class BaselineRegistry {
     constructor() {
         this.baselines = new Map();
-        this._initializeBaselines();
+        this._loadFromConfig();
     }
 
     /**
-     * Initialize all known baselines
+     * Load baselines from ArenaConfig.json
      * @private
      */
-    _initializeBaselines() {
-        // Baseline v0.0: Random legal play
-        this.register({
-            id: 'AI_v0.0_RANDOM',
-            gitTag: 'AI_v0.0_RANDOM',
-            date: '2026-01-14',
-            description: 'Uniform random legal policy',
-            createPolicy: () => new RandomPolicy()
-        });
-
-        // Future baselines will be added here as they are promoted
-    }
-
-    /**
-     * Register a baseline
-     * @param {Object} config - Baseline configuration
-     */
-    register(config) {
-        if (this.baselines.has(config.id)) {
-            throw new Error(`Baseline ${config.id} already registered`);
+    _loadFromConfig() {
+        for (const baseline of ArenaConfig.frozen_baselines) {
+            this.baselines.set(baseline.id, {
+                id: baseline.id,
+                policyName: baseline.policy_name,
+                gitTag: baseline.git_tag,
+                date: baseline.date,
+                description: baseline.description,
+                seedRange: baseline.seed_range
+            });
         }
-        
-        this.baselines.set(config.id, {
-            id: config.id,
-            gitTag: config.gitTag,
-            date: config.date,
-            description: config.description,
-            createPolicy: config.createPolicy
-        });
     }
 
     /**
      * Get baseline by ID
      * @param {string} id - Baseline ID
-     * @returns {Object} Baseline configuration
+     * @returns {Object} Baseline metadata
      */
     get(id) {
         const baseline = this.baselines.get(id);
@@ -70,7 +63,7 @@ export class BaselineRegistry {
      */
     createPolicy(id) {
         const baseline = this.get(id);
-        return baseline.createPolicy();
+        return createPolicy(baseline.policyName);
     }
 
     /**
@@ -78,9 +71,8 @@ export class BaselineRegistry {
      * @returns {string} Most recent baseline ID
      */
     getLatest() {
-        // Baselines are registered in chronological order
-        const ids = Array.from(this.baselines.keys());
-        return ids[ids.length - 1];
+        const baselines = ArenaConfig.frozen_baselines;
+        return baselines[baselines.length - 1].id;
     }
 
     /**
@@ -94,15 +86,9 @@ export class BaselineRegistry {
     /**
      * Get baseline metadata
      * @param {string} id - Baseline ID
-     * @returns {Object} Baseline metadata (without createPolicy function)
+     * @returns {Object} Baseline metadata
      */
     getMetadata(id) {
-        const baseline = this.get(id);
-        return {
-            id: baseline.id,
-            gitTag: baseline.gitTag,
-            date: baseline.date,
-            description: baseline.description
-        };
+        return this.get(id);
     }
 }

@@ -1,0 +1,96 @@
+{
+    "game_settings": {
+      "max_turns": 5000,
+      "default_starting_player_alternation": true
+    },
+    "seed_ranges": {
+      "DEV": {
+        "start": -10,
+        "count": 5,
+        "description": "Development seeds - reusable, fast iteration"
+      },
+      "SANITY": {
+        "start": 0,
+        "count": 15,
+        "description": "Sanity check seeds - reusable, pre-baseline validation"
+      },
+      "BASELINE_v0_0": {
+        "start": 100,
+        "count": 100,
+        "description": "Locked - AI_v0.0_RANDOM baseline"
+      },
+      "BASELINE_S01": {
+        "start": 200,
+        "count": 300,
+        "description": "Locked - AI_v0.1_VOID_OBJECTIVE baseline"
+      },
+      "BASELINE_S02": {
+        "start": 500,
+        "count": 300,
+        "description": "Available for next baseline"
+      },
+      "BASELINE_S03": {
+        "start": 800,
+        "count": 300,
+        "description": "Available for next baseline"
+      },
+      "BASELINE_S04": {
+        "start": 1100,
+        "count": 300,
+        "description": "Available for next baseline"
+      },
+      "BASELINE_S05": {
+        "start": 1400,
+        "count": 300,
+        "description": "Available for next baseline"
+      },
+      "BASELINE_S06": {
+        "start": 1700,
+        "count": 300,
+        "description": "Available for next baseline"
+      },
+      "BASELINE_S07": {
+        "start": 2000,
+        "count": 300,
+        "description": "Available for next baseline"
+      },
+      "BASELINE_S08": {
+        "start": 2300,
+        "count": 300,
+        "description": "Available for next baseline"
+      },
+      "BASELINE_S09": {
+        "start": 2600,
+        "count": 300,
+        "description": "Available for next baseline"
+      },
+      "BASELINE_S10": {
+        "start": 2900,
+        "count": 300,
+        "description": "Available for next baseline"
+      }
+    },
+    "frozen_baselines": [
+      {
+        "id": "AI_v0.0_RANDOM",
+        "policy_name": "RANDOM",
+        "git_tag": "AI_v0.0_RANDOM",
+        "date": "2026-01-14",
+        "description": "Uniform random legal policy",
+        "seed_range": "BASELINE_v0_0"
+      },
+      {
+        "id": "AI_v0.1_VOID_OBJECTIVE",
+        "policy_name": "VOID_OBJECTIVE",
+        "git_tag": "AI_v0.1_VOID_OBJECTIVE",
+        "date": "2026-01-15",
+        "description": "Void objective-aware policy",
+        "seed_range": "BASELINE_S01"
+      }
+    ],
+    "notes": {
+      "adding_baselines": "Append new baseline to 'frozen_baselines' array after promotion",
+      "adding_seed_ranges": "Add new BASELINE_SXX entries as needed",
+      "policy_changes": "Only edit ai_system/decision/PolicyRegistry.js - Arena loads by name"
+    }
+  }
