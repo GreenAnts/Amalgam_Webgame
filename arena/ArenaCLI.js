@@ -2,9 +2,10 @@
 // CLI entrypoint - parses args, constructs Arena, emits JSON schema
 
 import { ArenaAIPlayer } from './players/ArenaAIPlayer.js';
-import { RandomPolicy } from '../ai_system/decision/RandomPolicy.js';
 import { runArena } from './ArenaRunner.js';
 import { getSeedRange } from './SeedManager.js';
+// Logic Imports
+import { createPolicy, getAvailablePolicies } from '../ai_system/decision/PolicyRegistry.js';
 
 /**
  * Parse command line arguments
@@ -15,7 +16,8 @@ function parseArgs(args) {
         numberOfGames: 500,
         aiVersionId: 'AI_v0.0_RANDOM',
         determinismCheck: true,
-        seedRange: null  // NEW: for named ranges
+        seedRange: null,
+        policyName: 'RANDOM'  // Default policy
     };
 
     for (let i = 0; i < args.length; i++) {
@@ -25,30 +27,41 @@ function parseArgs(args) {
         } else if (args[i] === '--games' && args[i + 1]) {
             config.numberOfGames = parseInt(args[i + 1]);
             i++;
+        } else if (args[i] === '--range' && args[i + 1]) {
+            config.seedRange = args[i + 1];
+            i++;
+        } else if (args[i] === '--policy' && args[i + 1]) {
+            // NEW: Policy selection
+            config.policyName = args[i + 1];
+            i++;
         } else if (args[i] === '--version' && args[i + 1]) {
             config.aiVersionId = args[i + 1];
-            i++;
-        } else if (args[i] === '--range' && args[i + 1]) {
-            // NEW: Named seed range support
-            config.seedRange = args[i + 1];
             i++;
         } else if (args[i] === '--no-determinism-check') {
             config.determinismCheck = false;
         } else if (args[i] === '--help' || args[i] === '-h') {
+            const availablePolicies = getAvailablePolicies();
             console.error('Usage: node arena/ArenaCLI.js [options]');
             console.error('');
             console.error('Options:');
             console.error('  --seed <number>              Base seed (default: 12345)');
             console.error('  --games <number>             Number of games (default: 500)');
-            console.error('  --range <name>               Named seed range (DEV, SANITY, BASELINE_v0_1, etc.)');
+            console.error('  --range <name>               Named seed range (DEV, SANITY, BASELINE_v0_X)');
+            console.error('  --policy <name>              AI policy (default: RANDOM)');
+            console.error(`                               Available: ${availablePolicies.join(', ')}`);
             console.error('  --version <string>           AI version ID metadata (default: AI_v0.0_RANDOM)');
             console.error('  --no-determinism-check       Skip determinism verification');
             console.error('  --help, -h                   Show this help');
             console.error('');
             console.error('Examples:');
-            console.error('  node arena/ArenaCLI.js --range DEV');
-            console.error('  node arena/ArenaCLI.js --range SANITY');
-            console.error('  node arena/ArenaCLI.js --range BASELINE_v0_1 --version AI_v0.1_VOID_OBJECTIVE');
+            console.error('  # Quick dev test with random policy');
+            console.error('  node arena/ArenaCLI.js --range DEV --policy RANDOM');
+            console.error('');
+            console.error('  # Sanity check with void objective policy');
+            console.error('  node arena/ArenaCLI.js --range SANITY --policy VOID_OBJECTIVE');
+            console.error('');
+            console.error('  # Run baseline evaluation');
+            console.error('  node arena/ArenaCLI.js --range BASELINE_v0_1 --policy VOID_OBJECTIVE --version AI_v0.1_VOID_OBJECTIVE');
             console.error('');
             console.error('Output:');
             console.error('  stdout: Canonical JSON schema');
@@ -57,7 +70,7 @@ function parseArgs(args) {
         }
     }
     
-    // NEW: Apply named range if specified
+    // Apply named range if specified
     if (config.seedRange) {
         const range = getSeedRange(config.seedRange);
         config.baseSeed = range.start;
@@ -74,20 +87,26 @@ function parseArgs(args) {
 async function runBaseline(config) {
     const startTime = Date.now();
     
-    const randomPolicy = new RandomPolicy();
+    // Create policy instances using the registry
+    const policy = createPolicy(config.policyName);
     
     const playerA = new ArenaAIPlayer({
-        id: 'player1',  // Fixed ID for player slot
-        aiVersionId: config.aiVersionId,  // Version for tracking
-        policy: randomPolicy
+        id: 'player1',
+        aiVersionId: config.aiVersionId,
+        policy: policy
     });
+    
+    // Create separate policy instance for playerB (stateless policies can share, but safer to separate)
+    const policyB = createPolicy(config.policyName);
+    
     const playerB = new ArenaAIPlayer({
-        id: 'player2',  // Fixed ID for player slot
-        aiVersionId: config.aiVersionId,  // Version for tracking
-        policy: randomPolicy
+        id: 'player2',
+        aiVersionId: config.aiVersionId,
+        policy: policyB
     });
     
     console.error(`Running baseline: ${config.aiVersionId}`);
+    console.error(`Policy: ${config.policyName}`);
     console.error(`Games: ${config.numberOfGames}, Seed: ${config.baseSeed}`);
     console.error('Starting match...\n');
     

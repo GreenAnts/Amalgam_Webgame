@@ -2,7 +2,16 @@
 
 This document records all promoted AI baselines in chronological order.
 Baselines are **append-only** and **never modified** after promotion.
+---
+## <font color="green">AI_v0.1_VOID_OBJECTIVE</font>
 
+Currently completed self play: arena/results/baseline_AI_v0.1_VOID_OBJECTIVE.json
+
+## Description
+
+I thought this was playing against random, but misinterpreted the ArenaCLI, after editing to fix we will need to rerun the baseline.
+Running on the same seed will be fine, because we are not adjusting hueristic.
+---
 ---
 
 ## <font color="green"> AI_v0.0_RANDOM </font>

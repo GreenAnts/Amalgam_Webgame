@@ -461,6 +461,133 @@
 	  pointer-events: none;
   }
   
+  /* ===== VICTORY MODAL (Centered & Themed) ===== */
+	.victory-overlay {
+		position: fixed;
+		inset: 0;
+		z-index: 100;
+		background: rgba(30, 24, 18, 0.4); /* Darker backdrop */
+		backdrop-filter: blur(4px);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity 0.3s ease;
+	}
+
+	.victory-overlay.active {
+		opacity: 1;
+		pointer-events: auto;
+	}
+
+	.victory-card {
+		width: 90%;
+		max-width: 400px;
+		background: #efe4d3;
+		border-radius: 20px;
+		padding: 2px; /* For border effect */
+		box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+		transform: scale(0.95) translateY(10px);
+		transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+		position: relative;
+		overflow: hidden;
+	}
+
+	.victory-overlay.active .victory-card {
+		transform: scale(1) translateY(0);
+	}
+
+	.victory-inner {
+		background: #f7f1e8;
+		border-radius: 18px;
+		padding: 24px;
+		text-align: center;
+		position: relative;
+		z-index: 2;
+		/* Paper texture integration */
+		background-image: var(--paper-texture);
+		background-blend-mode: multiply;
+	}
+
+	/* --- THEMATIC VARIANTS --- */
+
+	/* DEFEAT (Red/Ember Theme) */
+	.victory-card.is-defeat {
+		background: linear-gradient(135deg, #c97a6a, #8f4f45); /* Rust border */
+	}
+	.victory-card.is-defeat .victory-header {
+		color: #c97a6a;
+	}
+	.victory-card.is-defeat .victory-icon {
+		background: #f3e6e4;
+		color: #c97a6a;
+	}
+
+	/* VICTORY (Green/Jade Theme) */
+	.victory-card.is-victory {
+		background: linear-gradient(135deg, #7fae65, #4a7a4a); /* Jade border */
+	}
+	.victory-card.is-victory .victory-header {
+		color: #5c8a45;
+	}
+	.victory-card.is-victory .victory-icon {
+		background: #e6f3e4;
+		color: #5c8a45;
+	}
+
+	/* Dark Mode Overrides */
+	body.dark .victory-inner { background: #2b2a27; color: #efe6d8; }
+	body.dark .victory-card.is-defeat .victory-header { color: #e68a7a; }
+	body.dark .victory-card.is-defeat .victory-icon { background: #3a2a28; color: #e68a7a; }
+	body.dark .victory-card.is-victory .victory-header { color: #9bc985; }
+	body.dark .victory-card.is-victory .victory-icon { background: #2a3a2a; color: #9bc985; }
+
+
+	/* Content Styling */
+	.victory-icon {
+		width: 48px;
+		height: 48px;
+		border-radius: 50%;
+		margin: 0 auto 16px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	.victory-icon svg { width: 24px; height: 24px; stroke-width: 2.5; }
+
+	.victory-header {
+		font-size: 1.5rem;
+		font-weight: 700;
+		letter-spacing: 0.05em;
+		margin-bottom: 8px;
+		text-transform: uppercase;
+	}
+
+	.victory-details {
+		font-family: 'DM Mono', monospace;
+		font-size: 0.9rem;
+		color: #7a6d60;
+		margin-bottom: 24px;
+		line-height: 1.5;
+	}
+	body.dark .victory-details { color: #b6afa6; }
+
+	.victory-btn {
+		width: 100%;
+		padding: 12px;
+		border: none;
+		border-radius: 12px;
+		font-weight: 600;
+		font-size: 1rem;
+		cursor: pointer;
+		background: #d7b48a;
+		color: #3b352f;
+		transition: filter 0.2s;
+	}
+	.victory-btn:hover { filter: brightness(1.05); }
+	body.dark .victory-btn { background: #6b584b; color: #efe6d8; }
+
   /* ===== Match History Log && Swapper Button ===== */
   .piece-rG { color: #ff4d4d; font-weight: bold; }
   .piece-pG { color: #d6cc81; font-weight: bold; } /* Slightly darker for tea theme */
@@ -609,16 +736,18 @@
 	</div>
 	
 	<div class="section">
-      <div class="section-title">AI Opponent</div>
-      <div class="difficulty-group" style="margin-bottom:10px;">
-          <button class="difficulty-btn" id="easyBtn">Easy</button>
-          <button class="difficulty-btn active" id="mediumBtn">Medium</button>
-          <button class="difficulty-btn" id="hardBtn">Hard</button>
-      </div>
-      <div id="resetButton" class="actions" style="grid-template-columns:1fr;">
-	      <button class="danger-btn" id="restartGameBtn">Restart Game</button>
-      </div>
-  </div>
+		<div class="section-title">AI Strategy</div>
+		
+		<div class="difficulty-group" style="margin-bottom:10px;">
+			<button class="difficulty-btn active" id="btnStandard">Standard</button> 
+			<button class="difficulty-btn" id="btnVoid">Void</button>
+			<button class="difficulty-btn" id="btnRandom">Random</button>
+		</div>
+	
+		<div id="resetButton" class="actions" style="grid-template-columns:1fr;">
+			<button class="danger-btn" id="restartGameBtn">Restart Game</button>
+		</div>
+	</div>
   
 	<div class="footer">Game Design by Anthony Davis · Patreon@UnfinishedProjects</div>
 	
@@ -666,6 +795,27 @@
 			</button>
 		</div>
 	</div>
+</div>
+
+<div class="victory-overlay" id="victoryOverlay">
+    <div class="victory-card" id="victoryCard">
+        <div class="victory-inner">
+            <div class="victory-icon" id="victoryIcon">
+                </div>
+            
+            <div class="victory-header" id="victoryTitle">
+                Match Complete
+            </div>
+
+            <div class="victory-details" id="victoryMessage">
+                Winner determined.
+            </div>
+
+            <button class="victory-btn" id="victoryResetBtn">
+                Play Again
+            </button>
+        </div>
+    </div>
 </div>
 
 <script>

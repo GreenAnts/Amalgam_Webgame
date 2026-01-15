@@ -10,6 +10,7 @@ import { SetupManager } from './systems/SetupManager.js';
 import { SetupUI } from './ui/SetupUI.js';
 import { MatchHistoryTracker } from './systems/MatchHistoryTracker.js';
 import { AIController } from './ai_system/controller/AIController.js';  //AI System
+import { createPolicy } from './ai_system/decision/PolicyRegistry.js';
 
 window.onload = function() {
     // Get canvas and UI elements
@@ -35,28 +36,57 @@ window.onload = function() {
     const setupManager = new SetupManager(gameLogic.getGameState(), playerManager);
     const setupUI = new SetupUI(canvas, ctx);
     const matchHistoryTracker = new MatchHistoryTracker();
-    
+
+    // Policy mode state
+    let currentPolicyMode = 'DEFAULT'; // 'DEFAULT' or policy name
+    let currentPolicy = null; // Policy instance when in policy mode
+
     // Make these available to AILogic
     window.matchHistoryTracker = matchHistoryTracker;
     
-    // AI difficulty
-    const easyBtn = document.getElementById('easyBtn');
-    const mediumBtn = document.getElementById('mediumBtn');
-    const hardBtn = document.getElementById('hardBtn');
+    // --- AI STRATEGY SELECTOR ---
+    const btnStandard = document.getElementById('btnStandard');
+    const btnVoid = document.getElementById('btnVoid');
+    const btnRandom = document.getElementById('btnRandom');
     
-    function setDifficulty(difficulty) {
-        aiController.setDifficulty(difficulty);
-        
-        // Update UI
-        [easyBtn, mediumBtn, hardBtn].forEach(btn => btn.classList.remove('active'));
-        if (difficulty === 'Easy') easyBtn.classList.add('active');
-        else if (difficulty === 'Medium') mediumBtn.classList.add('active');
-        else hardBtn.classList.add('active');
+    // Helper to update UI state
+    function updateStrategyUI(activeBtn) {
+        [btnStandard, btnVoid, btnRandom].forEach(btn => btn.classList.remove('active'));
+        activeBtn.classList.add('active');
     }
-    
-    easyBtn.addEventListener('click', () => setDifficulty('Easy'));
-    mediumBtn.addEventListener('click', () => setDifficulty('Medium'));
-    hardBtn.addEventListener('click', () => setDifficulty('Hard'));
+
+    // 1. Standard (Default AI)
+    btnStandard.addEventListener('click', () => {
+        currentPolicyMode = 'DEFAULT';
+        currentPolicy = null;
+        aiController.setDifficulty('Medium'); // Default standard difficulty
+        updateStrategyUI(btnStandard);
+        console.log('Switched to Standard AI');
+    });
+
+    // 2. Void Agent (Specific Policy)
+    btnVoid.addEventListener('click', () => {
+        try {
+            currentPolicyMode = 'VOID_OBJECTIVE';
+            currentPolicy = createPolicy('VOID_OBJECTIVE');
+            updateStrategyUI(btnVoid);
+            console.log('Switched to Void Policy');
+        } catch (error) {
+            console.error('Failed to init Void policy:', error);
+        }
+    });
+
+    // 3. Random Agent
+    btnRandom.addEventListener('click', () => {
+        try {
+            currentPolicyMode = 'RANDOM';
+            currentPolicy = createPolicy('RANDOM');
+            updateStrategyUI(btnRandom);
+            console.log('Switched to Random Policy');
+        } catch (error) {
+            console.error('Failed to init Random policy:', error);
+        }
+    });
 
     // Ability system references
     const portalSwapSystem = gameLogic.getPortalSwapSystem();
@@ -1074,7 +1104,7 @@ window.onload = function() {
     async function endTurn() {
         // PRESERVE FIX: Keep commitTurnActions() out of here to prevent "Double Commit" errors.
         
-        // 1. YOUR RESET LOGIC (Keep this exactly as is)
+        // 1. Reset Turn State
         moveMadeThisTurn = false;
         lastMovedPieceCoord = null;
         launchUsedThisTurn = false;
@@ -1087,25 +1117,23 @@ window.onload = function() {
         amberSapSystem.reset();
         jadeLaunchSystem.reset();
         
-        // 2. TURN TRANSITION
+        // 2. Switch Turn
         playerManager.switchTurn();
         uiManager.updatePlayerInfo(
             playerManager.getTurnCount(),
             playerManager.getCurrentPlayer()
         );
-        
-        // Reset button states AFTER switching player
         abilityButtons.resetAll();
-                
-        // Check abilities at start of new turn
         updateAbilityButtonStates();
         
-        // 3. MERGED AI LOGIC
+        // 3. AI Logic
         if (playerManager.getCurrentPlayer().isAI) {
+            // Check if game is already over before AI thinks
+            if (checkForWin()) return;
+
             setTimeout(async () => {
-                // 1. Ensure we have an RNG (create a simple one if window.currentGameRNG doesn't exist)
+                // 1. Ensure we have an RNG
                 if (!window.currentGameRNG) {
-                    // Simple Linear Congruential Generator for UI play if Arena didn't provide one
                     window.currentGameRNG = {
                         seed: Date.now(),
                         nextInt: function(max) {
@@ -1115,41 +1143,70 @@ window.onload = function() {
                     };
                 }
         
-                // 2. Prepare context
-                const turnContext = {
-                    movedPieceCoord: lastMovedPieceCoord, // Passed from global state
-                    usedAbilities: new Set(launchUsedThisTurn ? ['LAUNCH'] : [])
-                };
-        
-                // 3. Pass RNG and Context to findBestMove
-                const move = await aiController.findBestMove(turnContext, window.currentGameRNG);
+                let move = null;
+                
+                // POLICY MODE vs DEFAULT AI MODE
+                if (currentPolicyMode !== 'DEFAULT' && currentPolicy) {
+                    // === POLICY MODE: Use Arena policy ===
+                    const gameState = gameLogic.getState();
+                    const context = {
+                        rng: window.currentGameRNG,
+                        gameLogic: gameLogic,
+                        playerManager: playerManager
+                    };
+                    
+                    try {
+                        move = await currentPolicy.selectMove(gameState, context);
+                    } catch (error) {
+                        console.error('Policy error:', error);
+                        move = null;
+                    }
+                } else {
+                    // === DEFAULT MODE: Use AIController with difficulty ===
+                    const turnContext = {
+                        movedPieceCoord: lastMovedPieceCoord,
+                        usedAbilities: new Set(launchUsedThisTurn ? ['LAUNCH'] : [])
+                    };
+                    
+                    move = await aiController.findBestMove(turnContext, window.currentGameRNG);
+                }
+                
                 
                 // Handle debug_idle mode or no moves found
                 if (!move) {
                     console.log('AI returned null move (debug mode) - skipping AI turn');
-                    await endTurn(); // Recursively call to move to next player
+                    await endTurn();
                     updateAbilityButtonStates();
                     drawBoard();
                     return;
                 }
                 
-                const coords = aiController.convertMoveToCoordinates(move);
-                if (coords) {
-                    let success = false;
-                    
-                    // NEW: Logic to handle AI Abilities vs Standard Moves
-                    if (coords.type === 'ABILITY') {
-                        success = await executeAIAbility(coords);
-                    } else {
-                        success = await executeAIMove(coords);
-                    }
-                    
-                    // After AI successfully acts, end the turn
-                    if (success) {
-                        await endTurn(); 
+                if (move) {
+                    const coords = aiController.convertMoveToCoordinates(move);
+                    if (coords) {
+                        let success = false;
+                        
+                        if (coords.type === 'ABILITY') {
+                            success = await executeAIAbility(coords);
+                        } else {
+                            success = await executeAIMove(coords);
+                        }
+                        
+                        // --- CRITICAL FIX: CHECK WIN IMMEDIATELY AFTER MOVE ---
+                        // If AI triggered a win, checkForWin() returns true.
+                        // We must RETURN here to stop endTurn() from called recursively
+                        // or waiting for human input when the game is over.
+                        if (checkForWin()) {
+                            drawBoard(); // Ensure board shows final state
+                            return; 
+                        }
+
+                        if (success) {
+                            await endTurn(); 
+                        }
                     }
                 } else {
-                    console.warn('Failed to convert move to coordinates - skipping AI turn');
+                    // AI Pass/Fail
                     await endTurn();
                 }
                 
@@ -1419,20 +1476,64 @@ window.onload = function() {
         abilityButtons.updateEndTurnHover(mouseX, mouseY);
     }
     
-    // Check for win condition and display result
+    // --- VICTORY SYSTEM UI HANDLERS ---
+    const victoryOverlay = document.getElementById('victoryOverlay');
+    const victoryCard = document.getElementById('victoryCard');
+    const victoryTitle = document.getElementById('victoryTitle');
+    const victoryMessage = document.getElementById('victoryMessage');
+    const victoryIcon = document.getElementById('victoryIcon');
+    const victoryResetBtn = document.getElementById('victoryResetBtn');
+
     function checkForWin() {
         const result = winConditionSystem.checkWin();
         if (result) {
-            // Disable all buttons
+            // 1. Stop Game Interactions
             abilityButtons.resetAll();
             
-            // Show a more prominent win message
-            alert(`Game Over!\n\n${result.winner} wins by ${result.method}!\n\nClick Reset to play again.`);
+            // 2. Determine if Player Won or Lost
+            // Assumption: 'Player 1' is human (Square), 'Player 2' is AI (Circle)
+            const humanPlayer = 'Player 1'; 
+            const isVictory = result.winner === humanPlayer;
+
+            // 3. Apply Theme Classes
+            victoryCard.classList.remove('is-victory', 'is-defeat');
+            victoryCard.classList.add(isVictory ? 'is-victory' : 'is-defeat');
+
+            // 4. Set Content & Icons
+            if (isVictory) {
+                victoryTitle.textContent = "Victory";
+                // Crown Icon
+                victoryIcon.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>`;
+            } else {
+                victoryTitle.textContent = "Defeat";
+                // Broken Heart / Skull Icon
+                victoryIcon.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 12L6 12M6 12L12 6M6 12L12 18"/></svg>`; // Arrow pointing back/defeat, or you can use a skull
+            }
+
+            victoryMessage.innerHTML = `
+                ${result.winner} wins<br>
+                via ${result.method}
+            `;
             
+            // 5. Show Modal
+            victoryOverlay.classList.add('active');
             return true;
         }
         return false;
     }
+
+    victoryResetBtn.addEventListener('click', () => {
+        victoryOverlay.classList.remove('active');
+        handleResetClick();
+    });
+
+    // Update handleResetClick to ensure modal is closed if triggered via sidebar
+    const originalResetClick = handleResetClick;
+    handleResetClick = async function() {
+        // Ensure victory modal is closed if user clicked "Restart" on sidebar during win state
+        victoryOverlay.classList.remove('active');
+        await originalResetClick();
+    };
 
     function updateLogDisplay() {
         const history = matchHistoryTracker.getRawHistory();
