@@ -5,12 +5,38 @@ Baselines are **append-only** and **never modified** after promotion.
 ---
 ## <font color="green">AI_v0.1_VOID_OBJECTIVE</font>
 
-Currently completed self play: arena/results/baseline_AI_v0.1_VOID_OBJECTIVE.json
+- **Git tag:** `AI_v0.VOID_OBJECTIVE`
+- **Date:** 2026-01-15
+- **Theme:** Void rushes goal via standard movement, otherwise uniform random legal play
 
 ## Description
 
-I thought this was playing against random, but misinterpreted the ArenaCLI, after editing to fix we will need to rerun the baseline.
-Running on the same seed will be fine, because we are not adjusting hueristic.
+Void will utilize standard movement towards the goal, otherwise random movement same as previous baseline.
+
+### Validation Results
+
+- **Opponent:** AI_v0.0_RANDOM
+- **Games:** 300
+- **Seed range:** 200–499 (base seed 200)
+- **Starting player alternation:** Yes (enforced by MatchRunner)
+- **Validation record:** `arena/results/v0.1_baseline_VOID_OBJECTIVE_vs_RANDOM.json`
+
+**Statistics:**
+- Win rate: 97.7% / 2.3% (playerA / playerB)
+- Draws: 0% (games hitting 5000-turn limit)
+- Crashes: 0
+- Illegal moves: 0
+- Average turns: 159.36
+- Deterministic: YES (byte-identical on re-run)
+
+NOTE: I changed turn count from 5000 to 1000 (I think I did this after I tagged the repo - but if I am mistaken and you are trying to reevaluate against this tag, double check the turn count to be sure.) - [Sorry, I obviously don't know what the fuck I am doing]
+
+---
+---
+
+---
+---
+
 ---
 ---
 
