@@ -1,11 +1,11 @@
 // arena/ArenaCLI.js
-// CLI entrypoint - parses args, constructs Arena, emits JSON schema
+// CLI entrypoint - baseline vs candidate testing
 
 import { ArenaAIPlayer } from './players/ArenaAIPlayer.js';
 import { runArena } from './ArenaRunner.js';
 import { getSeedRange } from './SeedManager.js';
-// Logic Imports
-import { createPolicy, getAvailablePolicies } from '../ai_system/decision/PolicyRegistry.js';
+import { BaselineRegistry } from './BaselineRegistry.js';
+import { PolicyFactory } from './PolicyFactory.js';
 
 /**
  * Parse command line arguments
@@ -14,10 +14,10 @@ function parseArgs(args) {
     const config = {
         baseSeed: 12345,
         numberOfGames: 500,
-        aiVersionId: 'AI_v0.0_RANDOM',
-        determinismCheck: true,
+        candidatePolicy: null,      // NEW: candidate policy to test
+        baselineId: null,           // NEW: baseline to test against
         seedRange: null,
-        policyName: 'RANDOM'  // Default policy
+        determinismCheck: true
     };
 
     for (let i = 0; i < args.length; i++) {
@@ -27,41 +27,58 @@ function parseArgs(args) {
         } else if (args[i] === '--games' && args[i + 1]) {
             config.numberOfGames = parseInt(args[i + 1]);
             i++;
+        } else if (args[i] === '--policy' && args[i + 1]) {
+            // NEW: Candidate policy
+            config.candidatePolicy = args[i + 1];
+            i++;
+        } else if (args[i] === '--baseline' && args[i + 1]) {
+            // NEW: Baseline opponent
+            config.baselineId = args[i + 1];
+            i++;
         } else if (args[i] === '--range' && args[i + 1]) {
             config.seedRange = args[i + 1];
             i++;
-        } else if (args[i] === '--policy' && args[i + 1]) {
-            // NEW: Policy selection
-            config.policyName = args[i + 1];
-            i++;
-        } else if (args[i] === '--version' && args[i + 1]) {
-            config.aiVersionId = args[i + 1];
-            i++;
         } else if (args[i] === '--no-determinism-check') {
             config.determinismCheck = false;
+        } else if (args[i] === '--list-baselines') {
+            const registry = new BaselineRegistry();
+            console.error('Available baselines:');
+            registry.list().forEach(id => {
+                const meta = registry.getMetadata(id);
+                console.error(`  ${id} (${meta.date}): ${meta.description}`);
+            });
+            process.exit(0);
+        } else if (args[i] === '--list-policies') {
+            const factory = new PolicyFactory();
+            console.error('Available policies:');
+            factory.list().forEach(id => {
+                console.error(`  ${id}`);
+            });
+            process.exit(0);
         } else if (args[i] === '--help' || args[i] === '-h') {
-            const availablePolicies = getAvailablePolicies();
             console.error('Usage: node arena/ArenaCLI.js [options]');
             console.error('');
+            console.error('Testing Modes:');
+            console.error('  1. Baseline self-play:');
+            console.error('     node arena/ArenaCLI.js --range BASELINE_S01');
+            console.error('');
+            console.error('  2. Candidate vs Baseline (RECOMMENDED):');
+            console.error('     node arena/ArenaCLI.js --policy VOID_OBJECTIVE --baseline AI_v0.0_RANDOM --range BASELINE_S01');
+            console.error('');
+            console.error('  3. Candidate vs Latest Baseline (auto):');
+            console.error('     node arena/ArenaCLI.js --policy VOID_OBJECTIVE --range BASELINE_S01');
+            console.error('');
             console.error('Options:');
+            console.error('  --policy <name>              Candidate policy to test (e.g., VOID_OBJECTIVE)');
+            console.error('  --baseline <id>              Baseline opponent (e.g., AI_v0.0_RANDOM)');
+            console.error('                               If omitted with --policy, uses latest baseline');
             console.error('  --seed <number>              Base seed (default: 12345)');
             console.error('  --games <number>             Number of games (default: 500)');
-            console.error('  --range <name>               Named seed range (DEV, SANITY, BASELINE_v0_X)');
-            console.error('  --policy <name>              AI policy (default: RANDOM)');
-            console.error(`                               Available: ${availablePolicies.join(', ')}`);
-            console.error('  --version <string>           AI version ID metadata (default: AI_v0.0_RANDOM)');
+            console.error('  --range <name>               Named seed range (DEV, SANITY, BASELINE_S01, etc.)');
             console.error('  --no-determinism-check       Skip determinism verification');
+            console.error('  --list-baselines             List all available baselines');
+            console.error('  --list-policies              List all available policies');
             console.error('  --help, -h                   Show this help');
-            console.error('');
-            console.error('Examples:');
-            console.error('  # Quick dev test with random policy');
-            console.error('  node arena/ArenaCLI.js --range DEV --policy RANDOM');
-            console.error('');
-            console.error('  # Sanity check with void objective policy');
-            console.error('  node arena/ArenaCLI.js --range SANITY --policy VOID_OBJECTIVE');
-            console.error('');
-            console.error('  # Run baseline evaluation');
-            console.error('  node arena/ArenaCLI.js --range BASELINE_v0_1 --policy VOID_OBJECTIVE --version AI_v0.1_VOID_OBJECTIVE');
             console.error('');
             console.error('Output:');
             console.error('  stdout: Canonical JSON schema');
@@ -82,31 +99,59 @@ function parseArgs(args) {
 }
 
 /**
- * Run baseline evaluation
+ * Run Arena match
  */
-async function runBaseline(config) {
+async function runMatch(config) {
     const startTime = Date.now();
     
-    // Create policy instances using the registry
-    const policy = createPolicy(config.policyName);
+    const registry = new BaselineRegistry();
+    const factory = new PolicyFactory();
     
-    const playerA = new ArenaAIPlayer({
-        id: 'player1',
-        aiVersionId: config.aiVersionId,
-        policy: policy
-    });
+    let playerA, playerB;
+    let matchType;
     
-    // Create separate policy instance for playerB (stateless policies can share, but safer to separate)
-    const policyB = createPolicy(config.policyName);
+    // Determine match configuration
+    if (config.candidatePolicy && config.baselineId) {
+        // Mode 1: Explicit candidate vs explicit baseline
+        matchType = 'CANDIDATE_VS_BASELINE';
+        const candidatePolicy = factory.create(config.candidatePolicy);
+        const baselinePolicy = registry.createPolicy(config.baselineId);
+        
+        playerA = new ArenaAIPlayer({ id: 'candidate', policy: candidatePolicy });
+        playerB = new ArenaAIPlayer({ id: config.baselineId, policy: baselinePolicy });
+        
+        console.error(`Match type: Candidate vs Baseline`);
+        console.error(`  Candidate: ${config.candidatePolicy}`);
+        console.error(`  Baseline: ${config.baselineId}`);
+        
+    } else if (config.candidatePolicy && !config.baselineId) {
+        // Mode 2: Candidate vs latest baseline (auto)
+        matchType = 'CANDIDATE_VS_LATEST';
+        const latestBaseline = registry.getLatest();
+        const candidatePolicy = factory.create(config.candidatePolicy);
+        const baselinePolicy = registry.createPolicy(latestBaseline);
+        
+        playerA = new ArenaAIPlayer({ id: 'candidate', policy: candidatePolicy });
+        playerB = new ArenaAIPlayer({ id: latestBaseline, policy: baselinePolicy });
+        
+        console.error(`Match type: Candidate vs Latest Baseline`);
+        console.error(`  Candidate: ${config.candidatePolicy}`);
+        console.error(`  Baseline: ${latestBaseline} (latest)`);
+        
+    } else {
+        // Mode 3: Baseline self-play (original behavior)
+        matchType = 'BASELINE_SELF_PLAY';
+        const baselineId = config.baselineId || registry.getLatest();
+        const policyA = registry.createPolicy(baselineId);
+        const policyB = registry.createPolicy(baselineId);
+        
+        playerA = new ArenaAIPlayer({ id: baselineId, policy: policyA });
+        playerB = new ArenaAIPlayer({ id: baselineId, policy: policyB });
+        
+        console.error(`Match type: Baseline Self-Play`);
+        console.error(`  Baseline: ${baselineId}`);
+    }
     
-    const playerB = new ArenaAIPlayer({
-        id: 'player2',
-        aiVersionId: config.aiVersionId,
-        policy: policyB
-    });
-    
-    console.error(`Running baseline: ${config.aiVersionId}`);
-    console.error(`Policy: ${config.policyName}`);
     console.error(`Games: ${config.numberOfGames}, Seed: ${config.baseSeed}`);
     console.error('Starting match...\n');
     
@@ -158,7 +203,9 @@ async function runBaseline(config) {
     }
     
     const canonicalResult = {
-        baseline_id: config.aiVersionId,
+        match_type: matchType,
+        candidate_policy: config.candidatePolicy || null,
+        baseline_id: config.baselineId || (matchType === 'CANDIDATE_VS_LATEST' ? playerB.getId() : null),
         timestamp: new Date().toISOString(),
         seed: {
             base: config.baseSeed,
@@ -208,10 +255,10 @@ if (typeof process !== 'undefined' && process.argv) {
     const args = process.argv.slice(2);
     const config = parseArgs(args);
     
-    runBaseline(config).catch(error => {
+    runMatch(config).catch(error => {
         console.error('Error:', error);
         process.exit(1);
     });
 }
 
-export { runBaseline, parseArgs };
+export { runMatch, parseArgs };

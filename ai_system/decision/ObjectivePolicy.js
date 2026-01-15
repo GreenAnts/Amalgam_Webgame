@@ -1,115 +1,107 @@
 // ai_system/decision/ObjectivePolicy.js
-// Objective-aware policy: Void moves toward goal
+// Void objective-aware policy (first intelligent baseline candidate)
 
 import { RandomSelector } from './RandomSelector.js';
+import { ActionGenerator } from '../utils/ActionGenerator.js';
 
 /**
- * Objective-aware policy
- * - Void pieces move toward opponent's Amalgam start position
- * - Other pieces move randomly
+ * Objective Policy - prioritizes moving Void toward opponent's goal
+ * 
+ * Strategy:
+ * 1. If Void can move closer to goal, strongly prefer that move
+ * 2. Otherwise, random legal move
+ * 
+ * This is the minimal heuristic to beat random play.
  */
 export class ObjectivePolicy {
     constructor() {
+        this.generator = new ActionGenerator();
         this.randomSelector = new RandomSelector();
     }
 
     /**
      * Select move with objective awareness
      * @param {Object} gameState - Game state snapshot
-     * @param {Object} context - Context {rng, gameLogic, playerManager}
-     * @returns {Object} Move object
+     * @param {Object} context - {rng, gameLogic, playerManager}
+     * @returns {Object} Selected move
      */
     async selectMove(gameState, context) {
         const { rng, gameLogic, playerManager } = context;
+        const turnContext = { movedPieceCoord: null, usedAbilities: new Set() };
         
-        // Generate all legal actions
-        const allActions = this.randomSelector.generator.generateAllActions(
+        const allActions = this.generator.generateAllActions(
             gameLogic,
             playerManager,
-            null, // movedPieceCoord
-            new Set() // usedAbilities
+            turnContext.movedPieceCoord,
+            turnContext.usedAbilities
         );
-        
-        if (allActions.length === 0) {
-            return { type: 'PASS' };
-        }
-        
-        // Separate Void moves from other moves
-        const voidMoves = [];
-        const otherMoves = [];
-        
-        for (const action of allActions) {
-            if (action.type === 'MOVE') {
-                const piece = gameState.pieces[action.from];
-                if (piece && piece.type.toLowerCase().includes('void')) {
-                    voidMoves.push(action);
-                } else {
-                    otherMoves.push(action);
-                }
-            } else {
-                // Abilities and PASS
-                otherMoves.push(action);
-            }
-        }
-        
-        // If Void can move, prioritize moves toward goal
+
+        if (allActions.length === 0) return null;
+
+        // Filter for Void moves
+        const voidMoves = this._findVoidMoves(allActions, gameState, playerManager);
+
+        // If Void can move, find best objective-aware move
         if (voidMoves.length > 0) {
-            const bestVoidMove = this.selectBestVoidMove(voidMoves, gameState, playerManager);
-            if (bestVoidMove) {
-                return this.randomSelector.actionToMove(bestVoidMove);
+            const bestMove = this._selectBestVoidMove(voidMoves, gameState, playerManager, rng);
+            if (bestMove) {
+                return this.randomSelector.actionToMove(bestMove);
             }
         }
-        
-        // Otherwise, random move from all available
+
+        // Fallback: random move
         const selected = allActions[rng.nextInt(allActions.length)];
         return this.randomSelector.actionToMove(selected);
     }
-    
+
     /**
-     * Select Void move that minimizes distance to goal
+     * Find all moves involving Void piece
      * @private
      */
-    selectBestVoidMove(voidMoves, gameState, playerManager) {
-        const currentPlayer = playerManager.getCurrentPlayer().name;
-        
-        // Determine goal position based on current player
-        // Player 1 (squares) has voidSquare, goal is (0,6) - circle's amalgam start
-        // Player 2 (circles) has voidCircle, goal is (0,-6) - square's amalgam start
-        const goalPosition = currentPlayer === 'Player 1' 
-            ? { x: 0, y: 6 }   // VoidSquare → (0,6)
-            : { x: 0, y: -6 }; // VoidCircle → (0,-6)
-        
-        // Evaluate each Void move by distance to goal
-        let bestMove = null;
-        let bestDistance = Infinity;
-        
-        for (const move of voidMoves) {
-            const toCoord = this.parseCoord(move.to);
-            const distance = this.manhattanDistance(toCoord, goalPosition);
+    _findVoidMoves(actions, gameState, playerManager) {
+        const voidMoves = [];
+        const currentPlayer = playerManager.getCurrentPlayer();
+        const voidType = currentPlayer.name === 'Player 1' ? 'voidSquare' : 'voidCircle';
+
+        for (const action of actions) {
+            if (action.type !== 'MOVE') continue;
             
-            if (distance < bestDistance) {
-                bestDistance = distance;
-                bestMove = move;
+            const piece = gameState.pieces[action.from];
+            if (piece && piece.type === voidType) {
+                voidMoves.push(action);
             }
         }
-        
-        return bestMove;
+
+        return voidMoves;
     }
-    
+
     /**
-     * Parse coordinate string to {x, y}
+     * Select Void move that makes most progress toward goal
      * @private
      */
-    parseCoord(coordStr) {
-        const [x, y] = coordStr.split(',').map(Number);
-        return { x, y };
-    }
-    
-    /**
-     * Calculate Manhattan distance between two coordinates
-     * @private
-     */
-    manhattanDistance(coord1, coord2) {
-        return Math.abs(coord1.x - coord2.x) + Math.abs(coord1.y - coord2.y);
+    _selectBestVoidMove(voidMoves, gameState, playerManager, rng) {
+        const currentPlayer = playerManager.getCurrentPlayer();
+        const goalY = currentPlayer.name === 'Player 1' ? 6 : -6; // Player 1 → (0,6), Player 2 → (0,-6)
+
+        let bestMoves = [];
+        let bestScore = -Infinity;
+
+        for (const move of voidMoves) {
+            const [toX, toY] = move.to.split(',').map(Number);
+            
+            // Score: negative distance to goal (closer = higher score)
+            const distanceToGoal = Math.abs(toY - goalY) + Math.abs(toX - 0);
+            const score = -distanceToGoal;
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestMoves = [move];
+            } else if (score === bestScore) {
+                bestMoves.push(move);
+            }
+        }
+
+        // If multiple moves tie, pick randomly
+        return bestMoves.length > 0 ? bestMoves[rng.nextInt(bestMoves.length)] : null;
     }
 }
