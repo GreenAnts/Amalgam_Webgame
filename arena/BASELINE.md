@@ -1,7 +1,44 @@
-# <font color="turquoise"> Baseline Archive </font>
+# Historical Baseline Archive
 
-This document records all promoted AI baselines in chronological order.
-Baselines are **append-only** and **never modified** after promotion.
+**PURPOSE**: This document is a **historical archive only**.  
+**AUTHORITY**: Git tags + archived JSON results are ground truth.  
+**RUNNABILITY**: These baselines are NOT guaranteed to run in future environments.
+
+---
+
+## ⚠️ CRITICAL: Understanding This Archive
+
+### What This Archive Contains
+Each entry below represents a **frozen moment in time**:
+- Git tag captures the exact code state
+- JSON results are the authoritative measurements
+- Descriptions explain what the AI could do **at that time**
+
+### What This Archive Is NOT
+- ❌ NOT a registry of runnable policies
+- ❌ NOT meant for cross-era comparisons (running old code today)
+- ❌ NOT updated after promotion
+
+### For Current Evaluation
+Use **anchors** from `AnchorRegistry` (see `arena/README.md`).
+
+### Valid Uses
+✅ "On 2026-01-15, v0.1 achieved 97.7% vs v0.0"  
+✅ "v0.3 improved on v0.2's historical result by 12%"  
+✅ Citing results for research papers or documentation
+
+### Invalid Uses
+❌ "Let's run v0.1 code today and compare to v0.5"  
+❌ "v0.1 is now only 40% vs current random, so we regressed"  
+❌ Using as evaluation opponent (use anchors instead)
+
+---
+
+## Archive Entries
+
+All entries below are append-only. Never delete or modify after creation.
+
+---
 ---
 ## <font color="green">AI_v0.1_VOID_OBJECTIVE</font>
 

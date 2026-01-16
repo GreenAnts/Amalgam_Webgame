@@ -1,96 +1,149 @@
 {
-    "game_settings": {
-      "max_turns": 5000,
-      "default_starting_player_alternation": true
+  "schema_version": "1.0.0",
+  "game_settings": {
+    "max_turns": 5000,
+    "default_starting_player_alternation": true
+  },
+  "seed_ranges": {
+    "DEV": {
+      "start": -10,
+      "count": 5,
+      "locked": false,
+      "description": "Development seeds - reusable, fast iteration"
     },
-    "seed_ranges": {
-      "DEV": {
-        "start": -10,
-        "count": 5,
-        "description": "Development seeds - reusable, fast iteration"
-      },
-      "SANITY": {
-        "start": 0,
-        "count": 15,
-        "description": "Sanity check seeds - reusable, pre-baseline validation"
-      },
-      "BASELINE_v0_0": {
-        "start": 100,
-        "count": 100,
-        "description": "Locked - AI_v0.0_RANDOM baseline"
-      },
-      "BASELINE_S01": {
-        "start": 200,
-        "count": 300,
-        "description": "Locked - AI_v0.1_VOID_OBJECTIVE baseline"
-      },
-      "BASELINE_S02": {
-        "start": 500,
-        "count": 300,
-        "description": "Available for next baseline"
-      },
-      "BASELINE_S03": {
-        "start": 800,
-        "count": 300,
-        "description": "Available for next baseline"
-      },
-      "BASELINE_S04": {
-        "start": 1100,
-        "count": 300,
-        "description": "Available for next baseline"
-      },
-      "BASELINE_S05": {
-        "start": 1400,
-        "count": 300,
-        "description": "Available for next baseline"
-      },
-      "BASELINE_S06": {
-        "start": 1700,
-        "count": 300,
-        "description": "Available for next baseline"
-      },
-      "BASELINE_S07": {
-        "start": 2000,
-        "count": 300,
-        "description": "Available for next baseline"
-      },
-      "BASELINE_S08": {
-        "start": 2300,
-        "count": 300,
-        "description": "Available for next baseline"
-      },
-      "BASELINE_S09": {
-        "start": 2600,
-        "count": 300,
-        "description": "Available for next baseline"
-      },
-      "BASELINE_S10": {
-        "start": 2900,
-        "count": 300,
-        "description": "Available for next baseline"
-      }
+    "SANITY": {
+      "start": 0,
+      "count": 15,
+      "locked": false,
+      "description": "Sanity check seeds - reusable, pre-baseline validation"
     },
-    "frozen_baselines": [
-      {
-        "id": "AI_v0.0_RANDOM",
-        "policy_name": "RANDOM",
-        "git_tag": "AI_v0.0_RANDOM",
-        "date": "2026-01-14",
-        "description": "Uniform random legal policy",
-        "seed_range": "BASELINE_v0_0"
-      },
-      {
-        "id": "AI_v0.1_VOID_OBJECTIVE",
-        "policy_name": "VOID_OBJECTIVE",
-        "git_tag": "AI_v0.1_VOID_OBJECTIVE",
-        "date": "2026-01-15",
-        "description": "Void objective-aware policy",
-        "seed_range": "BASELINE_S01"
-      }
-    ],
-    "notes": {
-      "adding_baselines": "Append new baseline to 'frozen_baselines' array after promotion",
-      "adding_seed_ranges": "Add new BASELINE_SXX entries as needed",
-      "policy_changes": "Only edit ai_system/decision/PolicyRegistry.js - Arena loads by name"
+    "BASELINE_v0_0": {
+      "start": 100,
+      "count": 100,
+      "locked": true,
+      "description": "LOCKED - AI_v0.0_RANDOM baseline (DO NOT REUSE)"
+    },
+    "BASELINE_S01": {
+      "start": 200,
+      "count": 300,
+      "locked": true,
+      "description": "LOCKED - AI_v0.1_VOID_OBJECTIVE baseline (DO NOT REUSE)"
+    },
+    "BASELINE_S02": {
+      "start": 500,
+      "count": 300,
+      "locked": false,
+      "description": "Available for next baseline"
+    },
+    "BASELINE_S03": {
+      "start": 800,
+      "count": 300,
+      "locked": false,
+      "description": "Available for next baseline"
+    },
+    "BASELINE_S04": {
+      "start": 1100,
+      "count": 300,
+      "locked": false,
+      "description": "Available for next baseline"
+    },
+    "BASELINE_S05": {
+      "start": 1400,
+      "count": 300,
+      "locked": false,
+      "description": "Available for next baseline"
+    },
+    "BASELINE_S06": {
+      "start": 1700,
+      "count": 300,
+      "locked": false,
+      "description": "Available for next baseline"
+    },
+    "BASELINE_S07": {
+      "start": 2000,
+      "count": 300,
+      "locked": false,
+      "description": "Available for next baseline"
+    },
+    "BASELINE_S08": {
+      "start": 2300,
+      "count": 300,
+      "locked": false,
+      "description": "Available for next baseline"
+    },
+    "BASELINE_S09": {
+      "start": 2600,
+      "count": 300,
+      "locked": false,
+      "description": "Available for next baseline"
+    },
+    "BASELINE_S10": {
+      "start": 2900,
+      "count": 300,
+      "locked": false,
+      "description": "Available for next baseline"
     }
+  },
+  "historical_archive": [
+    {
+      "id": "AI_v0.0_RANDOM",
+      "git_tag": "AI_v0.0_RANDOM",
+      "date": "2026-01-14",
+      "description": "Uniform random legal policy",
+      "seed_range": "BASELINE_v0_0",
+      "results_file": "arena/results/v0.0_baseline_RANDOM.json",
+      "note": "Historical snapshot only - NOT runnable in future code"
+    },
+    {
+      "id": "AI_v0.1_VOID_OBJECTIVE",
+      "git_tag": "AI_v0.1_VOID_OBJECTIVE",
+      "date": "2026-01-15",
+      "description": "Void objective-aware policy",
+      "seed_range": "BASELINE_S01",
+      "results_file": "arena/results/v0.1_baseline_VOID_OBJECTIVE_vs_RANDOM.json",
+      "note": "Historical snapshot only - strength at promotion time"
+    }
+  ],
+  "active_anchors": [
+    {
+      "id": "ANCHOR_RANDOM",
+      "policy_name": "RANDOM",
+      "status": "validation_only",
+      "date_established": "2026-01-14",
+      "description": "Random policy - for Arena validation only",
+      "competency_level": "baseline",
+      "validation_mode": "self_play",
+      "expected_self_play_rate": 0.50,
+      "drift_tolerance": 0.10,
+      "validation_seed_base": 100,
+      "validation_game_count": 50,
+      "note": "Signal saturated - do not use for AI evaluation. Self-play validates RNG correctness."
+    },
+    {
+      "id": "ANCHOR_VOID_OBJECTIVE",
+      "policy_name": "VOID_OBJECTIVE",
+      "status": "primary_anchor",
+      "date_established": "2026-01-15",
+      "description": "Void objective-aware policy - maintained reference",
+      "competency_level": "competent",
+      "validation_mode": "vs_opponent",
+      "validation_opponent": "ANCHOR_RANDOM",
+      "expected_vs_opponent_rate": 0.977,
+      "drift_tolerance": 0.05,
+      "validation_seed_base": 200,
+      "validation_seed_end": 249,
+      "validation_game_count": 50,
+      "original_evaluation_seeds": "200-499 (BASELINE_S01, 300 games)",
+      "promotion_criteria": "Candidate must beat this anchor by ≥15% (≥65% absolute win rate)",
+      "note": "Validates using first 50 games from original 300-game evaluation. Seeds 200-249 should reproduce ~97.7% win rate vs RANDOM if no drift."
+    }
+  ],
+  "notes": {
+    "historical_vs_anchor": "Historical baselines are frozen git tags (archive only). Anchors are maintained policies (runnable).",
+    "adding_anchors": "Add to 'active_anchors' array. Must include validation parameters.",
+    "adding_historical": "Add to 'historical_archive' after promotion. Append-only.",
+    "seed_locking": "Set 'locked: true' after using a seed range. Never reuse locked ranges.",
+    "policy_changes": "Edit ai_system/decision/PolicyRegistry.js. Arena loads by name.",
+    "anchor_evolution": "Anchors can evolve implementation (bugfixes, API changes) but must maintain strength (validated via drift detection)."
   }
+}

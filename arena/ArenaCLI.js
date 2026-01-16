@@ -4,7 +4,9 @@
 import { ArenaAIPlayer } from './players/ArenaAIPlayer.js';
 import { runArena } from './ArenaRunner.js';
 import { getSeedRange, listSeedRanges } from './SeedManager.js';
-import { BaselineRegistry } from './BaselineRegistry.js';
+import { AnchorRegistry } from './AnchorRegistry.js';
+import { HistoricalRegistry } from './HistoricalRegistry.js';
+import { validateSeedRangeUnlocked } from './SeedManager.js';
 import { createPolicy, getAvailablePolicies } from '../ai_system/decision/PolicyRegistry.js';
 
 /**
@@ -22,6 +24,26 @@ function parseArgs(args) {
         baselinePolicy: null,
         mode: null  // 'self-play' or 'evaluation'
     };
+
+    // After setting config.seedRange
+    if (config.seedRange) {
+        const range = getSeedRange(config.seedRange);
+        
+        // Validate range is not locked (unless it's DEV or SANITY)
+        if (!config.seedRange.startsWith('DEV') && !config.seedRange.startsWith('SANITY')) {
+            try {
+                validateSeedRangeUnlocked(config.seedRange);
+            } catch (error) {
+                console.error(`ERROR: ${error.message}`);
+                console.error('\nUse --list-seed-ranges to see available ranges');
+                process.exit(1);
+            }
+        }
+        
+        config.baseSeed = range.start;
+        config.numberOfGames = range.count;
+        console.error(`Using seed range: ${config.seedRange} (seeds ${range.start}-${range.start + range.count - 1})`);
+    }
 
     for (let i = 0; i < args.length; i++) {
         if (args[i] === '--seed' && args[i + 1]) {
@@ -50,13 +72,26 @@ function parseArgs(args) {
             i++;
         } else if (args[i] === '--no-determinism-check') {
             config.determinismCheck = false;
-        } else if (args[i] === '--list-baselines') {
-            const registry = new BaselineRegistry();
-            console.error('Available baselines:');
-            registry.list().forEach(id => {
-                const meta = registry.getMetadata(id);
-                console.error(`  ${id} (${meta.date}): ${meta.description}`);
+        } else if (args[i] === '--list-anchors' || args[i] === '--list-baselines') {
+            const anchorRegistry = new AnchorRegistry();
+            const historicalRegistry = new HistoricalRegistry();
+            
+            console.error('\n=== Active Anchors (Runnable) ===');
+            anchorRegistry.list().forEach(id => {
+                const meta = anchorRegistry.getMetadata(id);
+                console.error(`  ${id}`);
+                console.error(`    Status: ${meta.status}`);
+                console.error(`    Description: ${meta.description}`);
             });
+            
+            console.error('\n=== Historical Archive (Git Tags Only) ===');
+            historicalRegistry.list().forEach(id => {
+                const meta = historicalRegistry.get(id);
+                console.error(`  ${id}`);
+                console.error(`    Git tag: ${meta.gitTag}`);
+                console.error(`    Date: ${meta.date}`);
+            });
+            console.error('');
             process.exit(0);
         } else if (args[i] === '--list-policies') {
             const available = getAvailablePolicies();
@@ -156,6 +191,8 @@ function parseArgs(args) {
 async function runMatch(config) {
     const startTime = Date.now();
     
+    
+
     // Create candidate policy
     const candidatePolicyInstance = createPolicy(config.candidatePolicy);
     
@@ -164,7 +201,7 @@ async function runMatch(config) {
     if (config.mode === 'self-play') {
         baselinePolicyInstance = createPolicy(config.candidatePolicy);
     } else {
-        const registry = new BaselineRegistry();
+        const registry = new AnchorRegistry();
         baselinePolicyInstance = registry.createPolicy(config.baselinePolicy);
     }
     

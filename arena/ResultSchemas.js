@@ -1,10 +1,21 @@
 // ResultSchemas.js
 // Pure data contracts. No logic.
 
+// Schema version for forward compatibility
+// Increment when adding/changing result fields
+export const SCHEMA_VERSION = '1.0.0';
+
 /**
  * Create a game result object
  * @param {Object} params - Game result parameters
- * @returns {Object} Game result
+ * @param {string|null} params.winnerId - Winner ID (playerA/playerB) or null for draw
+ * @param {string|null} params.winConditionType - Win condition type
+ * @param {number} params.turnCount - Number of turns played
+ * @param {boolean} params.crashed - Whether AI crashed
+ * @param {boolean} params.illegalMove - Whether illegal move occurred
+ * @param {number} params.seed - Game seed
+ * @param {Object} params.aiVersionIds - AI version identifiers
+ * @returns {Object} Game result schema v1.0.0
  */
 export function createGameResult({
     winnerId,
@@ -16,6 +27,7 @@ export function createGameResult({
     aiVersionIds
 }) {
     return {
+        schema_version: SCHEMA_VERSION,
         winnerId,          // string | null
         winConditionType,  // string | null
         turnCount,         // number
@@ -28,10 +40,11 @@ export function createGameResult({
 
 /**
  * Create an empty match stats object
- * @returns {Object} Match statistics
+ * @returns {Object} Match statistics schema v1.0.0
  */
 export function createMatchStats() {
     return {
+        schema_version: SCHEMA_VERSION,
         gamesPlayed: 0,
         winsByAI: {},        // { aiId: count }
         lossesByAI: {},      // { aiId: count }

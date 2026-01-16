@@ -75,3 +75,33 @@ export function createRNG(seed) {
         }
     };
 }
+
+/**
+ * Validate that a seed range is not locked
+ * @param {string} rangeName - Seed range name
+ * @throws {Error} If range is locked
+ */
+export function validateSeedRangeUnlocked(rangeName) {
+    const range = ArenaConfig.seed_ranges[rangeName];
+    if (!range) {
+        throw new Error(`Unknown seed range: ${rangeName}`);
+    }
+    
+    if (range.locked) {
+        throw new Error(
+            `Seed range ${rangeName} is LOCKED and cannot be reused.\n` +
+            `This range was used for: ${range.description}\n` +
+            `Use a different unlocked range from ArenaConfig.json`
+        );
+    }
+}
+
+/**
+ * Get all unlocked seed ranges
+ * @returns {Array<string>} Unlocked seed range names
+ */
+export function getUnlockedRanges() {
+    return Object.entries(ArenaConfig.seed_ranges)
+        .filter(([name, range]) => !range.locked)
+        .map(([name]) => name);
+}
