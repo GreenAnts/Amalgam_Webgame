@@ -10,6 +10,7 @@
 import { AnchorRegistry } from './AnchorRegistry.js';
 import { ArenaAIPlayer } from './players/ArenaAIPlayer.js';
 import { runArena } from './ArenaRunner.js';
+import { GameLogicAdapter } from './GameLogicAdapter.js'; // [1] Added Import
 
 /**
  * Validate that an anchor's strength hasn't drifted
@@ -37,7 +38,7 @@ async function validateAnchor(anchorId) {
         tolerance = anchor.driftTolerance || 0.10;
         console.error(`  Expected win rate: ${(expectedRate * 100).toFixed(1)}% (self-play)`);
     } else {
-        expectedRate = anchor.expectedVsOpponentRate;  // ← FIXED
+        expectedRate = anchor.expectedVsOpponentRate;
         tolerance = anchor.driftTolerance || 0.05;
         console.error(`  Expected win rate: ${(expectedRate * 100).toFixed(1)}% (vs ${anchor.validationOpponent})`);
     }
@@ -58,6 +59,28 @@ async function validateAnchor(anchorId) {
         playerB = new ArenaAIPlayer({ id: anchor.validationOpponent || 'ANCHOR_RANDOM', policy: opponentPolicy });
     }
     
+    // [2] Initialize game state for debugging purposes
+    const adapter = new GameLogicAdapter();
+    const gameState = adapter.initialize(anchor.validationSeedBase);
+
+    // DEBUG: Verify all pieces are on board
+    const pieces = Object.entries(gameState.pieces).reduce((acc, [coord, piece]) => {
+        const baseType = piece.type.replace('Square', '').replace('Circle', '').toLowerCase();
+        acc[baseType] = (acc[baseType] || 0) + 1;
+        return acc;
+    }, {});
+
+    console.error('=== DEBUG: Board Piece Count ===');
+    console.error('Void:', pieces.void || 0, '(expected: 2)');
+    console.error('Amalgam:', pieces.amalgam || 0, '(expected: 2)');
+    console.error('Portal:', pieces.portal || 0, '(expected: 4)');
+    console.error('Ruby:', pieces.ruby || 0, '(expected: 4)');
+    console.error('Pearl:', pieces.pearl || 0, '(expected: 4)');
+    console.error('Amber:', pieces.amber || 0, '(expected: 4)');
+    console.error('Jade:', pieces.jade || 0, '(expected: 4)');
+    console.error('Total pieces:', Object.keys(gameState.pieces).length, '(expected: 24)');
+    console.error('===\n');
+
     console.error('\n=== DEBUG: Configuration Check ===');
     console.error(`Anchor ID: ${anchorId}`);
     console.error(`Validation mode: ${validationMode}`);

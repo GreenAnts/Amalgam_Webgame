@@ -131,8 +131,8 @@
       "expected_vs_opponent_rate": 0.977,
       "drift_tolerance": 0.05,
       "validation_seed_base": 200,
-      "validation_seed_end": 249,
-      "validation_game_count": 50,
+      "validation_seed_end": 399,
+      "validation_game_count": 300,
       "original_evaluation_seeds": "200-499 (BASELINE_S01, 300 games)",
       "promotion_criteria": "Candidate must beat this anchor by ≥15% (≥65% absolute win rate)",
       "note": "Validates using first 50 games from original 300-game evaluation. Seeds 200-249 should reproduce ~97.7% win rate vs RANDOM if no drift."
