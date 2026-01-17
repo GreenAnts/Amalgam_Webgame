@@ -26,10 +26,12 @@ This class is a **photograph**, not a simulator.
 
 The absence of these features is **by design**.
 
-### ❌ Action application
-No `applyAction()`, no move execution.
+### ✅ Action application (Implemented in Session 4)
+`applyAction()` creates immutable child states with simulation lineage.
 
-> Why: Applying actions without a full simulation contract risks corrupting determinism.
+> Implementation: Returns frozen child state with incremented depth, parent reference, and action metadata. Does not mutate parent state.
+
+> Note: This was implemented in Session 4. Earlier versions of this document marked it as "not implemented" but that constraint was lifted after Session 3 completion.
 
 ---
 

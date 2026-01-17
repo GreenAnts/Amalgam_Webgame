@@ -88,7 +88,7 @@ export class ModeManager {
         if (modeConfig.enable_evaluation) {
             this.logger.info('[2/3] Evaluating position...');
             const evaluator = new LayeredEvaluator();
-            const score = evaluator.evaluate(gameState, playerManager);
+            const score = evaluator.evaluate(gameState, { gameLogic, playerManager, ...context });
             this.logger.data('Evaluation score', { score });
         }
         
