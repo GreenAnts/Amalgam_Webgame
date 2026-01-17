@@ -1,0 +1,565 @@
+{
+    "arena_api_version": "1.0.0",
+    "status": "FROZEN",
+    "last_updated": "2026-01-17",
+    
+    "purpose": "This specification defines the minimal interface required to create AI policies that work with the Arena evaluation system. Arena is a frozen measurement tool - do not modify Arena code.",
+    
+    "quick_start": {
+      "create_policy": "Implement a class in ai_system/decision/ that exports selectMove(gameState, context)",
+      "register_policy": "Add to ai_system/decision/PolicyRegistry.js",
+      "test": "node arena/ArenaCLI.js --policy YOUR_POLICY --range DEV",
+      "evaluate": "node arena/validateAnchorStability.js ANCHOR_VOID_OBJECTIVE && node arena/ArenaCLI.js --policy YOUR_POLICY --range BASELINE_SXX"
+    },
+    
+    "policy_interface": {
+      "description": "All AI policies must implement this async method",
+      "method_signature": "async selectMove(gameState, context)",
+      
+      "parameters": {
+        "gameState": {
+          "type": "Object",
+          "description": "Snapshot of current game state (read-only)",
+          "schema": {
+            "pieces": {
+              "type": "Object",
+              "description": "Dictionary of coord -> piece",
+              "example": {
+                "0,6": {
+                  "name": "Amalgam-Circle",
+                  "type": "amalgamCircle",
+                  "colors": ["#E63960", "#A9E886", "#F8F6DA", "#F6C13F"],
+                  "size": 9.5
+                }
+              }
+            },
+            "selectedPieceCoord": {
+              "type": "string | null",
+              "description": "Currently selected piece coordinate"
+            },
+            "currentPlayer": {
+              "type": "string",
+              "description": "'Player 1' or 'Player 2 (AI)'"
+            },
+            "turnCount": {
+              "type": "number",
+              "description": "Current turn number"
+            }
+          }
+        },
+        
+        "context": {
+          "type": "Object",
+          "description": "Execution context provided by Arena",
+          "required_fields": {
+            "rng": {
+              "type": "Object",
+              "description": "Deterministic random number generator (REQUIRED for all randomness)",
+              "methods": {
+                "nextInt(max)": "Returns random integer in [0, max)",
+                "nextFloat()": "Returns random float in [0, 1)"
+              },
+              "critical_rule": "NEVER use Math.random() - always use context.rng"
+            },
+            "gameLogic": {
+              "type": "GameLogic",
+              "description": "Game logic instance with current state",
+              "useful_methods": [
+                "getState() - Get current game state snapshot",
+                "getValidMoves(coordStr) - Get legal moves for piece",
+                "boardUtils.stringToCoord(str) - Convert '3,7' to {x:3, y:7}",
+                "boardUtils.coordToString(x,y) - Convert coords to '3,7'"
+              ]
+            },
+            "playerManager": {
+              "type": "PlayerManager",
+              "description": "Player state manager",
+              "useful_methods": [
+                "getCurrentPlayer() - Get active player object",
+                "canMovePiece(pieceType) - Check if piece belongs to current player"
+              ]
+            }
+          }
+        }
+      },
+      
+      "return_value": {
+        "type": "Object",
+        "description": "Move object describing the action to take",
+        
+        "move_types": {
+          "standard_move": {
+            "schema": {
+              "from": "string (e.g., '3,7')",
+              "to": "string (e.g., '4,8')"
+            },
+            "example": {
+              "from": "0,6",
+              "to": "1,7"
+            }
+          },
+          
+          "ability_fireball": {
+            "schema": {
+              "type": "'ABILITY'",
+              "abilityType": "'FIREBALL'",
+              "target": "string (coord to hit)"
+            },
+            "example": {
+              "type": "ABILITY",
+              "abilityType": "FIREBALL",
+              "target": "5,5"
+            }
+          },
+          
+          "ability_tidalwave": {
+            "schema": {
+              "type": "'ABILITY'",
+              "abilityType": "'TIDALWAVE'",
+              "target": "string (coord to activate)"
+            }
+          },
+          
+          "ability_sap": {
+            "schema": {
+              "type": "'ABILITY'",
+              "abilityType": "'SAP'",
+              "target": "string (coord to activate)"
+            }
+          },
+          
+          "ability_launch": {
+            "schema": {
+              "type": "'ABILITY'",
+              "abilityType": "'LAUNCH'",
+              "pieceCoord": "string (piece to launch)",
+              "target": "string (landing coord)"
+            }
+          },
+          
+          "ability_portal_swap": {
+            "schema": {
+              "type": "'ABILITY'",
+              "abilityType": "'PORTAL_SWAP'",
+              "portalCoord": "string (portal location)",
+              "target": "string (swap target)"
+            }
+          },
+          
+          "pass": {
+            "schema": {
+              "type": "'PASS'"
+            },
+            "note": "Valid only when no legal moves available"
+          }
+        }
+      }
+    },
+    
+    "action_generator_helper": {
+      "description": "Use ActionGenerator to get all legal actions (including abilities)",
+      "import": "import { ActionGenerator } from '../utils/ActionGenerator.js';",
+      "usage_example": "const generator = new ActionGenerator();\nconst actions = generator.generateAllActions(gameLogic, playerManager, null, new Set());",
+      
+      "action_format": {
+        "description": "ActionGenerator returns internal action format - use RandomSelector.actionToMove() to convert to move format",
+        "conversion": "See ai_system/decision/RandomSelector.js for conversion logic"
+      }
+    },
+    
+    "policy_registration": {
+      "file": "ai_system/decision/PolicyRegistry.js",
+      "steps": [
+        "1. Import your policy class",
+        "2. Add to POLICY_REGISTRY object",
+        "3. Policy is now available to Arena via --policy flag"
+      ],
+      
+      "example": {
+        "import": "import { YourPolicy } from './YourPolicy.js';",
+        "registry_entry": "'YOUR_POLICY_NAME': YourPolicy"
+      }
+    },
+    
+    "game_state_access": {
+      "description": "Policies work with game state snapshots. Do NOT mutate gameState directly.",
+      
+      "reading_state": {
+        "get_pieces": "for (const [coord, piece] of Object.entries(gameState.pieces)) { ... }",
+        "check_piece": "const piece = gameState.pieces['3,7'];",
+        "current_player": "const player = context.playerManager.getCurrentPlayer();"
+      },
+      
+      "piece_types": {
+        "description": "Piece type strings identify owner and piece class",
+        "player1": ["voidSquare", "amalgamSquare", "portalSquare", "rubySquare", "pearlSquare", "amberSquare", "jadeSquare"],
+        "player2": ["voidCircle", "amalgamCircle", "portalCircle", "rubyCircle", "pearlCircle", "amberCircle", "jadeCircle"]
+      },
+      
+      "coordinate_system": {
+        "format": "String 'x,y' where x,y are integers",
+        "range": "x: [-12, 12], y: [-12, 12]",
+        "valid_coords": "~500 positions (not all coordinates are valid)",
+        "goals": {
+          "player1_goal": "(0,6) - Square pieces must reach this",
+          "player2_goal": "(0,-6) - Circle pieces must reach this"
+        }
+      }
+    },
+    
+    "evaluation_workflow": {
+      "development": {
+        "step_1": "Implement policy in ai_system/decision/YourPolicy.js",
+        "step_2": "Register in PolicyRegistry.js",
+        "step_3": "Test: node arena/ArenaCLI.js --policy YOUR_POLICY --range DEV",
+        "step_4": "Iterate until no crashes/illegal moves"
+      },
+      
+      "validation": {
+        "step_1": "Sanity check: node arena/ArenaCLI.js --policy YOUR_POLICY --range SANITY",
+        "step_2": "Verify: 0 crashes, 0 illegal moves, deterministic",
+        "step_3": "Validate anchor: node arena/validateAnchorStability.js ANCHOR_VOID_OBJECTIVE",
+        "step_4": "Verify anchor is stable before proceeding"
+      },
+      
+      "official_evaluation": {
+        "step_1": "Run: node arena/ArenaCLI.js --policy YOUR_POLICY --range BASELINE_SXX > results.json",
+        "step_2": "Check results: win_rate >= 0.65 vs anchor",
+        "step_3": "If pass: promote to baseline (see arena/README.md)",
+        "step_4": "If fail: fix policy, use next seed range"
+      }
+    },
+    
+    "forbidden_practices": {
+      "never_use_math_random": {
+        "rule": "NEVER use Math.random() or Date.now()",
+        "reason": "Breaks determinism - Arena matches must be reproducible",
+        "correct": "Always use context.rng.nextInt() or context.rng.nextFloat()"
+      },
+      
+      "never_mutate_gamestate": {
+        "rule": "NEVER modify gameState parameter",
+        "reason": "gameState is a snapshot - modifications won't affect actual game",
+        "correct": "Return move object to Arena - it will apply the move"
+      },
+      
+      "never_import_arena_files": {
+        "rule": "Policies should NOT import from arena/",
+        "reason": "Arena is a frozen measurement tool",
+        "correct": "Import only from ai_system/ or core/"
+      },
+      
+      "never_access_localstorage": {
+        "rule": "No persistent storage, file I/O, or network calls",
+        "reason": "Policies must be deterministic and stateless across games",
+        "correct": "All state must be derived from gameState and context"
+      }
+    },
+    
+    "example_minimal_policy": {
+      "description": "Minimal working policy template",
+      "file": "ai_system/decision/MinimalPolicy.js",
+      "code": "import { RandomSelector } from './RandomSelector.js';\n\nexport class MinimalPolicy {\n    constructor() {\n        this.randomSelector = new RandomSelector();\n    }\n\n    async selectMove(gameState, context) {\n        const { rng, gameLogic, playerManager } = context;\n        \n        // Your logic here\n        // For now, just return random move\n        return this.randomSelector.selectRandomMove(\n            gameLogic,\n            playerManager,\n            rng,\n            { movedPieceCoord: null, usedAbilities: new Set() }\n        );\n    }\n}"
+    },
+    
+    "debugging_tips": {
+      "check_determinism": "Run same command twice - results should be identical",
+      "check_legality": "Use ActionGenerator to ensure moves are legal",
+      "check_crashes": "Wrap logic in try-catch, log errors to console.error",
+      "check_rng": "Verify all randomness goes through context.rng"
+    },
+    
+    "seed_ranges": {
+      "description": "Named seed ranges for different evaluation phases",
+      "ranges": {
+        "DEV": {
+          "seeds": "-10 to -5 (5 games)",
+          "purpose": "Fast iteration, unlimited reuse",
+          "reusable": true
+        },
+        "SANITY": {
+          "seeds": "0-14 (15 games)",
+          "purpose": "Pre-baseline validation",
+          "reusable": true
+        },
+        "BASELINE_S02": {
+          "seeds": "500-799 (300 games)",
+          "purpose": "Official baseline evaluation",
+          "reusable": false,
+          "note": "ONE-TIME USE - consumed after evaluation"
+        }
+      }
+    },
+    
+    "anchors": {
+      "description": "Reference opponents for evaluation",
+      "current_primary": "ANCHOR_VOID_OBJECTIVE",
+      "list_command": "node arena/ArenaCLI.js --list-anchors",
+      
+      "ANCHOR_VOID_OBJECTIVE": {
+        "description": "Void objective-aware policy",
+        "strength": "Competent baseline",
+        "win_rate_vs_random": "~97.7%",
+        "promotion_criteria": "Candidate must beat by ≥15% (≥65% absolute)"
+      },
+      
+      "ANCHOR_RANDOM": {
+        "description": "Uniform random legal play",
+        "strength": "Baseline control",
+        "win_rate_self_play": "~50%",
+        "note": "Signal saturated - use VOID_OBJECTIVE for meaningful evaluation"
+      }
+    },
+    
+    "promotion_criteria": {
+      "required": {
+        "win_rate": "≥65% vs primary anchor (over 300 games)",
+        "crashes": 0,
+        "illegal_moves": 0,
+        "determinism": "byte-identical on rerun",
+        "turn_count": "reasonable (not exploding)"
+      }
+    },
+    
+    "file_locations": {
+      "create_policy_here": "ai_system/decision/YourPolicy.js",
+      "register_policy_here": "ai_system/decision/PolicyRegistry.js",
+      "helper_utilities": "ai_system/utils/ActionGenerator.js",
+      "example_policies": [
+        "ai_system/decision/RandomPolicy.js",
+        "ai_system/decision/ObjectivePolicy.js"
+      ]
+    },
+    
+    "contact_for_issues": {
+      "arena_bugs": "Report in arena/FINALIZATION_LOG.json",
+      "policy_bugs": "Debug in ai_system/",
+      "documentation": "See arena/README.md for complete workflow"
+    },
+    
+    "anchor_management": {
+      "description": "Anchors are maintained reference policies. They can be created, validated, and retired, but NEVER deleted.",
+      
+      "when_to_create_new_anchor": {
+        "trigger_1": "After 5-10 baseline promotions using same anchor",
+        "trigger_2": "When current anchor becomes too weak (candidates beating at 90%+ consistently)",
+        "trigger_3": "When entering new development regime (e.g., heuristics → search)",
+        "note": "Do NOT create anchors frivolously - they require long-term maintenance"
+      },
+      
+      "anchor_creation_procedure": {
+        "description": "COMPLETE PROCEDURE - follow exactly to avoid accidental Arena modifications",
+        
+        "step_1_implement_policy": {
+          "action": "Create new policy class in ai_system/decision/YourAnchorPolicy.js",
+          "file": "ai_system/decision/YourAnchorPolicy.js",
+          "requirements": [
+            "Must implement async selectMove(gameState, context)",
+            "Must be deterministic (same seed → same moves)",
+            "Must be maintainable long-term (no complex dependencies)"
+          ],
+          "note": "Policy should represent a clear competency level (e.g., 'captures pieces', 'uses abilities tactically')"
+        },
+        
+        "step_2_register_policy": {
+          "action": "Add to PolicyRegistry",
+          "file": "ai_system/decision/PolicyRegistry.js",
+          "example": "import { YourAnchorPolicy } from './YourAnchorPolicy.js';\n\nconst POLICY_REGISTRY = {\n  ...\n  'YOUR_ANCHOR_NAME': YourAnchorPolicy\n};"
+        },
+        
+        "step_3_validate_strength": {
+          "action": "Run self-play to verify ~50% win rate",
+          "command": "node arena/ArenaCLI.js --policy YOUR_ANCHOR_NAME --self-play --range SANITY",
+          "expected": "Win rate between 45-55% (self-play)",
+          "if_fail": "Policy is biased or buggy - fix before proceeding"
+        },
+        
+        "step_4_validate_vs_current_anchor": {
+          "action": "Verify new anchor beats current primary anchor by ≥15%",
+          "command": "node arena/ArenaCLI.js --policy YOUR_ANCHOR_NAME --baseline ANCHOR_VOID_OBJECTIVE --range BASELINE_SXX",
+          "expected": "Win rate ≥ 65% vs current anchor",
+          "if_fail": "New anchor not strong enough - not worth maintaining",
+          "note": "Use a fresh unlocked BASELINE_SXX range - this consumes seeds"
+        },
+        
+        "step_5_add_to_config": {
+          "action": "Add to ArenaConfig.json active_anchors array",
+          "file": "arena/ArenaConfig.json",
+          "location": "active_anchors array (append, do not modify existing entries)",
+          "template": {
+            "id": "ANCHOR_YOUR_NAME",
+            "policy_name": "YOUR_ANCHOR_POLICY",
+            "status": "primary_anchor",
+            "date_established": "2026-XX-XX",
+            "description": "Brief description of anchor's strategy/competency",
+            "competency_level": "advanced|expert|competent|baseline",
+            "validation_mode": "vs_opponent",
+            "validation_opponent": "ANCHOR_VOID_OBJECTIVE",
+            "expected_vs_opponent_rate": 0.65,
+            "drift_tolerance": 0.05,
+            "validation_seed_base": "<seed from step 4>",
+            "validation_game_count": 300,
+            "promotion_criteria": "Candidate must beat by ≥15%",
+            "note": "Created on 2026-XX-XX to replace ANCHOR_VOID_OBJECTIVE"
+          },
+          "critical_rule": "DO NOT delete or modify existing anchor entries - only append new ones"
+        },
+        
+        "step_6_establish_validation_baseline": {
+          "action": "Run validateAnchorStability.js to establish baseline",
+          "command": "node arena/validateAnchorStability.js ANCHOR_YOUR_NAME",
+          "expected": "Should pass with expected win rate from step 4",
+          "purpose": "Creates the reference point for future drift detection",
+          "note": "This validates the anchor is working correctly before retirement of old anchor"
+        },
+        
+        "step_7_retire_old_anchor": {
+          "action": "Change old anchor status from 'primary_anchor' to 'retired'",
+          "file": "arena/ArenaConfig.json",
+          "find": "\"id\": \"ANCHOR_VOID_OBJECTIVE\",\n  \"status\": \"primary_anchor\"",
+          "replace_with": "\"id\": \"ANCHOR_VOID_OBJECTIVE\",\n  \"status\": \"retired\"",
+          "critical_rules": [
+            "NEVER delete retired anchors",
+            "NEVER modify any other fields of retired anchor",
+            "Only change status field from 'primary_anchor' to 'retired'",
+            "Keep full configuration for historical reference"
+          ],
+          "note": "Retired anchors remain in config for reference but are not used for evaluation"
+        },
+        
+        "step_8_update_documentation": {
+          "action": "Document anchor change in FINALIZATION_LOG.json",
+          "file": "arena/FINALIZATION_LOG.json",
+          "required_info": [
+            "Date of change",
+            "New anchor ID and description",
+            "Retired anchor ID",
+            "Validation results",
+            "Reason for anchor change"
+          ]
+        },
+        
+        "step_9_verify_new_anchor": {
+          "action": "Run a test evaluation using new anchor",
+          "command": "node arena/ArenaCLI.js --policy VOID_OBJECTIVE --baseline ANCHOR_YOUR_NAME --range DEV",
+          "expected": "Should run without errors, produce sensible win rate",
+          "purpose": "Verify new anchor works correctly as evaluation baseline"
+        }
+      },
+      
+      "anchor_retirement_rules": {
+        "when_to_retire": [
+          "When creating new primary anchor",
+          "When anchor becomes signal-saturated (all candidates beat at 95%+)",
+          "When anchor implementation has unfixable bugs"
+        ],
+        
+        "how_to_retire": {
+          "step_1": "Change status to 'retired' in ArenaConfig.json",
+          "step_2": "DO NOT delete the entry",
+          "step_3": "DO NOT modify any other fields",
+          "step_4": "Document retirement in FINALIZATION_LOG.json"
+        },
+        
+        "forbidden_actions": [
+          "NEVER delete retired anchors from config",
+          "NEVER modify retired anchor fields (except status)",
+          "NEVER reuse retired anchor IDs",
+          "NEVER promote retired anchors back to primary"
+        ],
+        
+        "rationale": "Retired anchors provide historical context and prevent confusion about past evaluations"
+      },
+      
+      "anchor_modification_rules": {
+        "allowed_modifications": {
+          "bugfixes": {
+            "description": "Fix crashes, illegal moves, or logic errors",
+            "procedure": [
+              "1. Run validateAnchorStability.js BEFORE fix",
+              "2. Apply minimal bugfix to policy code",
+              "3. Run validateAnchorStability.js AFTER fix",
+              "4. Compare results - must be within drift_tolerance",
+              "5. Document in FINALIZATION_LOG.json"
+            ],
+            "if_drift_detected": "Revert bugfix - it changed behavior too much. Consider retiring anchor instead."
+          },
+          
+          "api_updates": {
+            "description": "Update policy to work with new GameLogic API",
+            "example": "GameLogic method renamed, parameter order changed",
+            "procedure": "Same as bugfixes - must validate no strength change"
+          }
+        },
+        
+        "forbidden_modifications": {
+          "heuristic_changes": "Changing evaluation weights, priorities, or decision logic",
+          "search_depth_changes": "Increasing/decreasing search depth",
+          "feature_additions": "Adding new capabilities not in original design",
+          "reason": "These change anchor strength - create new anchor instead"
+        }
+      },
+      
+      "multi_anchor_strategy": {
+        "description": "As AI development progresses, multiple anchors may coexist at different competency levels",
+        
+        "recommended_setup": {
+          "baseline_anchor": {
+            "example": "ANCHOR_RANDOM",
+            "purpose": "RNG validation, signal floor",
+            "status": "validation_only (not for evaluation)"
+          },
+          
+          "competent_anchor": {
+            "example": "ANCHOR_VOID_OBJECTIVE",
+            "purpose": "Validates basic objective awareness",
+            "status": "retired (superseded)"
+          },
+          
+          "primary_anchor": {
+            "example": "ANCHOR_TACTICAL_SEARCH",
+            "purpose": "Current primary evaluation baseline",
+            "status": "primary_anchor"
+          },
+          
+          "advanced_anchor": {
+            "example": "ANCHOR_MINIMAX_DEPTH_4",
+            "purpose": "Stretch goal for near-term development",
+            "status": "primary_anchor"
+          }
+        },
+        
+        "testing_against_multiple_anchors": {
+          "recommendation": "Periodically test candidates against ALL active anchors to detect regressions",
+          "command_example": "node arena/ArenaCLI.js --policy CANDIDATE --baseline ANCHOR_VOID_OBJECTIVE --range DEV",
+          "note": "Regression vs old anchor is not automatic failure, but should be investigated"
+        }
+      },
+      
+      "common_mistakes_to_avoid": {
+        "mistake_1": {
+          "error": "Deleting retired anchors from ArenaConfig.json",
+          "why_wrong": "Loses historical context, breaks documentation references",
+          "correct": "Change status to 'retired', keep all other fields"
+        },
+        
+        "mistake_2": {
+          "error": "Modifying anchor policy without re-validation",
+          "why_wrong": "Anchor strength may drift, invalidating past evaluations",
+          "correct": "Always run validateAnchorStability before and after changes"
+        },
+        
+        "mistake_3": {
+          "error": "Creating too many anchors",
+          "why_wrong": "Each anchor requires long-term maintenance and drift monitoring",
+          "correct": "Only create anchors when clearly needed (every 5-10 promotions)"
+        },
+        
+        "mistake_4": {
+          "error": "Using BASELINE seed ranges for anchor validation",
+          "why_wrong": "Consumes one-time-use seeds that should be reserved for candidate evaluation",
+          "correct": "Use SANITY range for initial testing, then use first 50-100 games from the evaluation range for validation baseline"
+        }
+      }
+    }
+  }

@@ -40,43 +40,6 @@ All entries below are append-only. Never delete or modify after creation.
 
 ---
 ---
-## <font color="green">AI_v0.1_VOID_OBJECTIVE</font>
-
-- **Git tag:** `AI_v0.VOID_OBJECTIVE`
-- **Date:** 2026-01-15
-- **Theme:** Void rushes goal via standard movement, otherwise uniform random legal play
-
-## Description
-
-Void will utilize standard movement towards the goal, otherwise random movement same as previous baseline.
-
-### Validation Results
-
-- **Opponent:** AI_v0.0_RANDOM
-- **Games:** 300
-- **Seed range:** 200–499 (base seed 200)
-- **Starting player alternation:** Yes (enforced by MatchRunner)
-- **Validation record:** `arena/results/v0.1_baseline_VOID_OBJECTIVE_vs_RANDOM.json`
-
-**Statistics:**
-- Win rate: 97.7% / 2.3% (playerA / playerB)
-- Draws: 0% (games hitting 5000-turn limit)
-- Crashes: 0
-- Illegal moves: 0
-- Average turns: 159.36
-- Deterministic: YES (byte-identical on re-run)
-
-NOTE: I changed turn count from 5000 to 1000 (I think I did this after I tagged the repo - but if I am mistaken and you are trying to reevaluate against this tag, double check the turn count to be sure.) - [Sorry, I obviously don't know what the fuck I am doing]
-
----
----
-
----
----
-
----
----
-
 ## <font color="green"> AI_v0.0_RANDOM </font>
 
 - **Git tag:** `AI_v0.0_RANDOM`
@@ -96,7 +59,7 @@ This baseline exists purely as a control opponent and to validate Arena determin
 
 - **Opponent:** AI_v0.0_RANDOM (self-play)
 - **Games:** 100
-- **Seed range:** 100–199 (base seed 100)
+- **Seed range:** 100–199 (BASELINE_S00)
 - **Starting player alternation:** Yes (enforced by MatchRunner)
 - **Validation record:** `arena/results/baseline_AI_v0.0_RANDOM.json`
 
@@ -170,5 +133,39 @@ Promoted as the foundational control baseline.
 - Zero crashes, zero illegal moves
 
 All future AI versions must demonstrate measurable improvement against this baseline to justify advancement.
+
+---
+---
+
+---
+---
+
+---
+---
+## <font color="green">AI_v0.1_VOID_OBJECTIVE</font>
+
+- **Git tag:** `AI_v0.VOID_OBJECTIVE`
+- **Date:** 2026-01-15
+- **Theme:** Void rushes goal via standard movement, otherwise uniform random legal play
+
+## Description
+
+Void will utilize standard movement towards the goal, otherwise random movement same as previous baseline.
+
+### Validation Results
+
+- **Opponent:** AI_v0.0_RANDOM
+- **Games:** 300
+- **Seed range:** 200–499 (BASELINE_S01)
+- **Starting player alternation:** Yes (enforced by MatchRunner)
+- **Validation record:** `arena/results/v0.1_baseline_VOID_OBJECTIVE_vs_RANDOM.json`
+
+**Statistics:**
+- Win rate: 97.7% / 2.3% (playerA / playerB)
+- Draws: 0% (games hitting 5000-turn limit)
+- Crashes: 0
+- Illegal moves: 0
+- Average turns: 159.36
+- Deterministic: YES (byte-identical on re-run)
 
 ---

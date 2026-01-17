@@ -1005,6 +1005,19 @@ See `arena/arena_README.md` for complete validation workflow and promotion crite
 
 ## Technical Reference
 
+### External Context for Policy Authors (Non-ai_system)
+
+When you work outside an IDE (e.g., a Claude project that only sees files you supply), you can usually **use the JSON below alone**. Only supply source files if you must verify exact edge-case mechanics.
+
+**Minimal external files that define the game rules** (read-only reference):
+- `GameLogic.js` (Arena-facing API + terminal mapping)
+- `core/BoardUtils.js` + `core/Constants.js` (valid board coordinates, golden lines, adjacency)
+- `core/GameState.js` + `core/PieceDefinitions.js` (snapshot shape + initial setup)
+- `systems/*.js` (movement, attacks, abilities, win conditions)
+
+**JSON summary (copy into agent context to save tokens):**
+- Full JSON: `ai_system/README/External_Policy_Context.json`
+
 ### Position Hashing
 
 For transposition table and caching:

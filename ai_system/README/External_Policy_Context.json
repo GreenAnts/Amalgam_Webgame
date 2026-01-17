@@ -1,0 +1,104 @@
+{
+  "version": "2026-01-17",
+  "purpose": "Condensed non-ai_system context required to implement new policies without scanning arena/ or core/system source files.",
+  "external_rule_files": [
+    "GameLogic.js",
+    "core/BoardUtils.js",
+    "core/Constants.js",
+    "core/GameState.js",
+    "core/PieceDefinitions.js",
+    "systems/MovementSystem.js",
+    "systems/AttackSystem.js",
+    "systems/PortalSwapSystem.js",
+    "systems/RubyFireballSystem.js",
+    "systems/PearlTidalwaveSystem.js",
+    "systems/AmberSapSystem.js",
+    "systems/JadeLaunchSystem.js",
+    "systems/WinConditionSystem.js"
+  ],
+  "game_state_snapshot": {
+    "fields": ["pieces", "selectedPieceCoord", "goldenCoords", "goldenLinesDict"],
+    "pieces_schema": "{ coord: { name, type, colors?/outerColor?/innerColor?, size, rotation? } }",
+    "coord_format": "'x,y' string",
+    "coords_valid": "Use BoardUtils.isOnBoard(coordStr); ~500 valid coords"
+  },
+  "coordinate_system": {
+    "range": "x,y in [-12,12]",
+    "goal_coords": {
+      "player1_square_void_goal": "0,6",
+      "player2_circle_void_goal": "0,-6"
+    },
+    "golden_lines": "Portal movement/attacks use golden line connections",
+    "adjacency": "8-neighbor adjacency (dx,dy in -1..1 excluding 0,0)"
+  },
+  "piece_types": {
+    "player1_square": ["voidSquare", "amalgamSquare", "portalSquare", "rubySquare", "pearlSquare", "amberSquare", "jadeSquare"],
+    "player2_circle": ["voidCircle", "amalgamCircle", "portalCircle", "rubyCircle", "pearlCircle", "amberCircle", "jadeCircle"],
+    "initial_setup": "See core/PieceDefinitions.js; only Amalgam/Void/2 Portals per side start on board"
+  },
+  "movement_rules": {
+    "all_pieces": "May move to any adjacent empty coord (8 directions)",
+    "portal_extra": "Portals may move along golden lines; portals may move to adjacent golden intersections",
+    "phasing": {
+      "non_portal": "May phase through contiguous portal pieces to the first empty landing square",
+      "portal": "May phase through contiguous pieces and land on a golden coord"
+    },
+    "nexus_moves": "If adjacent to a nexus formation (Pearl/Amber/Amalgam of different types), piece may move to any empty adjacent to any nexus piece (portals must land on golden coords)."
+  },
+  "attack_rules": {
+    "void": "Attacks all adjacent enemy pieces",
+    "portal": "Attacks adjacent enemy portals + enemy portals connected by golden lines",
+    "non_portal": "Attacks adjacent enemy non-portals"
+  },
+  "abilities": {
+    "portal_swap": {
+      "formation": "Select own portal; swap with own non-portal on golden coord (or reverse: select target then portal)",
+      "effects": "Swap positions, then resolve attacks from both resulting positions"
+    },
+    "ruby_fireball": {
+      "formation": "Two adjacent Ruby/Amalgam aligned (straight or diagonal)",
+      "amplify": "If a Void is immediately beyond the firing ruby in direction of fire",
+      "range": "7 steps normal, 10 steps amplified",
+      "targets": "First enemy in line; normal fireball stops at enemy portal without destroying (unless amplified)"
+    },
+    "pearl_tidalwave": {
+      "formation": "Two adjacent Pearl/Amalgam aligned (straight or diagonal)",
+      "amplify": "Void immediately beyond pearl in direction",
+      "area": "AOE cone/rectangle; targets enemy pieces in coverage area (portals immune unless amplified)"
+    },
+    "amber_sap": {
+      "formation": "Two aligned Amber/Amalgam (straight or diagonal)",
+      "effect": "Destroys enemy pieces along line between ambers",
+      "amplify": "If friendly Void on the line, also hits enemy portals and parallel lines offset by 1"
+    },
+    "jade_launch": {
+      "formation": "Two adjacent Jade/Amalgam aligned (straight or diagonal)",
+      "effect": "Launches a piece from beyond the jade pair in the opposite direction",
+      "range": "5 steps normal, 7 amplified; portals must land on golden coords",
+      "collision": "Landing on enemy captures (portals can only land on enemy portals; non-portals cannot land on portals)"
+    }
+  },
+  "win_conditions": {
+    "goal": "Void reaches opponent amalgam start: squares win at 0,6; circles win at 0,-6",
+    "elimination": "If a player has no non-portal pieces remaining"
+  },
+  "game_logic_api": {
+    "safe_calls": [
+      "gameLogic.getState()",
+      "gameLogic.getValidMoves(coordStr)",
+      "gameLogic.getPortalSwapSystem()",
+      "gameLogic.getRubyFireballSystem()",
+      "gameLogic.getPearlTidalwaveSystem()",
+      "gameLogic.getAmberSapSystem()",
+      "gameLogic.getJadeLaunchSystem()",
+      "gameLogic.getWinConditionSystem()",
+      "gameLogic.isTerminal(gameState)",
+      "gameLogic.getTerminalResult(gameState)"
+    ],
+    "note": "Policies should not mutate gameState directly. Use ActionGenerator + RandomSelector conversion helpers inside ai_system."
+  },
+  "determinism_rules": {
+    "rng": "Always use context.rng.* (never Math.random or Date.now)",
+    "stateless": "No file I/O, network calls, or persistent storage"
+  }
+}

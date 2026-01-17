@@ -29,7 +29,7 @@ export class AlphaBetaSearch extends SearchStrategy {
             const rng = constraints.rng;
             const context = constraints.context || {};
     
-            const action = selector.selectRandomMove(
+            const action = selector.selectRandomMove( // Replace with "const actions = this.actionGenerator.generateAllActions(...)"
                 gameLogic, 
                 playerManager, 
                 rng, 

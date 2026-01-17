@@ -169,7 +169,7 @@ node arena/ArenaCLI.js --policy NEW_HEURISTIC --range BASELINE_S02 > results.jso
 - BASELINE_S02, S03, S04, ...: One-time use each
 
 ### Locked Ranges (Used)
-- BASELINE_v0_0: AI_v0.0_RANDOM
+- BASELINE_S00: AI_v0.0_RANDOM
 - BASELINE_S01: AI_v0.1_VOID_OBJECTIVE
 
 **Rule**: Once locked, NEVER reuse (except for Arena bug fixes)

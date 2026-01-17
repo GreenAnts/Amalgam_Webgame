@@ -52,7 +52,7 @@ async function validateAnchor(anchorId) {
     let playerB;
     if (validationMode === 'self_play') {
         const policyB = registry.createPolicy(anchorId);
-        playerB = new ArenaAIPlayer({ id: anchorId, policy: policyB });
+        playerB = new ArenaAIPlayer({ id: anchorId + '_playerB', policy: policyB });
     } else {
         // For vs_opponent mode, use the opponent specified in config
         const opponentPolicy = registry.createPolicy(anchor.validationOpponent || 'ANCHOR_RANDOM');
@@ -101,8 +101,8 @@ async function validateAnchor(anchorId) {
     });
     
     // Calculate win rate
-    const playerAWins = results.results.winsByAI['playerA'] || 0;
-    const playerBWins = results.results.winsByAI['playerB'] || 0;
+    const playerAWins = results.results.winsByAI[playerA.getId()] || 0;
+    const playerBWins = results.results.winsByAI[playerB.getId()] || 0;
     const totalWins = playerAWins + playerBWins;
     const currentRate = totalWins > 0 ? playerAWins / totalWins : 0.5;
     

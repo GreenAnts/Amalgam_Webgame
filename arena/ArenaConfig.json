@@ -17,7 +17,7 @@
       "locked": false,
       "description": "Sanity check seeds - reusable, pre-baseline validation"
     },
-    "BASELINE_v0_0": {
+    "BASELINE_S00": {
       "start": 100,
       "count": 100,
       "locked": true,
@@ -90,7 +90,7 @@
       "git_tag": "AI_v0.0_RANDOM",
       "date": "2026-01-14",
       "description": "Uniform random legal policy",
-      "seed_range": "BASELINE_v0_0",
+      "seed_range": "BASELINE_S00",
       "results_file": "arena/results/v0.0_baseline_RANDOM.json",
       "note": "Historical snapshot only - NOT runnable in future code"
     },
@@ -106,17 +106,17 @@
   ],
   "active_anchors": [
     {
-      "id": "ANCHOR_RANDOM",
-      "policy_name": "RANDOM",
-      "status": "validation_only",
-      "date_established": "2026-01-14",
-      "description": "Random policy - for Arena validation only",
-      "competency_level": "baseline",
-      "validation_mode": "self_play",
-      "expected_self_play_rate": 0.50,
-      "drift_tolerance": 0.10,
-      "validation_seed_base": 100,
-      "validation_game_count": 50,
+     "id": "ANCHOR_RANDOM",
+    "policy_name": "RANDOM",
+    "status": "validation_only",
+    "date_established": "2026-01-14",
+    "description": "Random policy - for Arena validation only",
+    "competency_level": "baseline",
+    "validation_mode": "self_play",
+    "expected_self_play_rate": 0.50,
+    "drift_tolerance": 0.10,
+    "validation_seed_base": 100,
+    "validation_game_count": 100,
       "note": "Signal saturated - do not use for AI evaluation. Self-play validates RNG correctness."
     },
     {
@@ -131,7 +131,6 @@
       "expected_vs_opponent_rate": 0.977,
       "drift_tolerance": 0.05,
       "validation_seed_base": 200,
-      "validation_seed_end": 399,
       "validation_game_count": 300,
       "original_evaluation_seeds": "200-499 (BASELINE_S01, 300 games)",
       "promotion_criteria": "Candidate must beat this anchor by ≥15% (≥65% absolute win rate)",
