@@ -29,6 +29,10 @@ export class AlphaBetaSearch extends SearchStrategy {
             const rng = constraints.rng;
             const context = constraints.context || {};
     
+            // No-op evaluator call (does not affect behavior)
+            const gameState = gameLogic.getState();
+            this.evaluator?.evaluate(gameState, { gameLogic, playerManager, ...context });
+
             const action = selector.selectRandomMove( // Replace with "const actions = this.actionGenerator.generateAllActions(...)"
                 gameLogic, 
                 playerManager, 
@@ -86,19 +90,30 @@ export class AlphaBetaSearch extends SearchStrategy {
     /**
      * Recursive alpha-beta function
      * @private
+     * 
+     * NOTE: This function is currently a skeleton and not used by search().
+     * It will be integrated in a future session when simulation infrastructure is ready.
+     * 
+     * Requirements for future integration:
+     * - Immutable game state or clone/undo mechanism
+     * - Simulation-only GameLogic instance
+     * - Arena mode that supports search vs baseline
+     * - Updated determinism guarantees
      */
     alphaBeta(position, depth, alpha, beta, maximizingPlayer) {
         this.nodesSearched++;
         this.maxDepth = Math.max(this.maxDepth, depth);
         
-        // TODO: Implement alpha-beta recursion
-        // 1. Check transposition table
-        // 2. Check terminal conditions (depth == 0, game over)
-        // 3. Generate and order moves
-        // 4. Search each move with pruning
-        // 5. Update transposition table
+        // TODO: Future implementation will include:
+        // 1. Transposition table lookup (currently stubbed)
+        // 2. Terminal condition checks (depth == 0, game over)
+        // 3. Legal move generation using ActionGenerator
+        // 4. Recursive search with alpha-beta pruning
+        // 5. Transposition table updates
         
-        return 0.0; // Placeholder
+        // For now, return a placeholder score
+        // This maintains the function signature for future integration
+        return 0.0;
     }
 
     /**
