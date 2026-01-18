@@ -7,7 +7,7 @@
   "seed_ranges": {
     "DEV": {
       "start": -10,
-      "count": 5,
+      "count": 1,
       "locked": false,
       "description": "Development seeds - reusable, fast iteration"
     },

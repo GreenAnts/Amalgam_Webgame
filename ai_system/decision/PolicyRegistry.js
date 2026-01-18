@@ -3,6 +3,7 @@
 
 import { RandomPolicy } from './RandomPolicy.js';
 import { ObjectivePolicy } from './ObjectivePolicy.js';
+import { AlphaBetaPolicy } from './AlphaBetaPolicy.js';
 
 /**
  * Policy Registry
@@ -11,10 +12,7 @@ import { ObjectivePolicy } from './ObjectivePolicy.js';
 const POLICY_REGISTRY = {
     'RANDOM': RandomPolicy,
     'VOID_OBJECTIVE': ObjectivePolicy,
-    // Add future policies here:
-    // 'CAPTURE_AWARE': CaptureAwarePolicy,
-    // 'DEFENSIVE': DefensivePolicy,
-    // etc.
+    'ALPHA_BETA': AlphaBetaPolicy
 };
 
 /**

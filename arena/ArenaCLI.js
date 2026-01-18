@@ -136,7 +136,7 @@ function parseArgs(args) {
             console.error('  node arena/ArenaCLI.js --range BASELINE_S01 --policy VOID_OBJECTIVE --self-play');
             console.error('');
             console.error('  # Candidate evaluation vs frozen baseline');
-            console.error('  node arena/ArenaCLI.js --range BASELINE_S02 --policy VOID_OBJECTIVE --baseline AI_v0.0_RANDOM');
+            console.error('  node arena/ArenaCLI.js --range BASELINE_S02 --policy VOID_OBJECTIVE --baseline ANCHOR_RANDOM');
             console.error('');
             console.error('Output:');
             console.error('  stdout: Canonical JSON schema');
@@ -166,7 +166,7 @@ function parseArgs(args) {
         } else {
             console.error('ERROR: Must specify either --self-play or --baseline <baseline_id>');
             console.error('For self-play: --policy VOID_OBJECTIVE --self-play');
-            console.error('For evaluation: --policy VOID_OBJECTIVE --baseline AI_v0.0_RANDOM');
+            console.error('For evaluation: --policy VOID_OBJECTIVE --baseline ANCHOR_RANDOM');
             process.exit(1);
         }
     }
