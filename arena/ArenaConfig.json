@@ -125,7 +125,7 @@
       "status": "primary_anchor",
       "date_established": "2026-01-15",
       "description": "Void objective-aware policy - maintained reference",
-      "competency_level": "competent",
+      "competency_level": "baseline",
       "validation_mode": "vs_opponent",
       "validation_opponent": "ANCHOR_RANDOM",
       "expected_vs_opponent_rate": 0.977,

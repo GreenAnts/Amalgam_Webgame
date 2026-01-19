@@ -43,50 +43,221 @@ window.onload = function() {
 
     // Make these available to AILogic
     window.matchHistoryTracker = matchHistoryTracker;
-    
+
     // --- AI STRATEGY SELECTOR ---
-    const btnStandard = document.getElementById('btnStandard');
-    const btnVoid = document.getElementById('btnVoid');
-    const btnRandom = document.getElementById('btnRandom');
-    
-    // Helper to update UI state
-    function updateStrategyUI(activeBtn) {
-        [btnStandard, btnVoid, btnRandom].forEach(btn => btn.classList.remove('active'));
-        activeBtn.classList.add('active');
+    const aiDifficultyDropdown = document.getElementById('aiDifficultyDropdown');
+
+    // Load available AI difficulties (stable + dynamic with proper ordering)
+    async function loadAIDifficulties() {
+        try {
+            // 🔒 STABLE OPTIONS (positioned for ordering)
+            const stableOptions = [
+                { value: 'DEFAULT', text: 'Current (Full Search)', position: 0 }, // Top/default
+                { value: 'RANDOM_MODE', text: 'Random', position: -1 }, // Second to last
+                { value: 'DUMMY_MODE', text: 'Practice Dummy', position: -2 } // Last
+            ];
+
+            // 🔄 DYNAMIC OPTIONS (anchors sorted by date, newest first)
+            const response = await fetch('arena/ArenaConfig.json');
+            const arenaConfig = await response.json();
+            const activeAnchors = arenaConfig.active_anchors
+                .filter(a => a.status !== 'validation_only')
+                .sort((a, b) => new Date(b.date_established) - new Date(a.date_established)); // Newest first
+
+            const dynamicOptions = activeAnchors.map(anchor => ({
+                value: anchor.policy_name,
+                text: `${anchor.id.replace('ANCHOR_', '').replace('_', ' ')} (${anchor.competency_level})`,
+                position: 1 // All anchors go after Current
+            }));
+
+            // 🎯 COMBINE WITH PROPER ORDERING
+            const allOptions = [...stableOptions, ...dynamicOptions]
+                .sort((a, b) => {
+                    // Position-based sorting: negative positions go to end
+                    if (a.position >= 0 && b.position >= 0) return a.position - b.position;
+                    if (a.position >= 0) return -1; // a before b
+                    if (b.position >= 0) return 1;  // b before a
+                    return b.position - a.position; // More negative positions last
+                });
+
+            // Build dropdown
+            aiDifficultyDropdown.innerHTML = '';
+            allOptions.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt.value;
+                option.textContent = opt.text;
+                aiDifficultyDropdown.appendChild(option);
+            });
+
+            // Set default selection
+            aiDifficultyDropdown.value = 'DEFAULT';
+        } catch (error) {
+            console.error('Failed to load difficulties:', error);
+            // Fallback with basic ordering
+            aiDifficultyDropdown.innerHTML = `
+                <option value="DEFAULT">Current (Full Search)</option>
+                <option value="VOID_OBJECTIVE">Void Rush (baseline)</option>
+                <option value="RANDOM_MODE">Random</option>
+                <option value="DUMMY_MODE">Practice Dummy</option>
+            `;
+            aiDifficultyDropdown.value = 'DEFAULT';
+        }
     }
 
-    // 1. Standard (Default AI)
-    btnStandard.addEventListener('click', () => {
-        currentPolicyMode = 'DEFAULT';
-        currentPolicy = null;
-        aiController.setDifficulty('Medium'); // Default standard difficulty
-        updateStrategyUI(btnStandard);
-        console.log('Switched to Standard AI');
+    // Handle dropdown changes with confirmation
+    aiDifficultyDropdown.addEventListener('change', async (e) => {
+        const selectedValue = e.target.value;
+        const previousValue = aiDifficultyDropdown.dataset.previousValue || 'DEFAULT';
+
+        // Check if user wants to skip confirmation
+        const skipConfirmation = localStorage.getItem('aiStrategySkipConfirmation') === 'true';
+
+        if (!skipConfirmation) {
+            // Store the attempted change
+            aiDifficultyDropdown.dataset.pendingValue = selectedValue;
+
+            // Show confirmation dialog
+            showAIStrategyConfirmation(selectedValue, previousValue);
+            return;
+        }
+
+        // Skip confirmation - apply change directly
+        await applyAIStrategyChange(selectedValue);
     });
 
-    // 2. Void Agent (Specific Policy)
-    btnVoid.addEventListener('click', () => {
-        try {
-            currentPolicyMode = 'VOID_OBJECTIVE';
-            currentPolicy = createPolicy('VOID_OBJECTIVE');
-            updateStrategyUI(btnVoid);
-            console.log('Switched to Void Policy');
-        } catch (error) {
-            console.error('Failed to init Void policy:', error);
-        }
-    });
+    // Show AI strategy confirmation dialog
+    function showAIStrategyConfirmation(newStrategy, previousStrategy) {
+        const overlay = document.getElementById('aiStrategyConfirmOverlay');
+        const dontAskCheckbox = document.getElementById('aiStrategyDontAskAgain');
+        const confirmBtn = document.getElementById('confirmAIStrategy');
+        const cancelBtn = document.getElementById('cancelAIStrategy');
 
-    // 3. Random Agent
-    btnRandom.addEventListener('click', () => {
-        try {
-            currentPolicyMode = 'RANDOM';
-            currentPolicy = createPolicy('RANDOM');
-            updateStrategyUI(btnRandom);
-            console.log('Switched to Random Policy');
-        } catch (error) {
-            console.error('Failed to init Random policy:', error);
+        // Reset checkbox
+        dontAskCheckbox.checked = false;
+
+        // Position the dialog (similar to restart confirmation)
+        const callout = overlay.querySelector('.confirm-callout');
+        const canvasContainer = document.querySelector('.canvas-container');
+
+        function positionDialog() {
+            const calloutRect = callout.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;
+
+            const verticalCenter = (viewportHeight / 2) - (calloutRect.height / 2);
+
+            callout.style.setProperty('--callout-offset', `${Math.max(verticalCenter, 0)}px`);
+
+            const canvasRect = canvasContainer.getBoundingClientRect();
+            const calloutWidth = 360;
+
+            callout.style.width = calloutWidth + 'px';
+            callout.style.left = canvasRect.left + (canvasRect.width / 2) - (calloutWidth / 2) + 'px';
         }
-    });
+
+        positionDialog();
+        overlay.classList.add('active');
+        callout.style.top = '-300px';
+
+        requestAnimationFrame(() => {
+            callout.style.top = getComputedStyle(callout).getPropertyValue('--callout-offset');
+        });
+
+        // Handle confirm
+        const handleConfirm = async () => {
+            // Save preference if checkbox is checked
+            if (dontAskCheckbox.checked) {
+                localStorage.setItem('aiStrategySkipConfirmation', 'true');
+            }
+
+            // Apply the change
+            const pendingValue = aiDifficultyDropdown.dataset.pendingValue;
+            await applyAIStrategyChange(pendingValue);
+
+            // Close dialog
+            closeDialog();
+        };
+
+        // Handle cancel
+        const handleCancel = () => {
+            // Revert dropdown to previous value
+            aiDifficultyDropdown.value = previousStrategy;
+            aiDifficultyDropdown.dataset.previousValue = previousStrategy;
+
+            // Close dialog
+            closeDialog();
+        };
+
+        const closeDialog = () => {
+            callout.style.top = '-300px';
+            setTimeout(() => {
+                overlay.classList.remove('active');
+                // Clean up event listeners
+                confirmBtn.removeEventListener('click', handleConfirm);
+                cancelBtn.removeEventListener('click', handleCancel);
+            }, 300);
+        };
+
+        // Attach event listeners
+        confirmBtn.addEventListener('click', handleConfirm);
+        cancelBtn.addEventListener('click', handleCancel);
+
+        // Handle window resize
+        const handleResize = () => {
+            if (overlay.classList.contains('active')) {
+                positionDialog();
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+
+        // Clean up resize listener when dialog closes
+        const originalClose = closeDialog;
+        closeDialog = () => {
+            window.removeEventListener('resize', handleResize);
+            originalClose();
+        };
+    }
+
+    // Apply AI strategy change
+    async function applyAIStrategyChange(selectedValue) {
+        // 🔒 STABLE OPTIONS (hardcoded routing)
+        if (selectedValue === 'DEFAULT') {
+            currentPolicyMode = 'DEFAULT';
+            currentPolicy = null;
+            aiController.setMode('trace');
+            console.log('Switched to Current (Full Search)');
+        } else if (selectedValue === 'RANDOM_MODE') {
+            currentPolicyMode = 'DEFAULT';
+            currentPolicy = null;
+            aiController.setMode('fallback');
+            console.log('Switched to Random (fallback mode)');
+        } else if (selectedValue === 'DUMMY_MODE') {
+            currentPolicyMode = 'DEFAULT';
+            currentPolicy = null;
+            aiController.setMode('debug_idle');
+            console.log('Switched to Practice Dummy (debug_idle mode)');
+        } else {
+            // 🔄 DYNAMIC OPTIONS (arena anchors)
+            try {
+                currentPolicyMode = 'POLICY';
+                currentPolicy = createPolicy(selectedValue);
+                console.log(`Switched to ${selectedValue} policy`);
+            } catch (error) {
+                console.error(`Failed to init ${selectedValue} policy:`, error);
+                // Fallback to default
+                currentPolicyMode = 'DEFAULT';
+                currentPolicy = null;
+                aiController.setMode('trace');
+                aiDifficultyDropdown.value = 'DEFAULT';
+            }
+        }
+
+        // Store current value for next change
+        aiDifficultyDropdown.dataset.previousValue = selectedValue;
+    }
+
+    // Initialize difficulties
+    loadAIDifficulties();
 
     // Ability system references
     const portalSwapSystem = gameLogic.getPortalSwapSystem();
