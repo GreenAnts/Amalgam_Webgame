@@ -109,6 +109,13 @@ window.onload = function() {
         const selectedValue = e.target.value;
         const previousValue = aiDifficultyDropdown.dataset.previousValue || 'DEFAULT';
 
+        if (gameEnded) {
+            // After game end: Store for later application, no confirmation needed
+            pendingAIStrategy = selectedValue;
+            return;
+        }
+
+        // During active game: Show confirmation (existing logic)
         // Check if user wants to skip confirmation
         const skipConfirmation = localStorage.getItem('aiStrategySkipConfirmation') === 'true';
 
@@ -271,6 +278,8 @@ window.onload = function() {
     let moveMadeThisTurn = false;
     let lastMovedPieceCoord = null;
     let launchUsedThisTurn = false;
+    let gameEnded = false; // Tracks if victory popup was dismissed (not via Play Again)
+    let pendingAIStrategy = null; // Stores AI strategy selected after game end
     
     function drawBoard() {
         boardRenderer.render();
@@ -441,13 +450,30 @@ window.onload = function() {
         }
     }
 
+    // Update action button states (Offer Draw, Forfeit, Request Takeback)
+    function updateActionButtonStates() {
+        const offerDrawBtn = document.getElementById('offerDrawBtn');
+        const forfeitBtn = document.getElementById('forfeitBtn');
+        const requestTakebackBtn = document.getElementById('requestTakebackBtn');
+
+        if (gameEnded) {
+            offerDrawBtn.classList.add('disabled');
+            forfeitBtn.classList.add('disabled');
+            requestTakebackBtn.classList.add('disabled');
+        } else {
+            offerDrawBtn.classList.remove('disabled');
+            forfeitBtn.classList.remove('disabled');
+            requestTakebackBtn.classList.remove('disabled');
+        }
+    }
+
     // Update ability button states based on game state
     function updateAbilityButtonStates() {
         const gameState = gameLogic.getState();
-        
+
         // CRITICAL: Only show abilities if it's the current player's turn
         const currentPlayer = playerManager.getCurrentPlayer();
-        
+
         // If it's AI's turn, disable all buttons
         if (currentPlayer.isAI) {
             abilityButtons.setButtonState('portalSwap', 'disabled');
@@ -582,6 +608,9 @@ window.onload = function() {
     }
 
     async function handleCanvasClick(event) {
+        // GUARD: Block all interactions if game has ended
+        if (gameEnded) return;
+
         // GUARD: Block all clicks during AI's turn
         const currentPlayerTurn = playerManager.getCurrentPlayer();
         if (currentPlayerTurn.isAI) {
@@ -1155,6 +1184,9 @@ window.onload = function() {
 
     // Handle ability button clicks
     async function handleAbilityButtonClick(buttonKey) {
+        // GUARD: Block all ability interactions if game has ended
+        if (gameEnded) return;
+
         if (buttonKey === 'endTurn') {
             await endTurn();
             return;
@@ -1698,11 +1730,47 @@ window.onload = function() {
         handleResetClick();
     });
 
+    // Close button - just close the popup without resetting
+    victoryCloseBtn.addEventListener('click', () => {
+        victoryOverlay.classList.remove('active');
+        gameEnded = true; // Enter "game ended" state - disable most interactions
+        updateActionButtonStates(); // Update button styling
+    });
+
+    // Copy history button - copy match notation to clipboard
+    victoryCopyBtn.addEventListener('click', async () => {
+        const text = matchHistoryTracker.getRawHistory().join('\n');
+
+        try {
+            await navigator.clipboard.writeText(text);
+
+            // Visual feedback - same as sidebar copy button
+            victoryCopyBtn.style.transform = 'scale(0.9)';
+            setTimeout(() => victoryCopyBtn.style.transform = '', 120);
+
+            // Play notification sound if available
+            if (typeof playNotificationSound === 'function') {
+                playNotificationSound();
+            }
+        } catch (err) {
+            console.error('Clipboard copy failed', err);
+        }
+    });
+
     // Update handleResetClick to ensure modal is closed if triggered via sidebar
     const originalResetClick = handleResetClick;
     handleResetClick = async function() {
         // Ensure victory modal is closed if user clicked "Restart" on sidebar during win state
         victoryOverlay.classList.remove('active');
+        gameEnded = false; // Reset game ended state
+        updateActionButtonStates(); // Update button styling
+
+        // Apply any pending AI strategy change from after game end
+        if (pendingAIStrategy) {
+            await applyAIStrategyChange(pendingAIStrategy);
+            pendingAIStrategy = null; // Clear after application
+        }
+
         await originalResetClick();
     };
 
@@ -1767,6 +1835,9 @@ window.onload = function() {
 
 
     window.addEventListener('keydown', (event) => {
+        // GUARD: Block all hotkey interactions if game has ended
+        if (gameEnded) return;
+
         // --- SETUP PHASE HOTKEYS ---
         if (setupManager.isSetupPhase) {
 	        const currentPlayer = setupManager.getCurrentPlayer();

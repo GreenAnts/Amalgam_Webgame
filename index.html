@@ -273,6 +273,19 @@
 	.actions { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
 	.actions button { border:none; border-radius:14px; padding:10px; font-weight:600; cursor:pointer; background:#d7b48a; color:#3b352f; box-shadow:0 4px 8px rgba(0,0,0,0.15); }
 	body.dark .actions button { background:#6b584b; color:#f4efe8; }
+
+	/* Disabled action buttons when game has ended */
+	.actions button.disabled {
+		background:#b8a085;
+		color:#6b584b;
+		cursor:not-allowed;
+		opacity:0.6;
+		box-shadow:0 2px 4px rgba(0,0,0,0.1);
+	}
+	body.dark .actions button.disabled {
+		background:#4a4237;
+		color:#8a7a6a;
+	}
   
   /* ===== DESTRUCTIVE ACTION ===== */
   .actions .danger-btn {
@@ -654,6 +667,81 @@
 	.victory-btn:hover { filter: brightness(1.05); }
 	body.dark .victory-btn { background: #6b584b; color: #efe6d8; }
 
+	/* Victory Modal Controls */
+	.victory-close-btn {
+		position: absolute;
+		top: 12px;
+		right: 12px;
+		width: 32px;
+		height: 32px;
+		border: none;
+		border-radius: 50%;
+		background: rgba(255, 255, 255, 0.1);
+		color: #7a6d60;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		transition: background-color 0.2s ease;
+		z-index: 3;
+	}
+	.victory-close-btn:hover {
+		background: rgba(255, 255, 255, 0.2);
+		color: #3b352f;
+	}
+	body.dark .victory-close-btn {
+		color: #b6afa6;
+	}
+	body.dark .victory-close-btn:hover {
+		background: rgba(0, 0, 0, 0.2);
+		color: #efe6d8;
+	}
+	.victory-close-btn svg {
+		width: 16px;
+		height: 16px;
+	}
+
+	.victory-controls {
+		display: flex;
+		justify-content: center;
+		margin-bottom: 16px;
+	}
+
+	.victory-copy-btn {
+		position: absolute;
+		top: 12px;
+		left: 12px;
+		width: 32px;
+		height: 32px;
+		border: none;
+		border-radius: 50%;
+		background: rgba(255, 255, 255, 0.1);
+		color: #7a6d60;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+		transition: background-color 0.2s ease, transform 0.15s ease;
+		z-index: 3;
+	}
+	.victory-copy-btn:hover {
+		background: rgba(255, 255, 255, 0.2);
+		color: #3b352f;
+		transform: translateY(-1px);
+	}
+	body.dark .victory-copy-btn {
+		color: #b6afa6;
+	}
+	body.dark .victory-copy-btn:hover {
+		background: rgba(0, 0, 0, 0.2);
+		color: #efe6d8;
+	}
+	.victory-copy-btn svg {
+		width: 16px;
+		height: 16px;
+	}
+
   /* ===== Match History Log && Swapper Button ===== */
   .piece-rG { color: #ff4d4d; font-weight: bold; }
   .piece-pG { color: #d6cc81; font-weight: bold; } /* Slightly darker for tea theme */
@@ -797,8 +885,8 @@
 
 	<div class="section">
 		<div class="section-title">Actions</div>
-		<div style="margin-bottom:10px;"><div class="actions"><button>Offer Draw</button><button>Forfeit</button></div></div>
-		<div style="margin-bottom:10px;"><div class="actions" style="grid-template-columns:1fr;"><button>Request Takeback</button></div></div>
+		<div style="margin-bottom:10px;"><div class="actions"><button id="offerDrawBtn">Offer Draw</button><button id="forfeitBtn">Forfeit</button></div></div>
+		<div style="margin-bottom:10px;"><div class="actions" style="grid-template-columns:1fr;"><button id="requestTakebackBtn">Request Takeback</button></div></div>
 	</div>
 	
 	<div class="section">
@@ -866,6 +954,19 @@
 <div class="victory-overlay" id="victoryOverlay">
     <div class="victory-card" id="victoryCard">
         <div class="victory-inner">
+            <button class="victory-close-btn" id="victoryCloseBtn" aria-label="Close victory popup">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+            </button>
+
+            <button class="victory-copy-btn" id="victoryCopyBtn" title="Copy Match History">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+            </button>
+
             <div class="victory-icon" id="victoryIcon">
                 </div>
 
