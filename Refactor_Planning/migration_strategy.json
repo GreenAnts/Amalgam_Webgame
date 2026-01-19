@@ -1,0 +1,1174 @@
+{
+  "version": "2.0.0",
+  "refactor_date": "2026-01-19",
+  "project_name": "Amalgam WebGame Refactor",
+  "description": "Updated migration strategy - codebase already largely modularized with remaining gaps to complete",
+  
+  "phases": [
+    {
+      "name": "Phase 1: Core Foundation Enhancement",
+      "priority": 1,
+      "duration_estimate": "1-2 days",
+      "status": "pending",
+      "from_files": ["GameLogic.js", "core/GameState.js"],
+      "to_files": ["Core/gameEngine.js", "Core/gameRules.js"],
+      "validation_criteria": [
+        "GameEngine provides clean API for state operations",
+        "GameRules centralizes validation logic",
+        "Existing GameState.js enhanced with immutability",
+        "No breaking changes to existing functionality"
+      ],
+      "rollback_plan": "Restore original GameLogic.js structure",
+      "dependencies": [],
+      "blocking_issues": [],
+      
+      "steps": [
+        {
+          "step": 1,
+          "description": "Create Core module structure",
+          "files": [
+            {"name": "Core/gameEngine.js", "action": "create", "template": "GameEngine class with pure functions"},
+            {"name": "Core/gameState.js", "action": "create", "template": "GameState class with immutable state"},
+            {"name": "Core/gameRules.js", "action": "create", "template": "GameRules class with validation utilities"}
+          ],
+          "validation": "All files compile without errors",
+          "dependencies": []
+        },
+        {
+          "step": 2,
+          "description": "Extract GameState from GameLogic",
+          "source": "GameLogic.js",
+          "target": "Core/gameState.js",
+          "extraction_details": {
+            "GameState class": "Move entire GameState class",
+            "State methods": "Move state manipulation methods",
+            "Validation": "Move state validation methods"
+          },
+          "validation": "All state operations work through GameState",
+          "dependencies": ["step 1"]
+        },
+        {
+          "step": 3,
+          "description": "Extract GameEngine from Main.js",
+          "source": "Main.js",
+          "target": "Core/gameEngine.js",
+          "extraction_details": {
+            "Game logic coordination": "Move game logic orchestration",
+            "State mutation methods": "Move state mutation functions",
+            "Turn management": "Move turn handling logic"
+          },
+          "validation": "GameEngine provides clean API for state operations",
+          "dependencies": ["step 2"]
+        },
+        {
+          "step": 4,
+          "description": "Extract GameRules from existing code",
+          "source": "GameLogic.js, Main.js",
+          "target": "Core/gameRules.js",
+          "extraction_details": {
+            "Rule validation": "Move rule checking functions",
+            "Move validation": "Move move validation logic",
+            "Win condition checking": "Move win condition logic"
+          },
+          "validation": "All rule validation goes through GameRules",
+          "dependencies": ["step 3"]
+        },
+        {
+          "step": 5,
+          "description": "Update Main.js to use Core modules",
+          "source": "Main.js",
+          "target": "Main.js (refactored)",
+          "changes": {
+            "Import statements": "Import Core modules instead of direct access",
+            "State management": "Use GameEngine for all state operations",
+            "Rule validation": "Use GameRules for all validation"
+          },
+          "validation": "Main.js compiles and runs with Core modules",
+          "dependencies": ["step 4"]
+        },
+        {
+          "step": 6,
+          "description": "Remove old code from Main.js and GameLogic.js",
+          "source": "Main.js, GameLogic.js",
+          "target": "Main.js, GameLogic.js (cleaned)",
+          "changes": {
+            "Remove GameState": "Remove GameState class from GameLogic.js",
+            "Remove game logic": "Remove game logic from Main.js",
+            "Remove validation": "Remove validation from Main.js"
+          },
+          "validation": "No duplicate code remains",
+          "dependencies": ["step 5"]
+        }
+      ],
+      
+      "testing_requirements": {
+        "unit_tests": {
+          "GameEngine": "Test all state mutation methods",
+          "GameState": "Test state immutability and validation",
+          "GameRules": "Test all validation functions"
+        },
+        "integration_tests": {
+          "Core modules": "Test Core module interactions",
+          "Main.js integration": "Test Main.js with Core modules"
+        },
+        "regression_tests": {
+          "Game functionality": "Ensure all game features work",
+          "Performance": "Ensure no performance degradation"
+        }
+      }
+    },
+    
+    {
+      "name": "Phase 2: Systems Module Reorganization",
+      "priority": 2,
+      "duration_estimate": "3-4 days",
+      "status": "pending",
+      "from_files": ["systems/*"],
+      "to_files": ["Systems/Rules/*", "Systems/MatchHistory/*"],
+      "validation_criteria": [
+        "All systems import only from Core",
+        "No direct UI or Network imports in Systems",
+        "Rules module enforces import restrictions",
+        "MatchHistory properly tracks game events"
+      ],
+      "rollback_plan": "Restore original systems/ directory structure",
+      "dependencies": ["Phase 1: Core Extraction"],
+      "blocking_issues": [],
+      
+      "steps": [
+        {
+          "step": 1,
+          "description": "Create Systems module structure",
+          "files": [
+            {"name": "Systems/Rules/movementRules.js", "action": "create"},
+            {"name": "Systems/Rules/attackRules.js", "action": "create"},
+            {"name": "Systems/Rules/Abilities/swapRules.js", "action": "create"},
+            {"name": "Systems/Rules/Abilities/fireballRules.js", "action": "create"},
+            {"name": "Systems/Rules/Abilities/waveRules.js", "action": "create"},
+            {"name": "Systems/Rules/Abilities/sapRules.js", "action": "create"},
+            {"name": "Systems/Rules/Abilities/launchRules.js", "action": "create"},
+            {"name": "Systems/MatchHistory/historyCollector.js", "action": "create"},
+            {"name": "Systems/MatchHistory/historyParser.js", "action": "create"},
+            {"name": "Systems/MatchHistory/historySerializer.js", "action": "create"}
+          ],
+          "validation": "All Systems files compile without errors",
+          "dependencies": []
+        },
+        {
+          "step": 2,
+          "description": "Extract MovementRules from existing systems",
+          "source": "systems/MovementSystem.js",
+          "target": "Systems/Rules/movementRules.js",
+          "extraction_details": {
+            "Movement validation": "Move movement validation logic",
+            "Path calculation": "Move path calculation methods",
+            "Special movement rules": "Move special movement logic"
+          },
+          "validation": "All movement validation works through MovementRules",
+          "dependencies": ["step 1"]
+        },
+        {
+          "step": 3,
+          "description": "Extract AttackRules from existing systems",
+          "source": "systems/AttackSystem.js",
+          "target": "Systems/Rules/attackRules.js",
+          "extraction_details": {
+            "Attack validation": "Move attack validation logic",
+            "Elimination logic": "Move elimination methods",
+            "Combat resolution": "Move combat resolution logic"
+          },
+          "validation": "All attack validation works through AttackRules",
+          "dependencies": ["step 2"]
+        },
+        {
+          "step": 4,
+          "description": "Extract Ability Rules from existing systems",
+          "source": "systems/*",
+          "target": "Systems/Rules/Abilities/*",
+          "extraction_details": {
+            "Portal swap rules": "Move to swapRules.js",
+            "Fireball rules": "Move to fireballRules.js",
+            "Tidal wave rules": "Move to waveRules.js",
+            "Sap rules": "Move to sapRules.js",
+            "Launch rules": "Move to launchRules.js"
+          },
+          "validation": "All ability validation works through respective rule files",
+          "dependencies": ["step 3"]
+        },
+        {
+          "step": 5,
+          "description": "Extract MatchHistory from existing systems",
+          "source": "systems/MatchHistoryTracker.js",
+          "target": "Systems/MatchHistory/*",
+          "extraction_details": {
+            "Event collection": "Move to historyCollector.js",
+            "Event parsing": "Move to historyParser.js",
+            "Serialization": "Move to historySerializer.js"
+          },
+          "validation": "All history tracking works through MatchHistory module",
+          "dependencies": ["step 4"]
+        },
+        {
+          "step": 6,
+          "description": "Update existing systems to use Systems module",
+          "source": "systems/*",
+          "target": "systems/* (refactored)",
+          "changes": {
+            "Import statements": "Import from Systems instead of direct access",
+            "Rule usage": "Use Systems rules for validation",
+            "History usage": "Use Systems history for tracking"
+          },
+          "validation": "All systems work with new Systems module structure",
+          "dependencies": ["step 5"]
+        }
+      ],
+      
+      "testing_requirements": {
+        "unit_tests": {
+          "MovementRules": "Test all movement validation",
+          "AttackRules": "Test all attack validation",
+          "AbilityRules": "Test all ability validation",
+          "MatchHistory": "Test all history tracking"
+        },
+        "integration_tests": {
+          "Systems modules": "Test Systems module interactions",
+          "Core integration": "Test Systems with Core modules"
+        },
+        "regression_tests": {
+          "Game functionality": "Ensure all game features work",
+          "History tracking": "Ensure history is properly tracked"
+        }
+      }
+    },
+    
+    {
+      "name": "Phase 3: UI Module Restructuring",
+      "priority": 3,
+      "duration_estimate": "2-3 days",
+      "status": "pending",
+      "from_files": ["ui/*"],
+      "to_files": ["UI/*"],
+      "validation_criteria": [
+        "UI only reads state, never mutates",
+        "UI components are properly modularized",
+        "No business logic in UI components",
+        "Visual-only components separated from logic"
+      ],
+      "rollback_plan": "Restore original ui/ directory structure",
+      "dependencies": ["Phase 1: Core Extraction", "Phase 2: Systems Module Reorganization"],
+      "blocking_issues": [],
+      
+      "steps": [
+        {
+          "step": 1,
+          "description": "Create UI module structure",
+          "files": [
+            {"name": "UI/uiController.js", "action": "create"},
+            {"name": "UI/boardRenderer.js", "action": "create"},
+            {"name": "UI/pieceRenderer.js", "action": "create"},
+            {"name": "UI/Overlays/defeatNotification.js", "action": "create"},
+            {"name": "UI/Overlays/victoryNotification.js", "action": "create"},
+            {"name": "UI/Overlays/setupPieceTray.js", "action": "create"},
+            {"name": "UI/Indicators/movementIndicators.js", "action": "create"},
+            {"name": "UI/Indicators/abilityIndicators.js", "action": "create"},
+            {"name": "UI/Animations/moveAnimations.js", "action": "create"},
+            {"name": "UI/Animations/abilityAnimations.js", "action": "create"},
+            {"name": "UI/Buttons/abilityButtons.js", "action": "create"},
+            {"name": "UI/Buttons/gameControls.js", "action": "create"}
+          ],
+          "validation": "All UI files compile without errors",
+          "dependencies": []
+        },
+        {
+          "step": 2,
+          "description": "Extract UI Controller from Main.js",
+          "source": "Main.js",
+          "target": "UI/uiController.js",
+          "extraction_details": {
+            "UI state management": "Move UI state handling",
+            "Component coordination": "Move component coordination",
+            "Event handling": "Move event handling logic"
+          },
+          "validation": "All UI coordination works through UIController",
+          "dependencies": ["step 1"]
+        },
+        {
+          "step": 3,
+          "description": "Restructure existing UI components",
+          "source": "ui/*",
+          "target": "UI/* (restructured)",
+          "changes": {
+            "BoardRenderer": "Move to UI/boardRenderer.js",
+            "PieceRenderer": "Move to UI/pieceRenderer.js",
+            "IndicatorRenderer": "Split into Indicators/*",
+            "AbilityButtons": "Move to UI/Buttons/abilityButtons.js",
+            "SetupUI": "Move to UI/Overlays/setupPieceTray.js"
+          },
+          "validation": "All UI components work in new structure",
+          "dependencies": ["step 2"]
+        },
+        {
+          "step": 4,
+          "description": "Update Main.js to use UI module",
+          "source": "Main.js",
+          "target": "Main.js (updated)",
+          "changes": {
+            "Import statements": "Import from UI instead of ui/",
+            "UI coordination": "Use UIController for coordination",
+            "Component usage": "Use UI components through module"
+          },
+          "validation": "Main.js works with new UI module structure",
+          "dependencies": ["step 3"]
+        }
+      ],
+      
+      "testing_requirements": {
+        "unit_tests": {
+          "UIController": "Test UI coordination",
+          "Renderers": "Test all rendering components",
+          "Indicators": "Test all indicator components",
+          "Animations": "Test all animation components"
+        },
+        "integration_tests": {
+          "UI modules": "Test UI module interactions",
+          "Core integration": "Test UI with Core modules"
+        },
+        "regression_tests": {
+          "Visual functionality": "Ensure all visual features work",
+          "User interaction": "Ensure all user interactions work"
+        }
+      }
+    },
+    
+    {
+      "name": "Phase 4: Players Module Creation",
+      "priority": 4,
+      "duration_estimate": "2-3 days",
+      "status": "pending",
+      "from_files": ["systems/PlayerManager.js"],
+      "to_files": ["Players/*"],
+      "validation_criteria": [
+        "Player management is properly modularized",
+        "AI player uses Core interfaces",
+        "Local player uses Core interfaces",
+        "Online player uses Core and Network interfaces"
+      ],
+      "rollback_plan": "Restore original player management",
+      "dependencies": ["Phase 1: Core Extraction", "Phase 3: UI Module Restructuring"],
+      "blocking_issues": [],
+      
+      "steps": [
+        {
+          "step": 1,
+          "description": "Create Players module structure",
+          "files": [
+            {"name": "Players/playerInterface.js", "action": "create"},
+            {"name": "Players/AI/aiPlayer.js", "action": "create"},
+            {"name": "Players/Local/hotSeatPlayer.js", "action": "create"},
+            {"name": "Players/Online/onlinePlayer.js", "action": "create"}
+          ],
+          "validation": "All Players files compile without errors",
+          "dependencies": []
+        },
+        {
+          "step": 2,
+          "description": "Extract PlayerInterface",
+          "source": "systems/PlayerManager.js",
+          "target": "Players/playerInterface.js",
+          "extraction_details": {
+            "Interface definition": "Move player interface definition",
+            "Contract validation": "Move contract validation logic"
+          },
+          "validation": "PlayerInterface defines proper contracts",
+          "dependencies": ["step 1"]
+        },
+        {
+          "step": 3,
+          "description": "Extract AI Player",
+          "source": "Main.js, systems/*",
+          "target": "Players/AI/aiPlayer.js",
+          "extraction_details": {
+            "AI decision making": "Move AI logic",
+            "Move calculation": "Move move calculation",
+            "Strategy implementation": "Move strategy logic"
+          },
+          "validation": "AI player works with Core interfaces",
+          "dependencies": ["step 2"]
+        },
+        {
+          "step": 4,
+          "description": "Extract Local Player",
+          "source": "Main.js",
+          "target": "Players/Local/hotSeatPlayer.js",
+          "extraction_details": {
+            "Local input handling": "Move input handling",
+            "Player state management": "Move player state logic"
+          },
+          "validation": "Local player works with Core interfaces",
+          "dependencies": ["step 3"]
+        },
+        {
+          "step": 5,
+          "description": "Extract Online Player",
+          "source": "Main.js, Network/*",
+          "target": "Players/Online/onlinePlayer.js",
+          "extraction_details": {
+            "Network communication": "Move network logic",
+            "Remote input handling": "Move remote input logic"
+          },
+          "validation": "Online player works with Core and Network interfaces",
+          "dependencies": ["step 4"]
+        }
+      ],
+      
+      "testing_requirements": {
+        "unit_tests": {
+          "PlayerInterface": "Test player interface contracts",
+          "AIPlayer": "Test AI player functionality",
+          "HotSeatPlayer": "Test local player functionality",
+          "OnlinePlayer": "Test online player functionality"
+        },
+        "integration_tests": {
+          "Players modules": "Test Players module interactions",
+          "Core integration": "Test Players with Core modules"
+        },
+        "regression_tests": {
+          "Player functionality": "Ensure all player types work",
+          "Game flow": "Ensure game flow works with all players"
+        }
+      }
+    },
+    
+    {
+      "name": "Phase 5: Network Module Creation",
+      "priority": 5,
+      "duration_estimate": "3-4 days",
+      "status": "pending",
+      "from_files": ["EMPTY_PendingNetworkImplementation/*"],
+      "to_files": ["Network/*"],
+      "validation_criteria": [
+        "Network module is properly structured",
+        "Supabase integration works",
+        "Data serialization works",
+        "Security validation is enforced"
+      ],
+      "rollback_plan": "Restore original network implementation",
+      "dependencies": ["Phase 1: Core Extraction", "Phase 2: Systems Module Reorganization"],
+      "blocking_issues": [],
+      
+      "steps": [
+        {
+          "step": 1,
+          "description": "Create Network module structure",
+          "files": [
+            {"name": "Network/networkController.js", "action": "create"},
+            {"name": "Network/Supabase/auth.js", "action": "create"},
+            {"name": "Network/Supabase/profiles.js", "action": "create"},
+            {"name": "Network/Supabase/leaderboard.js", "action": "create"},
+            {"name": "Network/Supabase/matchmaking.js", "action": "create"},
+            {"name": "Network/Supabase/gameState.js", "action": "create"},
+            {"name": "Network/Serializers/gameStateSerializer.js", "action": "create"},
+            {"name": "Network/Serializers/moveSerializer.js", "action": "create"},
+            {"name": "Network/Validators/inputValidator.js", "action": "create"},
+            {"name": "Network/Validators/stateValidator.js", "action": "create"}
+          ],
+          "validation": "All Network files compile without errors",
+          "dependencies": []
+        },
+        {
+          "step": 2,
+          "description": "Implement Network Controller",
+          "source": "EMPTY_PendingNetworkImplementation/*",
+          "target": "Network/networkController.js",
+          "implementation_details": {
+            "Connection management": "Implement connection logic",
+            "Message routing": "Implement message routing",
+            "Error handling": "Implement error handling"
+          },
+          "validation": "Network controller manages connections properly",
+          "dependencies": ["step 1"]
+        },
+        {
+          "step": 3,
+          "description": "Implement Supabase Integration",
+          "source": "EMPTY_PendingNetworkImplementation/*",
+          "target": "Network/Supabase/*",
+          "implementation_details": {
+            "Authentication": "Implement auth.js",
+            "Profiles": "Implement profiles.js",
+            "Leaderboard": "Implement leaderboard.js",
+            "Matchmaking": "Implement matchmaking.js",
+            "Game State": "Implement gameState.js"
+          },
+          "validation": "All Supabase integration works",
+          "dependencies": ["step 2"]
+        },
+        {
+          "step": 4,
+          "description": "Implement Data Serialization",
+          "source": "EMPTY_PendingNetworkImplementation/*",
+          "target": "Network/Serializers/*",
+          "implementation_details": {
+            "Game State": "Implement gameStateSerializer.js",
+            "Moves": "Implement moveSerializer.js"
+          },
+          "validation": "All data serialization works",
+          "dependencies": ["step 3"]
+        },
+        {
+          "step": 5,
+          "description": "Implement Data Validation",
+          "source": "EMPTY_PendingNetworkImplementation/*",
+          "target": "Network/Validators/*",
+          "implementation_details": {
+            "Input Validation": "Implement inputValidator.js",
+            "State Validation": "Implement stateValidator.js"
+          },
+          "validation": "All data validation works",
+          "dependencies": ["step 4"]
+        }
+      ],
+      
+      "testing_requirements": {
+        "unit_tests": {
+          "NetworkController": "Test network controller functionality",
+          "Supabase": "Test all Supabase integration",
+          "Serializers": "Test all data serialization",
+          "Validators": "Test all data validation"
+        },
+        "integration_tests": {
+          "Network modules": "Test Network module interactions",
+          "Core integration": "Test Network with Core modules"
+        },
+        "regression_tests": {
+          "Network functionality": "Ensure all network features work",
+          "Security": "Ensure all security validation works"
+        }
+      }
+    },
+    
+    {
+      "name": "Phase 6: Edge Functions Implementation",
+      "priority": 6,
+      "duration_estimate": "2-3 days",
+      "status": "pending",
+      "from_files": ["EMPTY_PendingNetworkImplementation/ServerSideEdgeFunctions/*"],
+      "to_files": ["EdgeFunctions/*"],
+      "validation_criteria": [
+        "All edge functions are properly implemented",
+        "Server-side validation works",
+        "Security is enforced",
+        "Error handling is comprehensive"
+      ],
+      "rollback_plan": "Restore original edge functions",
+      "dependencies": ["Phase 5: Network Module Creation"],
+      "blocking_issues": [],
+      
+      "steps": [
+        {
+          "step": 1,
+          "description": "Create Edge Functions structure",
+          "files": [
+            {"name": "EdgeFunctions/matchmaking.js", "action": "create"},
+            {"name": "EdgeFunctions/validateTurn.js", "action": "create"},
+            {"name": "EdgeFunctions/updateLeaderboard.js", "action": "create"},
+            {"name": "EdgeFunctions/createGame.js", "action": "create"},
+            {"name": "EdgeFunctions/syncGameState.js", "action": "create"},
+            {"name": "EdgeFunctions/forfeitGame.js", "action": "create"},
+            {"name": "EdgeFunctions/saveReplay.js", "action": "create"},
+            {"name": "EdgeFunctions/.env.example", "action": "create"}
+          ],
+          "validation": "All Edge Functions files compile without errors",
+          "dependencies": []
+        },
+        {
+          "step": 2,
+          "description": "Implement Server-side Matchmaking",
+          "source": "EMPTY_PendingNetworkImplementation/ServerSideEdgeFunctions/matchmaking.js",
+          "target": "EdgeFunctions/matchmaking.js",
+          "implementation_details": {
+            "Player matching": "Implement player matching logic",
+            "Game creation": "Implement game creation logic",
+            "Queue management": "Implement queue management"
+          },
+          "validation": "Server-side matchmaking works",
+          "dependencies": ["step 1"]
+        },
+        {
+          "step": 3,
+          "description": "Implement Server-side Turn Validation",
+          "source": "EMPTY_PendingNetworkImplementation/ServerSideEdgeFunctions/validateTurn.js",
+          "target": "EdgeFunctions/validateTurn.js",
+          "implementation_details": {
+            "Turn validation": "Implement turn validation logic",
+            "Rule enforcement": "Implement rule enforcement",
+            "Cheating prevention": "Implement cheating prevention"
+          },
+          "validation": "Server-side turn validation works",
+          "dependencies": ["step 2"]
+        },
+        {
+          "step": 4,
+          "description": "Implement Server-side Leaderboard Updates",
+          "source": "EMPTY_PendingNetworkImplementation/ServerSideEdgeFunctions/updateLeaderboard.js",
+          "target": "EdgeFunctions/updateLeaderboard.js",
+          "implementation_details": {
+            "Score calculation": "Implement score calculation",
+            "Rank updates": "Implement rank updates",
+            "Data persistence": "Implement data persistence"
+          },
+          "validation": "Server-side leaderboard updates work",
+          "dependencies": ["step 3"]
+        },
+        {
+          "step": 5,
+          "description": "Implement Server-side Game Creation",
+          "source": "EMPTY_PendingNetworkImplementation/ServerSideEdgeFunctions/createGame.js",
+          "target": "EdgeFunctions/createGame.js",
+          "implementation_details": {
+            "Game initialization": "Implement game initialization",
+            "Player assignment": "Implement player assignment",
+            "State setup": "Implement state setup"
+          },
+          "validation": "Server-side game creation works",
+          "dependencies": ["step 4"]
+        },
+        {
+          "step": 6,
+          "description": "Implement Server-side Game State Synchronization",
+          "source": "EMPTY_PendingNetworkImplementation/ServerSideEdgeFunctions/syncGameState.js",
+          "target": "EdgeFunctions/syncGameState.js",
+          "implementation_details": {
+            "State sync": "Implement state synchronization",
+            "Real-time updates": "Implement real-time updates",
+            "Conflict resolution": "Implement conflict resolution"
+          },
+          "validation": "Server-side game state synchronization works",
+          "dependencies": ["step 5"]
+        },
+        {
+          "step": 7,
+          "description": "Implement Server-side Game Forfeit Handling",
+          "source": "EMPTY_PendingNetworkImplementation/ServerSideEdgeFunctions/forfeitGame.js",
+          "target": "EdgeFunctions/forfeitGame.js",
+          "implementation_details": {
+            "Forfeit processing": "Implement forfeit processing",
+            "State cleanup": "Implement state cleanup",
+            "Score updates": "Implement score updates"
+          },
+          "validation": "Server-side game forfeit handling works",
+          "dependencies": ["step 6"]
+        },
+        {
+          "step": 8,
+          "description": "Implement Server-side Replay Saving",
+          "source": "EMPTY_PendingNetworkImplementation/ServerSideEdgeFunctions/saveReplay.js",
+          "target": "EdgeFunctions/saveReplay.js",
+          "implementation_details": {
+            "Replay capture": "Implement replay capture",
+            "Data storage": "Implement data storage",
+            "Compression": "Implement compression"
+          },
+          "validation": "Server-side replay saving works",
+          "dependencies": ["step 7"]
+        }
+      ],
+      
+      "testing_requirements": {
+        "unit_tests": {
+          "Edge Functions": "Test all edge function functionality",
+          "Server-side validation": "Test all server-side validation",
+          "Security": "Test all security measures"
+        },
+        "integration_tests": {
+          "Edge Functions": "Test edge function interactions",
+          "Supabase integration": "Test edge functions with Supabase"
+        },
+        "regression_tests": {
+          "Server-side functionality": "Ensure all server-side features work",
+          "Security": "Ensure all security measures work"
+        }
+      }
+    },
+    
+    {
+      "name": "Phase 7: Pages Module Creation",
+      "priority": 7,
+      "duration_estimate": "2-3 days",
+      "status": "pending",
+      "from_files": ["index.html", "Main.js"],
+      "to_files": ["Pages/*"],
+      "validation_criteria": [
+        "Pages are properly isolated",
+        "No cross-page imports",
+        "Self-contained page components",
+        "Theme integration works"
+      ],
+      "rollback_plan": "Restore original page structure",
+      "dependencies": ["Phase 3: UI Module Restructuring", "Phase 4: Players Module Creation"],
+      "blocking_issues": [],
+      
+      "steps": [
+        {
+          "step": 1,
+          "description": "Create Pages module structure",
+          "files": [
+            {"name": "Pages/Landing/index.html", "action": "create"},
+            {"name": "Pages/Landing/index.css", "action": "create"},
+            {"name": "Pages/Landing/index.js", "action": "create"},
+            {"name": "Pages/Menu/index.html", "action": "create"},
+            {"name": "Pages/Menu/index.css", "action": "create"},
+            {"name": "Pages/Menu/index.js", "action": "create"},
+            {"name": "Pages/Gameplay/index.html", "action": "create"},
+            {"name": "Pages/Gameplay/index.css", "action": "create"},
+            {"name": "Pages/Gameplay/index.js", "action": "create"},
+            {"name": "Pages/Replay/index.html", "action": "create"},
+            {"name": "Pages/Replay/index.css", "action": "create"},
+            {"name": "Pages/Replay/index.js", "action": "create"},
+            {"name": "Pages/Settings/index.html", "action": "create"},
+            {"name": "Pages/Settings/index.css", "action": "create"},
+            {"name": "Pages/Settings/index.js", "action": "create"},
+            {"name": "Pages/OnlineHub/index.html", "action": "create"},
+            {"name": "Pages/OnlineHub/index.css", "action": "create"},
+            {"name": "Pages/OnlineHub/index.js", "action": "create"},
+            {"name": "Pages/Tutorial/index.html", "action": "create"},
+            {"name": "Pages/Tutorial/index.css", "action": "create"},
+            {"name": "Pages/Tutorial/index.js", "action": "create"},
+            {"name": "Pages/Profile/index.html", "action": "create"},
+            {"name": "Pages/Profile/index.css", "action": "create"},
+            {"name": "Pages/Profile/index.js", "action": "create"}
+          ],
+          "validation": "All Pages files compile without errors",
+          "dependencies": []
+        },
+        {
+          "step": 2,
+          "description": "Extract Landing Page",
+          "source": "index.html, Main.js",
+          "target": "Pages/Landing/*",
+          "extraction_details": {
+            "Landing HTML": "Move landing page HTML",
+            "Landing CSS": "Move landing page CSS",
+            "Landing JS": "Move landing page JS"
+          },
+          "validation": "Landing page works independently",
+          "dependencies": ["step 1"]
+        },
+        {
+          "step": 3,
+          "description": "Extract Menu Page",
+          "source": "Main.js",
+          "target": "Pages/Menu/*",
+          "extraction_details": {
+            "Menu HTML": "Move menu page HTML",
+            "Menu CSS": "Move menu page CSS",
+            "Menu JS": "Move menu page JS"
+          },
+          "validation": "Menu page works independently",
+          "dependencies": ["step 2"]
+        },
+        {
+          "step": 4,
+          "description": "Extract Gameplay Page",
+          "source": "Main.js",
+          "target": "Pages/Gameplay/*",
+          "extraction_details": {
+            "Gameplay HTML": "Move gameplay page HTML",
+            "Gameplay CSS": "Move gameplay page CSS",
+            "Gameplay JS": "Move gameplay page JS"
+          },
+          "validation": "Gameplay page works independently",
+          "dependencies": ["step 3"]
+        },
+        {
+          "step": 5,
+          "description": "Extract Replay Page",
+          "source": "Main.js",
+          "target": "Pages/Replay/*",
+          "extraction_details": {
+            "Replay HTML": "Move replay page HTML",
+            "Replay CSS": "Move replay page CSS",
+            "Replay JS": "Move replay page JS"
+          },
+          "validation": "Replay page works independently",
+          "dependencies": ["step 4"]
+        },
+        {
+          "step": 6,
+          "description": "Extract Settings Page",
+          "source": "Main.js",
+          "target": "Pages/Settings/*",
+          "extraction_details": {
+            "Settings HTML": "Move settings page HTML",
+            "Settings CSS": "Move settings page CSS",
+            "Settings JS": "Move settings page JS"
+          },
+          "validation": "Settings page works independently",
+          "dependencies": ["step 5"]
+        },
+        {
+          "step": 7,
+          "description": "Extract Online Hub Page",
+          "source": "Main.js",
+          "target": "Pages/OnlineHub/*",
+          "extraction_details": {
+            "Online Hub HTML": "Move online hub HTML",
+            "Online Hub CSS": "Move online hub CSS",
+            "Online Hub JS": "Move online hub JS"
+          },
+          "validation": "Online hub page works independently",
+          "dependencies": ["step 6"]
+        },
+        {
+          "step": 8,
+          "description": "Extract Tutorial Page",
+          "source": "Main.js",
+          "target": "Pages/Tutorial/*",
+          "extraction_details": {
+            "Tutorial HTML": "Move tutorial page HTML",
+            "Tutorial CSS": "Move tutorial page CSS",
+            "Tutorial JS": "Move tutorial page JS"
+          },
+          "validation": "Tutorial page works independently",
+          "dependencies": ["step 7"]
+        },
+        {
+          "step": 9,
+          "description": "Extract Profile Page",
+          "source": "Main.js",
+          "target": "Pages/Profile/*",
+          "extraction_details": {
+            "Profile HTML": "Move profile page HTML",
+            "Profile CSS": "Move profile page CSS",
+            "Profile JS": "Move profile page JS"
+          },
+          "validation": "Profile page works independently",
+          "dependencies": ["step 8"]
+        }
+      ],
+      
+      "testing_requirements": {
+        "unit_tests": {
+          "Landing Page": "Test landing page functionality",
+          "Menu Page": "Test menu page functionality",
+          "Gameplay Page": "Test gameplay page functionality",
+          "Replay Page": "Test replay page functionality",
+          "Settings Page": "Test settings page functionality",
+          "Online Hub Page": "Test online hub page functionality",
+          "Tutorial Page": "Test tutorial page functionality",
+          "Profile Page": "Test profile page functionality"
+        },
+        "integration_tests": {
+          "Page interactions": "Test page interactions",
+          "UI integration": "Test pages with UI module"
+        },
+        "regression_tests": {
+          "Page functionality": "Ensure all pages work independently",
+          "Navigation": "Ensure page navigation works"
+        }
+      }
+    },
+    
+    {
+      "name": "Phase 8: Config Module Creation",
+      "priority": 8,
+      "duration_estimate": "1-2 days",
+      "status": "pending",
+      "from_files": ["core/Constants.js", "ui/*"],
+      "to_files": ["Config/*"],
+      "validation_criteria": [
+        "Configuration is properly centralized",
+        "Themes are properly separated",
+        "Graphics configuration works",
+        "Match history configuration works"
+      ],
+      "rollback_plan": "Restore original configuration",
+      "dependencies": ["Phase 3: UI Module Restructuring"],
+      "blocking_issues": [],
+      
+      "steps": [
+        {
+          "step": 1,
+          "description": "Create Config module structure",
+          "files": [
+            {"name": "Config/Themes/Gameplay/defaultGameplay.js", "action": "create"},
+            {"name": "Config/Themes/Gameplay/highContrastGameplay.js", "action": "create"},
+            {"name": "Config/Themes/Gameplay/teaHouseGameplay.js", "action": "create"},
+            {"name": "Config/Themes/Pages/defaultLight.css", "action": "create"},
+            {"name": "Config/Themes/Pages/defaultDark.css", "action": "create"},
+            {"name": "Config/Themes/Pages/minimalLight.css", "action": "create"},
+            {"name": "Config/Themes/Pages/minimalDark.css", "action": "create"},
+            {"name": "Config/graphicsConfig.js", "action": "create"},
+            {"name": "Config/matchHistoryConfig.js", "action": "create"},
+            {"name": "Config/supabaseConfig.example.js", "action": "create"}
+          ],
+          "validation": "All Config files compile without errors",
+          "dependencies": []
+        },
+        {
+          "step": 2,
+          "description": "Extract Gameplay Themes",
+          "source": "ui/*",
+          "target": "Config/Themes/Gameplay/*",
+          "extraction_details": {
+            "Default theme": "Move default gameplay theme",
+            "High contrast theme": "Move high contrast theme",
+            "Tea house theme": "Move tea house theme"
+          },
+          "validation": "All gameplay themes work independently",
+          "dependencies": ["step 1"]
+        },
+        {
+          "step": 3,
+          "description": "Extract Page Themes",
+          "source": "ui/*",
+          "target": "Config/Themes/Pages/*",
+          "extraction_details": {
+            "Default light theme": "Move default light theme",
+            "Default dark theme": "Move default dark theme",
+            "Minimal light theme": "Move minimal light theme",
+            "Minimal dark theme": "Move minimal dark theme"
+          },
+          "validation": "All page themes work independently",
+          "dependencies": ["step 2"]
+        },
+        {
+          "step": 4,
+          "description": "Extract Graphics Configuration",
+          "source": "core/Constants.js, ui/*",
+          "target": "Config/graphicsConfig.js",
+          "extraction_details": {
+            "Visual configuration": "Move visual configuration",
+            "Size settings": "Move size settings",
+            "Color palettes": "Move color palettes",
+            "Shape definitions": "Move shape definitions"
+          },
+          "validation": "Graphics configuration works independently",
+          "dependencies": ["step 3"]
+        },
+        {
+          "step": 5,
+          "description": "Extract Match History Configuration",
+          "source": "systems/MatchHistoryTracker.js",
+          "target": "Config/matchHistoryConfig.js",
+          "extraction_details": {
+            "History formatting": "Move history formatting",
+            "Notation styles": "Move notation styles",
+            "Display configuration": "Move display configuration"
+          },
+          "validation": "Match history configuration works independently",
+          "dependencies": ["step 4"]
+        },
+        {
+          "step": 6,
+          "description": "Extract Supabase Configuration",
+          "source": "EMPTY_PendingNetworkImplementation/*",
+          "target": "Config/supabaseConfig.example.js",
+          "extraction_details": {
+            "Database configuration": "Move database configuration",
+            "API keys template": "Move API keys template",
+            "Connection settings": "Move connection settings"
+          },
+          "validation": "Supabase configuration works independently",
+          "dependencies": ["step 5"]
+        }
+      ],
+      
+      "testing_requirements": {
+        "unit_tests": {
+          "Gameplay Themes": "Test all gameplay themes",
+          "Page Themes": "Test all page themes",
+          "Graphics Config": "Test graphics configuration",
+          "Match History Config": "Test match history configuration",
+          "Supabase Config": "Test Supabase configuration"
+        },
+        "integration_tests": {
+          "Config modules": "Test Config module interactions",
+          "Theme integration": "Test theme integration with UI"
+        },
+        "regression_tests": {
+          "Configuration": "Ensure all configuration works",
+          "Theming": "Ensure all theming works"
+        }
+      }
+    },
+    
+    {
+      "name": "Phase 10: Main.js Refactoring",
+      "priority": 3,
+      "duration_estimate": "2-3 days",
+      "status": "pending",
+      "from_files": ["Main.js"],
+      "to_files": ["Main.js (refactored)", "UI/uiController.js", "Players/Local/hotSeatPlayer.js", "Players/Online/onlinePlayer.js"],
+      "validation_criteria": [
+        "Main.js reduced to under 200 lines",
+        "Responsibilities properly delegated to architectural modules",
+        "UI controller handles all UI orchestration",
+        "Player modules handle player-specific logic",
+        "No business logic remains in Main.js"
+      ],
+      "rollback_plan": "Restore original Main.js structure",
+      "dependencies": ["Phase 1: Core Extraction", "Phase 2: Systems Module Reorganization"],
+      "blocking_issues": [],
+      "description": "Break down the 1,122-line Main.js into thin architectural layers",
+
+      "steps": [
+        {
+          "step": 1,
+          "description": "Extract UI Controller from Main.js",
+          "source": "Main.js",
+          "target": "UI/uiController.js",
+          "extraction_details": {
+            "Canvas setup": "Move canvas initialization to UI controller",
+            "UI element setup": "Move UI element management to UI controller",
+            "Event handling": "Move canvas click handling to UI controller",
+            "State updates": "Move UI state update logic to UI controller",
+            "Ability button management": "Move ability button state management to UI controller"
+          },
+          "validation": "UI controller handles all UI orchestration",
+          "dependencies": []
+        },
+        {
+          "step": 2,
+          "description": "Extract Player Management from Main.js",
+          "source": "Main.js",
+          "target": "Players/Local/hotSeatPlayer.js, Players/Online/onlinePlayer.js",
+          "extraction_details": {
+            "Local player logic": "Move hot seat player logic to Local module",
+            "Online player logic": "Move online player logic to Online module",
+            "Player state management": "Move player state handling to appropriate modules",
+            "Turn coordination": "Move turn management to player modules"
+          },
+          "validation": "Player modules handle all player-specific responsibilities",
+          "dependencies": ["step 1"]
+        },
+        {
+          "step": 3,
+          "description": "Extract Game Orchestration from Main.js",
+          "source": "Main.js",
+          "target": "Core/gameEngine.js (enhanced)",
+          "extraction_details": {
+            "Game state management": "Move game state coordination to GameEngine",
+            "Turn management": "Move turn orchestration to GameEngine",
+            "Win condition checking": "Move win checking to GameEngine",
+            "Game flow control": "Move game flow logic to GameEngine"
+          },
+          "validation": "GameEngine handles all game orchestration",
+          "dependencies": ["step 2"]
+        },
+        {
+          "step": 4,
+          "description": "Thin Main.js to Application Bootstrap",
+          "source": "Main.js",
+          "target": "Main.js (thinned)",
+          "changes": {
+            "Module imports": "Import all architectural modules",
+            "Dependency injection": "Wire up all modules with proper dependencies",
+            "Application startup": "Initialize application with module orchestration",
+            "Event binding": "Bind minimal startup events",
+            "Remove business logic": "Remove all game logic, UI logic, and player logic"
+          },
+          "validation": "Main.js under 200 lines and only handles bootstrapping",
+          "dependencies": ["step 3"]
+        }
+      ],
+
+      "testing_requirements": {
+        "unit_tests": {
+          "UI Controller": "Test UI orchestration functionality",
+          "Player Modules": "Test player management logic",
+          "Game Engine": "Test enhanced game orchestration",
+          "Main.js": "Test application bootstrapping"
+        },
+        "integration_tests": {
+          "Module wiring": "Test all modules work together",
+          "Application startup": "Test full application initialization"
+        },
+        "regression_tests": {
+          "All game features": "Ensure all existing functionality preserved",
+          "UI interactions": "Ensure all UI interactions work",
+          "Player management": "Ensure all player types work"
+        }
+      }
+    },
+
+    {
+      "name": "Phase 11: Assets Organization",
+      "priority": 11,
+      "duration_estimate": "1 day",
+      "status": "pending",
+      "from_files": ["assets/*"],
+      "to_files": ["Assets/*"],
+      "validation_criteria": [
+        "Assets are properly organized",
+        "No code in assets",
+        "Optimized sizes",
+        "Format standards followed"
+      ],
+      "rollback_plan": "Restore original assets structure",
+      "dependencies": [],
+      "blocking_issues": [],
+
+      "steps": [
+        {
+          "step": 1,
+          "description": "Create Assets module structure",
+          "files": [
+            {"name": "Assets/Images/favicon.ico", "action": "move"},
+            {"name": "Assets/Images/logo.png", "action": "move"},
+            {"name": "Assets/Images/pieces/", "action": "move"},
+            {"name": "Assets/Images/ui/", "action": "move"},
+            {"name": "Assets/Audio/move.wav", "action": "move"},
+            {"name": "Assets/Audio/attack.wav", "action": "move"},
+            {"name": "Assets/Audio/ability.wav", "action": "move"},
+            {"name": "Assets/Audio/victory.mp3", "action": "move"},
+            {"name": "Assets/Audio/defeat.mp3", "action": "move"},
+            {"name": "Assets/Fonts/ZenMaruGothic.ttf", "action": "move"},
+            {"name": "Assets/Fonts/DM-Mono.ttf", "action": "move"}
+          ],
+          "validation": "All Assets files are properly organized",
+          "dependencies": []
+        }
+      ],
+
+      "testing_requirements": {
+        "unit_tests": {
+          "Assets loading": "Test all assets load properly",
+          "Format validation": "Test all asset formats are correct"
+        },
+        "integration_tests": {
+          "Asset integration": "Test assets with UI module"
+        },
+        "regression_tests": {
+          "Asset functionality": "Ensure all assets work properly"
+        }
+      }
+    }
+  ],
+  
+  "global_validation": {
+    "no_circular_dependencies": true,
+    "layered_architecture": true,
+    "interface_segregation": true,
+    "single_responsibility": true,
+    "open_closed": true,
+    "pure_functions_preferred": true,
+    "immutable_state_preferred": true
+  },
+  
+  "rollback_strategy": {
+    "phase_rollback": "Each phase can be rolled back independently",
+    "full_rollback": "Complete rollback to original structure",
+    "backup_strategy": "Backup original files before each phase",
+    "validation_before_rollback": "Validate rollback before proceeding"
+  },
+  
+  "success_criteria": {
+    "functional_completeness": "All game features work as before",
+    "architectural_compliance": "All architectural constraints are met",
+    "performance": "No significant performance degradation",
+    "maintainability": "Code is easier to maintain and extend",
+    "testability": "Code is easier to test",
+    "documentation": "All modules are properly documented"
+  }
+}

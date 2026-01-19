@@ -1,0 +1,758 @@
+{
+  "version": "2.0.0",
+  "refactor_date": "2026-01-19",
+  "project_name": "Amalgam WebGame",
+  "description": "Current architectural constraints and validation rules for the modularized codebase",
+  
+  "module_rules": {
+    "Core": {
+      "description": "Pure state management and game engine",
+      "rules": {
+        "no_ui_imports": {
+          "enabled": true,
+          "description": "Core modules cannot import from UI modules",
+          "forbidden_imports": ["UI/*", "ui/*"],
+          "error_message": "Core modules must not depend on UI modules"
+        },
+        "no_external_state": {
+          "enabled": true,
+          "description": "Core modules cannot access external state",
+          "forbidden_patterns": [
+            "window.",
+            "document.",
+            "localStorage",
+            "sessionStorage",
+            "globalThis"
+          ],
+          "error_message": "Core modules must be stateless and pure"
+        },
+        "pure_functions_only": {
+          "enabled": true,
+          "description": "All Core functions must be pure",
+          "requirements": [
+            "No side effects",
+            "No state mutation",
+            "Deterministic output for same input",
+            "No external dependencies"
+          ],
+          "error_message": "Core functions must be pure with no side effects"
+        },
+        "max_file_size": {
+          "enabled": true,
+          "limit": 500,
+          "description": "Core files must not exceed 500 lines",
+          "error_message": "Core files must be kept under 500 lines for maintainability"
+        },
+        "no_side_effects": {
+          "enabled": true,
+          "description": "Core modules must not have side effects",
+          "forbidden_patterns": [
+            "console.log",
+            "console.error",
+            "alert",
+            "prompt",
+            "confirm",
+            "document.write",
+            "window.open"
+          ],
+          "error_message": "Core modules must not produce side effects"
+        },
+        "immutable_state": {
+          "enabled": true,
+          "description": "All state operations must return new state objects",
+          "requirements": [
+            "No direct property mutation",
+            "No array mutation methods",
+            "No object mutation methods",
+            "Always return new state"
+          ],
+          "error_message": "Core modules must maintain immutable state"
+        },
+        "comprehensive_validation": {
+          "enabled": true,
+          "description": "All Core functions must validate inputs",
+          "requirements": [
+            "Input parameter validation",
+            "Type checking",
+            "Range validation",
+            "Error handling"
+          ],
+          "error_message": "Core functions must validate all inputs"
+        }
+      }
+    },
+    
+    "Systems": {
+      "description": "Game systems and business logic",
+      "rules": {
+        "no_direct_ui": {
+          "enabled": true,
+          "description": "Systems modules cannot import from UI modules",
+          "forbidden_imports": ["UI/*", "ui/*"],
+          "error_message": "Systems modules must not depend on UI modules"
+        },
+        "must_use_core_interfaces": {
+          "enabled": true,
+          "description": "Systems must use Core module interfaces",
+          "required_imports": ["Core/GameEngine", "Core/GameState", "Core/GameRules"],
+          "error_message": "Systems must use Core module interfaces"
+        },
+        "max_circular_dependencies": {
+          "enabled": true,
+          "limit": 0,
+          "description": "Systems modules cannot have circular dependencies",
+          "error_message": "Circular dependencies are not allowed in Systems modules"
+        },
+        "import_restriction": {
+          "enabled": true,
+          "description": "Systems can only import from Core and other Systems",
+          "allowed_imports": ["Core/*", "Systems/*"],
+          "forbidden_imports": ["UI/*", "Network/*", "Players/*"],
+          "error_message": "Systems modules have restricted import dependencies"
+        },
+        "pure_functions_preferred": {
+          "enabled": true,
+          "description": "System functions should be pure when possible",
+          "requirements": [
+            "Prefer pure functions",
+            "Minimize side effects",
+            "Use parameters instead of state",
+            "Return values instead of mutations"
+          ],
+          "error_message": "System functions should be pure when possible"
+        },
+        "interface_compliance": {
+          "enabled": true,
+          "description": "All System modules must implement proper interfaces",
+          "requirements": [
+            "Clear method signatures",
+            "Proper return types",
+            "Input validation",
+            "Error handling"
+          ],
+          "error_message": "System modules must implement proper interfaces"
+        }
+      }
+    },
+    
+    "Players": {
+      "description": "Player management and interaction logic",
+      "rules": {
+        "no_direct_ui": {
+          "enabled": true,
+          "description": "Player modules cannot import from UI modules",
+          "forbidden_imports": ["UI/*", "ui/*"],
+          "error_message": "Player modules must not depend on UI modules"
+        },
+        "must_use_core_interfaces": {
+          "enabled": true,
+          "description": "Players must use Core module interfaces",
+          "required_imports": ["Core/GameEngine"],
+          "error_message": "Players must use Core module interfaces"
+        },
+        "player_contract_compliance": {
+          "enabled": true,
+          "description": "All players must implement PlayerInterface",
+          "requirements": [
+            "Implement makeMove method",
+            "Implement isAI property",
+            "Proper error handling",
+            "Stateless operation"
+          ],
+          "error_message": "All players must implement PlayerInterface"
+        },
+        "game_engine_integration": {
+          "enabled": true,
+          "description": "Players must integrate properly with GameEngine",
+          "requirements": [
+            "Use GameEngine for state operations",
+            "Follow turn management rules",
+            "Handle game state properly",
+            "Respect game rules"
+          ],
+          "error_message": "Players must integrate properly with GameEngine"
+        }
+      }
+    },
+    
+    "UI": {
+      "description": "User interface components and rendering",
+      "rules": {
+        "read_only_state": {
+          "enabled": true,
+          "description": "UI modules can only read state, never mutate",
+          "forbidden_patterns": [
+            "gameState.pieces[",
+            "gameState.selectedPieceCoord =",
+            "gameState.movePiece(",
+            "gameState.removePiece("
+          ],
+          "error_message": "UI modules must only read state, never mutate it"
+        },
+        "no_state_mutation": {
+          "enabled": true,
+          "description": "UI modules cannot mutate game state",
+          "requirements": [
+            "Only read state",
+            "Use GameEngine for mutations",
+            "Handle events properly",
+            "Update UI based on state changes"
+          ],
+          "error_message": "UI modules must not mutate game state"
+        },
+        "visual_only": {
+          "enabled": true,
+          "description": "UI modules should only handle visual concerns",
+          "forbidden_patterns": [
+            "game logic",
+            "state management",
+            "rule validation",
+            "player management"
+          ],
+          "error_message": "UI modules should only handle visual concerns"
+        },
+        "no_business_logic": {
+          "enabled": true,
+          "description": "UI modules must not contain business logic",
+          "forbidden_patterns": [
+            "if (gameState.pieces[",
+            "calculateWinner(",
+            "validateMove(",
+            "checkWinCondition("
+          ],
+          "error_message": "UI modules must not contain business logic"
+        },
+        "event_handling_only": {
+          "enabled": true,
+          "description": "UI modules should only handle user events",
+          "allowed_patterns": [
+            "addEventListener",
+            "event.preventDefault",
+            "event.stopPropagation",
+            "DOM manipulation"
+          ],
+          "error_message": "UI modules should only handle user events"
+        },
+        "performance_optimization": {
+          "enabled": true,
+          "description": "UI modules must be optimized for performance",
+          "requirements": [
+            "Efficient rendering",
+            "Minimal DOM manipulation",
+            "Proper event delegation",
+            "Memory management"
+          ],
+          "error_message": "UI modules must be optimized for performance"
+        }
+      }
+    },
+    
+    "Network": {
+      "description": "Network communication and multiplayer support",
+      "rules": {
+        "no_ui_imports": {
+          "enabled": true,
+          "description": "Network modules cannot import from UI modules",
+          "forbidden_imports": ["UI/*", "ui/*"],
+          "error_message": "Network modules must not depend on UI modules"
+        },
+        "security_first": {
+          "enabled": true,
+          "description": "Network modules must prioritize security",
+          "requirements": [
+            "Input validation",
+            "Sanitization",
+            "Authentication",
+            "Authorization"
+          ],
+          "error_message": "Network modules must prioritize security"
+        },
+        "validation_required": {
+          "enabled": true,
+          "description": "All network data must be validated",
+          "requirements": [
+            "Input validation",
+            "Format validation",
+            "Range validation",
+            "Type validation"
+          ],
+          "error_message": "All network data must be validated"
+        },
+        "error_handling_mandatory": {
+          "enabled": true,
+          "description": "Network modules must have comprehensive error handling",
+          "requirements": [
+            "Network error handling",
+            "Timeout handling",
+            "Retry logic",
+            "Graceful degradation"
+          ],
+          "error_message": "Network modules must have comprehensive error handling"
+        },
+        "core_integration": {
+          "enabled": true,
+          "description": "Network modules must integrate with Core modules",
+          "required_imports": ["Core/GameEngine", "Core/GameState"],
+          "error_message": "Network modules must integrate with Core modules"
+        }
+      }
+    },
+    
+    "EdgeFunctions": {
+      "description": "Server-side edge functions for Supabase",
+      "rules": {
+        "server_side_only": {
+          "enabled": true,
+          "description": "Edge functions must be server-side only",
+          "forbidden_patterns": [
+            "client-side",
+            "browser",
+            "window.",
+            "document."
+          ],
+          "error_message": "Edge functions must be server-side only"
+        },
+        "security_critical": {
+          "enabled": true,
+          "description": "Edge functions must be security critical",
+          "requirements": [
+            "Authentication",
+            "Authorization",
+            "Input validation",
+            "Rate limiting"
+          ],
+          "error_message": "Edge functions must be security critical"
+        },
+        "no_client_code": {
+          "enabled": true,
+          "description": "Edge functions must not contain client code",
+          "forbidden_patterns": [
+            "UI rendering",
+            "DOM manipulation",
+            "Event handling",
+            "Client-side validation"
+          ],
+          "error_message": "Edge functions must not contain client code"
+        },
+        "error_handling_mandatory": {
+          "enabled": true,
+          "description": "Edge functions must have comprehensive error handling",
+          "requirements": [
+            "Error logging",
+            "Graceful error responses",
+            "Security error handling",
+            "Performance monitoring"
+          ],
+          "error_message": "Edge functions must have comprehensive error handling"
+        }
+      }
+    },
+    
+    "Pages": {
+      "description": "Page-specific components and layouts",
+      "rules": {
+        "page_isolation": {
+          "enabled": true,
+          "description": "Pages must be isolated from each other",
+          "forbidden_imports": ["Pages/*"],
+          "error_message": "Pages must be isolated from each other"
+        },
+        "no_cross_page_imports": {
+          "enabled": true,
+          "description": "Pages cannot import from other pages",
+          "forbidden_patterns": [
+            "import.*from.*Pages/",
+            "require.*Pages/",
+            "import.*from.*../Pages/"
+          ],
+          "error_message": "Pages cannot import from other pages"
+        },
+        "self_contained": {
+          "enabled": true,
+          "description": "Pages must be self-contained",
+          "requirements": [
+            "Independent functionality",
+            "No page dependencies",
+            "Self-sufficient components",
+            "Isolated state"
+          ],
+          "error_message": "Pages must be self-contained"
+        },
+        "theme_integration": {
+          "enabled": true,
+          "description": "Pages must integrate with theme system",
+          "required_imports": ["Config/Themes/*"],
+          "error_message": "Pages must integrate with theme system"
+        }
+      }
+    },
+    
+    "Config": {
+      "description": "Configuration and theming system",
+      "rules": {
+        "configuration_only": {
+          "enabled": true,
+          "description": "Config modules must only contain configuration",
+          "forbidden_patterns": [
+            "game logic",
+            "state management",
+            "UI rendering",
+            "network communication"
+          ],
+          "error_message": "Config modules must only contain configuration"
+        },
+        "no_business_logic": {
+          "enabled": true,
+          "description": "Config modules must not contain business logic",
+          "forbidden_patterns": [
+            "if (gameState.",
+            "calculate",
+            "validate",
+            "process"
+          ],
+          "error_message": "Config modules must not contain business logic"
+        },
+        "theme_separation": {
+          "enabled": true,
+          "description": "Gameplay and page themes must be separate",
+          "requirements": [
+            "Gameplay themes in Config/Themes/Gameplay/",
+            "Page themes in Config/Themes/Pages/",
+            "No mixing of theme types",
+            "Clear separation of concerns"
+          ],
+          "error_message": "Gameplay and page themes must be separate"
+        },
+        "easy_customization": {
+          "enabled": true,
+          "description": "Config must be easily customizable",
+          "requirements": [
+            "Clear configuration options",
+            "Well-documented settings",
+            "Type safety",
+            "Validation"
+          ],
+          "error_message": "Config must be easily customizable"
+        }
+      }
+    },
+    
+    "Assets": {
+      "description": "Static assets (images, audio, etc.)",
+      "rules": {
+        "static_assets_only": {
+          "enabled": true,
+          "description": "Assets directory must only contain static assets",
+          "forbidden_patterns": [
+            ".js",
+            ".ts",
+            ".jsx",
+            ".tsx"
+          ],
+          "error_message": "Assets directory must only contain static assets"
+        },
+        "no_code": {
+          "enabled": true,
+          "description": "Assets directory must not contain code files",
+          "forbidden_extensions": [".js", ".ts", ".jsx", ".tsx"],
+          "error_message": "Assets directory must not contain code files"
+        },
+        "optimized_sizes": {
+          "enabled": true,
+          "description": "Assets must be optimized for size",
+          "requirements": [
+            "Compressed images",
+            "Optimized audio",
+            "Minified assets",
+            "Proper formats"
+          ],
+          "error_message": "Assets must be optimized for size"
+        },
+        "format_standards": {
+          "enabled": true,
+          "description": "Assets must follow format standards",
+          "requirements": [
+            "Web-compatible formats",
+            "Proper naming conventions",
+            "Organized structure",
+            "Accessibility considerations"
+          ],
+          "error_message": "Assets must follow format standards"
+        }
+      }
+    }
+  },
+  
+  "dependency_rules": {
+    "no_cycles": {
+      "enabled": true,
+      "description": "No circular dependencies allowed",
+      "error_message": "Circular dependencies are not allowed in any module"
+    },
+    "layered_architecture": {
+      "enabled": true,
+      "description": "Enforce layered architecture dependencies",
+      "layers": [
+        "Core",
+        "Systems",
+        "Players",
+        "UI",
+        "Network",
+        "Pages",
+        "Config",
+        "Assets"
+      ],
+      "error_message": "Dependencies must follow layered architecture"
+    },
+    "interface_segregation": {
+      "enabled": true,
+      "description": "Interfaces must be segregated and focused",
+      "requirements": [
+        "Single responsibility interfaces",
+        "No fat interfaces",
+        "Clear method contracts",
+        "Proper abstraction"
+      ],
+      "error_message": "Interfaces must be segregated and focused"
+    },
+    "dependency_inversion": {
+      "enabled": true,
+      "description": "High-level modules should not depend on low-level modules",
+      "requirements": [
+        "Depend on abstractions",
+        "Not on concretions",
+        "Interface-based design",
+        "Loose coupling"
+      ],
+      "error_message": "Must follow dependency inversion principle"
+    }
+  },
+  
+  "code_quality_rules": {
+    "test_coverage_minimum": {
+      "enabled": true,
+      "minimum": 80,
+      "description": "Minimum test coverage of 80%",
+      "error_message": "Test coverage must be at least 80%"
+    },
+    
+    "code_review_required": {
+      "enabled": true,
+      "description": "All code changes require review",
+      "requirements": [
+        "Pull request review",
+        "Code quality checks",
+        "Security review",
+        "Performance review"
+      ],
+      "error_message": "All code changes require review"
+    },
+    
+    "linting_enabled": {
+      "enabled": true,
+      "description": "Linting must be enabled and enforced",
+      "requirements": [
+        "ESLint configuration",
+        "Prettier configuration",
+        "TypeScript strict mode",
+        "Import sorting"
+      ],
+      "error_message": "Linting must be enabled and enforced"
+    },
+    
+    "formatting_enforced": {
+      "enabled": true,
+      "description": "Code formatting must be enforced",
+      "requirements": [
+        "Consistent indentation",
+        "Proper spacing",
+        "Naming conventions",
+        "File organization"
+      ],
+      "error_message": "Code formatting must be enforced"
+    },
+    
+    "documentation_required": {
+      "enabled": true,
+      "description": "All modules must be documented",
+      "requirements": [
+        "JSDoc comments",
+        "Module descriptions",
+        "Method documentation",
+        "Type definitions"
+      ],
+      "error_message": "All modules must be documented"
+    },
+    
+    "performance_monitoring": {
+      "enabled": true,
+      "description": "Performance must be monitored",
+      "requirements": [
+        "Performance metrics",
+        "Memory usage tracking",
+        "Render performance",
+        "Bundle size monitoring"
+      ],
+      "error_message": "Performance must be monitored"
+    }
+  },
+  
+  "refactor_specific_rules": {
+    "purity_requirements": {
+      "core_modules": {
+        "enabled": true,
+        "description": "Core modules must be pure",
+        "requirements": [
+          "No side effects",
+          "No state mutation",
+          "Deterministic functions",
+          "No external dependencies"
+        ],
+        "error_message": "Core modules must be pure"
+      },
+      "system_modules": {
+        "enabled": true,
+        "description": "System modules should be pure when possible",
+        "requirements": [
+          "Prefer pure functions",
+          "Minimize side effects",
+          "Use parameters instead of state",
+          "Return values instead of mutations"
+        ],
+        "error_message": "System modules should be pure when possible"
+      }
+    },
+    
+    "interface_contracts": {
+      "enabled": true,
+      "description": "All modules must implement proper interfaces",
+      "requirements": [
+        "Clear method signatures",
+        "Proper return types",
+        "Input validation",
+        "Error handling"
+      ],
+      "error_message": "All modules must implement proper interfaces"
+    },
+    
+    "separation_of_concerns": {
+      "enabled": true,
+      "description": "Each module must have a single responsibility",
+      "requirements": [
+        "Single responsibility",
+        "Clear boundaries",
+        "No mixed concerns",
+        "Focused functionality"
+      ],
+      "error_message": "Each module must have a single responsibility"
+    },
+    
+    "dependency_injection": {
+      "enabled": true,
+      "description": "Use dependency injection instead of direct imports",
+      "requirements": [
+        "Constructor injection",
+        "Interface-based dependencies",
+        "Loose coupling",
+        "Testable dependencies"
+      ],
+      "error_message": "Use dependency injection instead of direct imports"
+    }
+  },
+  
+  "validation_checks": [
+    "No import cycles",
+    "All Core functions are pure",
+    "UI only reads state, never mutates",
+    "Systems only import Core and other Systems",
+    "Players implement PlayerInterface",
+    "Network modules have security validation",
+    "Edge functions are server-side only",
+    "Pages are isolated from each other",
+    "Config contains only configuration",
+    "Assets contain only static files",
+    "All modules have proper interfaces",
+    "Test coverage meets minimum requirements",
+    "Code follows formatting standards",
+    "Documentation is complete",
+    "Performance is monitored"
+  ],
+  
+  "automated_validation": {
+    "eslint": {
+      "enabled": true,
+      "config": {
+        "extends": ["eslint:recommended", "@typescript-eslint/recommended"],
+        "plugins": ["@typescript-eslint"],
+        "rules": {
+          "no-console": "error",
+          "no-debugger": "error",
+          "no-unused-vars": "error",
+          "prefer-const": "error",
+          "no-var": "error"
+        }
+      }
+    },
+    
+    "prettier": {
+      "enabled": true,
+      "config": {
+        "semi": true,
+        "trailingComma": "es5",
+        "singleQuote": true,
+        "printWidth": 80,
+        "tabWidth": 2
+      }
+    },
+    
+    "typescript": {
+      "enabled": true,
+      "config": {
+        "strict": true,
+        "noImplicitAny": true,
+        "strictNullChecks": true,
+        "strictFunctionTypes": true,
+        "noImplicitReturns": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true
+      }
+    },
+    
+    "test_coverage": {
+      "enabled": true,
+      "tool": "Jest",
+      "minimum": 80,
+      "reporters": ["text", "lcov", "html"]
+    }
+  },
+  
+  "manual_validation_checklist": {
+    "architecture_compliance": [
+      "No circular dependencies",
+      "Layered architecture followed",
+      "Interface segregation implemented",
+      "Dependency inversion applied"
+    ],
+    
+    "code_quality": [
+      "All functions are pure where required",
+      "No side effects in Core modules",
+      "Proper error handling implemented",
+      "Input validation comprehensive"
+    ],
+    
+    "module_separation": [
+      "UI only reads state",
+      "Systems use Core interfaces",
+      "Players implement contracts",
+      "Network has security measures"
+    ],
+    
+    "testing": [
+      "Unit tests for all modules",
+      "Integration tests for interfaces",
+      "Regression tests for existing functionality",
+      "Performance tests for critical paths"
+    ]
+  }
+}

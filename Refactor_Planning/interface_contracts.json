@@ -1,0 +1,1306 @@
+{
+  "version": "2.0.0",
+  "refactor_date": "2026-01-19",
+  "project_name": "Amalgam WebGame",
+  "description": "Current API definitions and method signatures for the modularized codebase",
+  
+  "core_interfaces": {
+    "GameEngine": {
+      "description": "Main game engine orchestrator - pure functions only",
+      "responsibilities": [
+        "State mutation coordination",
+        "Game logic orchestration",
+        "Rule system integration",
+        "Turn management"
+      ],
+      "methods": {
+        "initialize": {
+          "signature": "(seed?: number): GameState",
+          "description": "Initialize game with optional seed for determinism",
+          "parameters": {
+            "seed": {
+              "type": "number",
+              "required": false,
+              "description": "Optional seed for Arena determinism"
+            }
+          },
+          "returns": {
+            "type": "GameState",
+            "description": "Initial game state snapshot"
+          },
+          "side_effects": "None - pure function",
+          "validation": "Must return valid initial state"
+        },
+        "movePiece": {
+          "signature": "(fromCoord: string, toCoord: string, gameState: GameState): GameState",
+          "description": "Execute a piece move and return new state",
+          "parameters": {
+            "fromCoord": {
+              "type": "string",
+              "required": true,
+              "description": "Starting coordinate in 'x,y' format"
+            },
+            "toCoord": {
+              "type": "string", 
+              "required": true,
+              "description": "Target coordinate in 'x,y' format"
+            },
+            "gameState": {
+              "type": "GameState",
+              "required": true,
+              "description": "Current game state snapshot"
+            }
+          },
+          "returns": {
+            "type": "GameState",
+            "description": "New game state after move"
+          },
+          "side_effects": "None - pure function",
+          "validation": "Must validate move through Rules system"
+        },
+        "applyAbility": {
+          "signature": "(abilityType: string, params: any, gameState: GameState): GameState",
+          "description": "Apply ability effect and return new state",
+          "parameters": {
+            "abilityType": {
+              "type": "string",
+              "required": true,
+              "description": "Type of ability (fireball, tidalwave, sap, launch, swap)"
+            },
+            "params": {
+              "type": "any",
+              "required": true,
+              "description": "Ability-specific parameters"
+            },
+            "gameState": {
+              "type": "GameState",
+              "required": true,
+              "description": "Current game state snapshot"
+            }
+          },
+          "returns": {
+            "type": "GameState",
+            "description": "New game state after ability"
+          },
+          "side_effects": "None - pure function",
+          "validation": "Must validate ability through Rules system"
+        },
+        "checkWin": {
+          "signature": "(gameState: GameState): {winner: string|null, method: string|null}",
+          "description": "Check if game has reached terminal state",
+          "parameters": {
+            "gameState": {
+              "type": "GameState",
+              "required": true,
+              "description": "Current game state snapshot"
+            }
+          },
+          "returns": {
+            "type": "object",
+            "properties": {
+              "winner": {
+                "type": "string",
+                "nullable": true,
+                "description": "Winner name or null if no winner"
+              },
+              "method": {
+                "type": "string", 
+                "nullable": true,
+                "description": "Win method (goal_reached, elimination) or null"
+              }
+            }
+          },
+          "side_effects": "None - pure function",
+          "validation": "Must use WinConditionSystem for validation"
+        },
+        "isLegalMove": {
+          "signature": "(gameState: GameState, move: {from: string, to: string}): boolean",
+          "description": "Check if a move is legal",
+          "parameters": {
+            "gameState": {
+              "type": "GameState",
+              "required": true,
+              "description": "Current game state snapshot"
+            },
+            "move": {
+              "type": "object",
+              "required": true,
+              "properties": {
+                "from": {
+                  "type": "string",
+                  "description": "Starting coordinate"
+                },
+                "to": {
+                  "type": "string", 
+                  "description": "Target coordinate"
+                }
+              }
+            }
+          },
+          "returns": {
+            "type": "boolean",
+            "description": "True if move is legal"
+          },
+          "side_effects": "None - pure function",
+          "validation": "Must use MovementRules for validation"
+        },
+        "getValidMoves": {
+          "signature": "(coord: string, gameState: GameState): Array<{x: number, y: number}>",
+          "description": "Get all valid moves for a piece at coordinate",
+          "parameters": {
+            "coord": {
+              "type": "string",
+              "required": true,
+              "description": "Coordinate in 'x,y' format"
+            },
+            "gameState": {
+              "type": "GameState",
+              "required": true,
+              "description": "Current game state snapshot"
+            }
+          },
+          "returns": {
+            "type": "Array<{x: number, y: number}>",
+            "description": "Array of valid move coordinates"
+          },
+          "side_effects": "None - pure function",
+          "validation": "Must use MovementRules for calculation"
+        }
+      },
+      "dependencies": ["GameState", "GameRules"],
+      "forbidden_imports": ["UI/*", "Network/*", "Players/*", "Systems/*"],
+      "purity_requirements": {
+        "no_side_effects": true,
+        "pure_functions": true,
+        "immutable_state": true,
+        "no_global_state": true
+      }
+    },
+    
+    "GameState": {
+      "description": "Pure state container - immutable state management",
+      "responsibilities": [
+        "State storage and retrieval",
+        "State validation",
+        "State serialization",
+        "State comparison"
+      ],
+      "methods": {
+        "getPiece": {
+          "signature": "(coord: string): Piece|null",
+          "description": "Get piece at coordinate",
+          "parameters": {
+            "coord": {
+              "type": "string",
+              "required": true,
+              "description": "Coordinate in 'x,y' format"
+            }
+          },
+          "returns": {
+            "type": "Piece|null",
+            "description": "Piece object or null if empty"
+          },
+          "side_effects": "None",
+          "validation": "Must validate coordinate format"
+        },
+        "isLocationEmpty": {
+          "signature": "(coord: string): boolean",
+          "description": "Check if location is empty",
+          "parameters": {
+            "coord": {
+              "type": "string",
+              "required": true,
+              "description": "Coordinate in 'x,y' format"
+            }
+          },
+          "returns": {
+            "type": "boolean",
+            "description": "True if location is empty"
+          },
+          "side_effects": "None",
+          "validation": "Must validate coordinate format"
+        },
+        "selectPiece": {
+          "signature": "(coord: string): GameState",
+          "description": "Select piece at coordinate",
+          "parameters": {
+            "coord": {
+              "type": "string",
+              "required": true,
+              "description": "Coordinate in 'x,y' format"
+            }
+          },
+          "returns": {
+            "type": "GameState",
+            "description": "New state with piece selected"
+          },
+          "side_effects": "None - returns new state",
+          "validation": "Must validate coordinate and piece existence"
+        },
+        "deselectPiece": {
+          "signature": "(): GameState",
+          "description": "Deselect current piece",
+          "parameters": [],
+          "returns": {
+            "type": "GameState",
+            "description": "New state with no piece selected"
+          },
+          "side_effects": "None - returns new state",
+          "validation": "None"
+        },
+        "movePiece": {
+          "signature": "(fromCoord: string, toCoord: string): GameState",
+          "description": "Move piece from one location to another",
+          "parameters": {
+            "fromCoord": {
+              "type": "string",
+              "required": true,
+              "description": "Starting coordinate"
+            },
+            "toCoord": {
+              "type": "string",
+              "required": true,
+              "description": "Target coordinate"
+            }
+          },
+          "returns": {
+            "type": "GameState",
+            "description": "New state after move"
+          },
+          "side_effects": "None - returns new state",
+          "validation": "Must validate coordinates and piece existence"
+        },
+        "removePiece": {
+          "signature": "(coord: string): GameState",
+          "description": "Remove piece from coordinate",
+          "parameters": {
+            "coord": {
+              "type": "string",
+              "required": true,
+              "description": "Coordinate in 'x,y' format"
+            }
+          },
+          "returns": {
+            "type": "GameState",
+            "description": "New state after removal"
+          },
+          "side_effects": "None - returns new state",
+          "validation": "Must validate coordinate and piece existence"
+        },
+        "addPiece": {
+          "signature": "(coord: string, piece: Piece): GameState",
+          "description": "Add piece to coordinate",
+          "parameters": {
+            "coord": {
+              "type": "string",
+              "required": true,
+              "description": "Coordinate in 'x,y' format"
+            },
+            "piece": {
+              "type": "Piece",
+              "required": true,
+              "description": "Piece object to add"
+            }
+          },
+          "returns": {
+            "type": "GameState",
+            "description": "New state after addition"
+          },
+          "side_effects": "None - returns new state",
+          "validation": "Must validate coordinate and piece object"
+        },
+        "getState": {
+          "signature": "(): GameStateSnapshot",
+          "description": "Get current state snapshot",
+          "parameters": [],
+          "returns": {
+            "type": "GameStateSnapshot",
+            "description": "Immutable state snapshot"
+          },
+          "side_effects": "None",
+          "validation": "None"
+        },
+        "reset": {
+          "signature": "(): GameState",
+          "description": "Reset to initial state",
+          "parameters": [],
+          "returns": {
+            "type": "GameState",
+            "description": "New state reset to initial"
+          },
+          "side_effects": "None - returns new state",
+          "validation": "None"
+        }
+      },
+      "dependencies": [],
+      "forbidden_imports": ["UI/*", "Network/*", "Players/*", "Systems/*"],
+      "purity_requirements": {
+        "no_mutation": true,
+        "immutable_data": true,
+        "validation_methods": true
+      }
+    },
+    
+    "GameRules": {
+      "description": "Shared rule helpers and validation utilities",
+      "responsibilities": [
+        "Rule validation",
+        "Game state validation",
+        "Move validation",
+        "Win condition checking"
+      ],
+      "methods": {
+        "validateMove": {
+          "signature": "(gameState: GameState, fromCoord: string, toCoord: string): {valid: boolean, reason?: string}",
+          "description": "Validate if a move is legal",
+          "parameters": {
+            "gameState": {
+              "type": "GameState",
+              "required": true,
+              "description": "Current game state"
+            },
+            "fromCoord": {
+              "type": "string",
+              "required": true,
+              "description": "Starting coordinate"
+            },
+            "toCoord": {
+              "type": "string",
+              "required": true,
+              "description": "Target coordinate"
+            }
+          },
+          "returns": {
+            "type": "object",
+            "properties": {
+              "valid": {
+                "type": "boolean",
+                "description": "True if move is valid"
+              },
+              "reason": {
+                "type": "string",
+                "nullable": true,
+                "description": "Reason for invalidation if not valid"
+              }
+            }
+          },
+          "side_effects": "None - pure function",
+          "validation": "Must check all movement rules"
+        },
+        "validateAbility": {
+          "signature": "(gameState: GameState, abilityType: string, params: any): {valid: boolean, reason?: string}",
+          "description": "Validate if an ability can be used",
+          "parameters": {
+            "gameState": {
+              "type": "GameState",
+              "required": true,
+              "description": "Current game state"
+            },
+            "abilityType": {
+              "type": "string",
+              "required": true,
+              "description": "Type of ability"
+            },
+            "params": {
+              "type": "any",
+              "required": true,
+              "description": "Ability parameters"
+            }
+          },
+          "returns": {
+            "type": "object",
+            "properties": {
+              "valid": {
+                "type": "boolean",
+                "description": "True if ability is valid"
+              },
+              "reason": {
+                "type": "string",
+                "nullable": true,
+                "description": "Reason for invalidation if not valid"
+              }
+            }
+          },
+          "side_effects": "None - pure function",
+          "validation": "Must check ability-specific rules"
+        },
+        "checkWinCondition": {
+          "signature": "(gameState: GameState): {winner: string|null, method: string|null}",
+          "description": "Check win conditions",
+          "parameters": {
+            "gameState": {
+              "type": "GameState",
+              "required": true,
+              "description": "Current game state"
+            }
+          },
+          "returns": {
+            "type": "object",
+            "properties": {
+              "winner": {
+                "type": "string",
+                "nullable": true,
+                "description": "Winner name or null"
+              },
+              "method": {
+                "type": "string",
+                "nullable": true,
+                "description": "Win method or null"
+              }
+            }
+          },
+          "side_effects": "None - pure function",
+          "validation": "Must check all win conditions"
+        },
+        "getPieceType": {
+          "signature": "(piece: Piece): string",
+          "description": "Get normalized piece type",
+          "parameters": {
+            "piece": {
+              "type": "Piece",
+              "required": true,
+              "description": "Piece object"
+            }
+          },
+          "returns": {
+            "type": "string",
+            "description": "Normalized piece type"
+          },
+          "side_effects": "None - pure function",
+          "validation": "Must validate piece object"
+        },
+        "isPlayerPiece": {
+          "signature": "(piece: Piece, player: string): boolean",
+          "description": "Check if piece belongs to player",
+          "parameters": {
+            "piece": {
+              "type": "Piece",
+              "required": true,
+              "description": "Piece object"
+            },
+            "player": {
+              "type": "string",
+              "required": true,
+              "description": "Player identifier"
+            }
+          },
+          "returns": {
+            "type": "boolean",
+            "description": "True if piece belongs to player"
+          },
+          "side_effects": "None - pure function",
+          "validation": "Must validate piece and player"
+        }
+      },
+      "dependencies": [],
+      "forbidden_imports": ["UI/*", "Network/*", "Players/*", "Systems/*"],
+      "purity_requirements": {
+        "pure_functions": true,
+        "no_state": true,
+        "validation_only": true
+      }
+    }
+  },
+  
+  "system_interfaces": {
+    "MovementRules": {
+      "description": "Piece movement validation and calculation",
+      "responsibilities": [
+        "Valid move calculation",
+        "Movement path validation",
+        "Special movement rules",
+        "Movement state updates"
+      ],
+      "methods": {
+        "getValidMoves": {
+          "signature": "(coord: string, gameState: GameState): Array<{x: number, y: number}>",
+          "description": "Get all valid moves for a piece",
+          "parameters": {
+            "coord": {
+              "type": "string",
+              "required": true,
+              "description": "Starting coordinate"
+            },
+            "gameState": {
+              "type": "GameState",
+              "required": true,
+              "description": "Current game state"
+            }
+          },
+          "returns": {
+            "type": "Array<{x: number, y: number}>",
+            "description": "Array of valid move coordinates"
+          },
+          "side_effects": "None - pure function",
+          "validation": "Must validate piece type and movement rules"
+        },
+        "isValidMove": {
+          "signature": "(fromCoord: string, toCoord: string, gameState: GameState): boolean",
+          "description": "Check if move is valid",
+          "parameters": {
+            "fromCoord": {
+              "type": "string",
+              "required": true,
+              "description": "Starting coordinate"
+            },
+            "toCoord": {
+              "type": "string",
+              "required": true,
+              "description": "Target coordinate"
+            },
+            "gameState": {
+              "type": "GameState",
+              "required": true,
+              "description": "Current game state"
+            }
+          },
+          "returns": {
+            "type": "boolean",
+            "description": "True if move is valid"
+          },
+          "side_effects": "None - pure function",
+          "validation": "Must check movement rules"
+        },
+        "isPortalPiece": {
+          "signature": "(piece: Piece): boolean",
+          "description": "Check if piece is a portal",
+          "parameters": {
+            "piece": {
+              "type": "Piece",
+              "required": true,
+              "description": "Piece object"
+            }
+          },
+          "returns": {
+            "type": "boolean",
+            "description": "True if piece is portal"
+          },
+          "side_effects": "None - pure function",
+          "validation": "Must validate piece object"
+        },
+        "isNexusCapablePiece": {
+          "signature": "(piece: Piece): boolean",
+          "description": "Check if piece can form nexuses",
+          "parameters": {
+            "piece": {
+              "type": "Piece",
+              "required": true,
+              "description": "Piece object"
+            }
+          },
+          "returns": {
+            "type": "boolean",
+            "description": "True if piece can form nexuses"
+          },
+          "side_effects": "None - pure function",
+          "validation": "Must validate piece object"
+        }
+      },
+      "dependencies": ["Core/GameEngine"],
+      "forbidden_imports": ["UI/*", "Network/*", "Players/*"],
+      "max_lines": 400
+    },
+    
+    "AttackRules": {
+      "description": "Combat and elimination rules",
+      "responsibilities": [
+        "Attack validation",
+        "Elimination logic",
+        "Combat resolution",
+        "Damage calculation"
+      ],
+      "methods": {
+        "executeAttack": {
+          "signature": "(coord: string, gameState: GameState): Array<{type: string, coord: string}>",
+          "description": "Execute attack from coordinate",
+          "parameters": {
+            "coord": {
+              "type": "string",
+              "required": true,
+              "description": "Attack origin coordinate"
+            },
+            "gameState": {
+              "type": "GameState",
+              "required": true,
+              "description": "Current game state"
+            }
+          },
+          "returns": {
+            "type": "Array<{type: string, coord: string}>",
+            "description": "Array of eliminated pieces"
+          },
+          "side_effects": "None - pure function",
+          "validation": "Must validate attack rules"
+        },
+        "canAttack": {
+          "signature": "(attacker: Piece, target: Piece): boolean",
+          "description": "Check if attacker can eliminate target",
+          "parameters": {
+            "attacker": {
+              "type": "Piece",
+              "required": true,
+              "description": "Attacking piece"
+            },
+            "target": {
+              "type": "Piece",
+              "required": true,
+              "description": "Target piece"
+            }
+          },
+          "returns": {
+            "type": "boolean",
+            "description": "True if attack is valid"
+          },
+          "side_effects": "None - pure function",
+          "validation": "Must check attack rules"
+        },
+        "isAdjacent": {
+          "signature": "(coord1: string, coord2: string): boolean",
+          "description": "Check if coordinates are adjacent",
+          "parameters": {
+            "coord1": {
+              "type": "string",
+              "required": true,
+              "description": "First coordinate"
+            },
+            "coord2": {
+              "type": "string",
+              "required": true,
+              "description": "Second coordinate"
+            }
+          },
+          "returns": {
+            "type": "boolean",
+            "description": "True if adjacent"
+          },
+          "side_effects": "None - pure function",
+          "validation": "Must validate coordinates"
+        }
+      },
+      "dependencies": ["Core/GameEngine"],
+      "forbidden_imports": ["UI/*", "Network/*", "Players/*"],
+      "max_lines": 300
+    },
+    
+    "AbilityRules": {
+      "description": "Individual ability rule implementations",
+      "submodules": {
+        "SwapRules": {
+          "description": "Portal swap ability rules",
+          "methods": {
+            "canSwap": {
+              "signature": "(portalCoord: string, targetCoord: string, gameState: GameState): boolean",
+              "description": "Check if swap is valid",
+              "parameters": {
+                "portalCoord": {
+                  "type": "string",
+                  "required": true,
+                  "description": "Portal coordinate"
+                },
+                "targetCoord": {
+                  "type": "string",
+                  "required": true,
+                  "description": "Target coordinate"
+                },
+                "gameState": {
+                  "type": "GameState",
+                  "required": true,
+                  "description": "Current game state"
+                }
+              },
+              "returns": {
+                "type": "boolean",
+                "description": "True if swap is valid"
+              },
+              "side_effects": "None - pure function",
+              "validation": "Must check swap rules"
+            }
+          }
+        },
+        "FireballRules": {
+          "description": "Ruby fireball ability rules",
+          "methods": {
+            "canFireball": {
+              "signature": "(ruby1: string, ruby2: string, target: string, gameState: GameState): boolean",
+              "description": "Check if fireball is valid",
+              "parameters": {
+                "ruby1": {
+                  "type": "string",
+                  "required": true,
+                  "description": "First ruby coordinate"
+                },
+                "ruby2": {
+                  "type": "string",
+                  "required": true,
+                  "description": "Second ruby coordinate"
+                },
+                "target": {
+                  "type": "string",
+                  "required": true,
+                  "description": "Target coordinate"
+                },
+                "gameState": {
+                  "type": "GameState",
+                  "required": true,
+                  "description": "Current game state"
+                }
+              },
+              "returns": {
+                "type": "boolean",
+                "description": "True if fireball is valid"
+              },
+              "side_effects": "None - pure function",
+              "validation": "Must check fireball rules"
+            }
+          }
+        },
+        "WaveRules": {
+          "description": "Pearl tidal wave ability rules",
+          "methods": {
+            "canWave": {
+              "signature": "(pearl1: string, pearl2: string, target: string, gameState: GameState): boolean",
+              "description": "Check if wave is valid",
+              "parameters": {
+                "pearl1": {
+                  "type": "string",
+                  "required": true,
+                  "description": "First pearl coordinate"
+                },
+                "pearl2": {
+                  "type": "string",
+                  "required": true,
+                  "description": "Second pearl coordinate"
+                },
+                "target": {
+                  "type": "string",
+                  "required": true,
+                  "description": "Target coordinate"
+                },
+                "gameState": {
+                  "type": "GameState",
+                  "required": true,
+                  "description": "Current game state"
+                }
+              },
+              "returns": {
+                "type": "boolean",
+                "description": "True if wave is valid"
+              },
+              "side_effects": "None - pure function",
+              "validation": "Must check wave rules"
+            }
+          }
+        },
+        "SapRules": {
+          "description": "Amber sap ability rules",
+          "methods": {
+            "canSap": {
+              "signature": "(amber1: string, amber2: string, target: string, gameState: GameState): boolean",
+              "description": "Check if sap is valid",
+              "parameters": {
+                "amber1": {
+                  "type": "string",
+                  "required": true,
+                  "description": "First amber coordinate"
+                },
+                "amber2": {
+                  "type": "string",
+                  "required": true,
+                  "description": "Second amber coordinate"
+                },
+                "target": {
+                  "type": "string",
+                  "required": true,
+                  "description": "Target coordinate"
+                },
+                "gameState": {
+                  "type": "GameState",
+                  "required": true,
+                  "description": "Current game state"
+                }
+              },
+              "returns": {
+                "type": "boolean",
+                "description": "True if sap is valid"
+              },
+              "side_effects": "None - pure function",
+              "validation": "Must check sap rules"
+            }
+          }
+        },
+        "LaunchRules": {
+          "description": "Jade launch ability rules",
+          "methods": {
+            "canLaunch": {
+              "signature": "(jade1: string, jade2: string, piece: string, target: string, gameState: GameState): boolean",
+              "description": "Check if launch is valid",
+              "parameters": {
+                "jade1": {
+                  "type": "string",
+                  "required": true,
+                  "description": "First jade coordinate"
+                },
+                "jade2": {
+                  "type": "string",
+                  "required": true,
+                  "description": "Second jade coordinate"
+                },
+                "piece": {
+                  "type": "string",
+                  "required": true,
+                  "description": "Piece to launch coordinate"
+                },
+                "target": {
+                  "type": "string",
+                  "required": true,
+                  "description": "Target coordinate"
+                },
+                "gameState": {
+                  "type": "GameState",
+                  "required": true,
+                  "description": "Current game state"
+                }
+              },
+              "returns": {
+                "type": "boolean",
+                "description": "True if launch is valid"
+              },
+              "side_effects": "None - pure function",
+              "validation": "Must check launch rules"
+            }
+          }
+        }
+      }
+    },
+    
+    "MatchHistory": {
+      "description": "Game state tracking and serialization",
+      "methods": {
+        "trackMove": {
+          "signature": "(pieceType: string, fromCoord: string, toCoord: string): void",
+          "description": "Track a piece move",
+          "parameters": {
+            "pieceType": {
+              "type": "string",
+              "required": true,
+              "description": "Type of piece moved"
+            },
+            "fromCoord": {
+              "type": "string",
+              "required": true,
+              "description": "Starting coordinate"
+            },
+            "toCoord": {
+              "type": "string",
+              "required": true,
+              "description": "Ending coordinate"
+            }
+          },
+          "returns": {
+            "type": "void"
+          },
+          "side_effects": "Updates internal history state",
+          "validation": "Must validate move data"
+        },
+        "trackAbility": {
+          "signature": "(abilityType: string, params: any): void",
+          "description": "Track an ability use",
+          "parameters": {
+            "abilityType": {
+              "type": "string",
+              "required": true,
+              "description": "Type of ability"
+            },
+            "params": {
+              "type": "any",
+              "required": true,
+              "description": "Ability parameters"
+            }
+          },
+          "returns": {
+            "type": "void"
+          },
+          "side_effects": "Updates internal history state",
+          "validation": "Must validate ability data"
+        },
+        "getHistory": {
+          "signature": "(): Array<any>",
+          "description": "Get match history",
+          "parameters": [],
+          "returns": {
+            "type": "Array<any>",
+            "description": "Array of history entries"
+          },
+          "side_effects": "None",
+          "validation": "None"
+        }
+      },
+      "dependencies": ["Core/GameEngine"],
+      "forbidden_imports": ["UI/*", "Network/*"],
+      "max_lines": 350
+    }
+  },
+  
+  "ui_interfaces": {
+    "UIController": {
+      "description": "Main UI controller and coordinator",
+      "responsibilities": [
+        "UI state management",
+        "Component coordination",
+        "Event handling",
+        "User input processing"
+      ],
+      "methods": {
+        "updateGameState": {
+          "signature": "(gameState: GameState): void",
+          "description": "Update UI with new game state",
+          "parameters": {
+            "gameState": {
+              "type": "GameState",
+              "required": true,
+              "description": "New game state"
+            }
+          },
+          "returns": {
+            "type": "void"
+          },
+          "side_effects": "Updates UI components",
+          "validation": "Must validate game state"
+        },
+        "handleUserInput": {
+          "signature": "(input: any): void",
+          "description": "Handle user input events",
+          "parameters": {
+            "input": {
+              "type": "any",
+              "required": true,
+              "description": "User input data"
+            }
+          },
+          "returns": {
+            "type": "void"
+          },
+          "side_effects": "May trigger game actions",
+          "validation": "Must validate input"
+        },
+        "render": {
+          "signature": "(): void",
+          "description": "Render current UI state",
+          "parameters": [],
+          "returns": {
+            "type": "void"
+          },
+          "side_effects": "Updates DOM",
+          "validation": "None"
+        }
+      },
+      "dependencies": ["Core/GameEngine", "Systems/MatchHistory"],
+      "forbidden_imports": ["Network/*", "Players/*"],
+      "max_lines": 400
+    },
+    
+    "BoardRenderer": {
+      "description": "Board rendering and visualization",
+      "responsibilities": [
+        "Board drawing",
+        "Grid rendering",
+        "Theme application",
+        "Visual effects"
+      ],
+      "methods": {
+        "render": {
+          "signature": "(gameState: GameState): void",
+          "description": "Render the game board",
+          "parameters": {
+            "gameState": {
+              "type": "GameState",
+              "required": true,
+              "description": "Current game state"
+            }
+          },
+          "returns": {
+            "type": "void"
+          },
+          "side_effects": "Updates canvas",
+          "validation": "Must validate game state"
+        },
+        "updateTheme": {
+          "signature": "(theme: any): void",
+          "description": "Update board theme",
+          "parameters": {
+            "theme": {
+              "type": "any",
+              "required": true,
+              "description": "Theme configuration"
+            }
+          },
+          "returns": {
+            "type": "void"
+          },
+          "side_effects": "Updates visual appearance",
+          "validation": "Must validate theme"
+        }
+      },
+      "dependencies": ["Core/GameState"],
+      "forbidden_imports": ["Network/*", "Players/*", "Systems/*"],
+      "max_lines": 500
+    },
+    
+    "PieceRenderer": {
+      "description": "Piece rendering and animation",
+      "responsibilities": [
+        "Piece drawing",
+        "Animation handling",
+        "Visual state management",
+        "Theme integration"
+      ],
+      "methods": {
+        "drawPiece": {
+          "signature": "(coord: string, piece: Piece): void",
+          "description": "Draw a piece at coordinate",
+          "parameters": {
+            "coord": {
+              "type": "string",
+              "required": true,
+              "description": "Coordinate in 'x,y' format"
+            },
+            "piece": {
+              "type": "Piece",
+              "required": true,
+              "description": "Piece object to draw"
+            }
+          },
+          "returns": {
+            "type": "void"
+          },
+          "side_effects": "Updates canvas",
+          "validation": "Must validate piece and coordinate"
+        },
+        "animateMove": {
+          "signature": "(fromCoord: string, toCoord: string, piece: Piece): Promise<void>",
+          "description": "Animate piece movement",
+          "parameters": {
+            "fromCoord": {
+              "type": "string",
+              "required": true,
+              "description": "Starting coordinate"
+            },
+            "toCoord": {
+              "type": "string",
+              "required": true,
+              "description": "Ending coordinate"
+            },
+            "piece": {
+              "type": "Piece",
+              "required": true,
+              "description": "Piece object to animate"
+            }
+          },
+          "returns": {
+            "type": "Promise<void>",
+            "description": "Animation completion promise"
+          },
+          "side_effects": "Updates canvas over time",
+          "validation": "Must validate move"
+        }
+      },
+      "dependencies": ["Core/GameState"],
+      "forbidden_imports": ["Network/*", "Players/*", "Systems/*"],
+      "max_lines": 400
+    }
+  },
+  
+  "player_interfaces": {
+    "PlayerInterface": {
+      "description": "Player interface definition",
+      "responsibilities": [
+        "Player contract definition",
+        "Interface validation",
+        "Player type checking"
+      ],
+      "methods": {
+        "makeMove": {
+          "signature": "(gameState: GameState, context: any): {from: string, to: string}|null",
+          "description": "Make a move",
+          "parameters": {
+            "gameState": {
+              "type": "GameState",
+              "required": true,
+              "description": "Current game state"
+            },
+            "context": {
+              "type": "any",
+              "required": true,
+              "description": "Move context"
+            }
+          },
+          "returns": {
+            "type": "{from: string, to: string}|null",
+            "description": "Move or null if no move"
+          },
+          "side_effects": "None - returns move data",
+          "validation": "Must validate move"
+        },
+        "isAI": {
+          "signature": "(): boolean",
+          "description": "Check if player is AI",
+          "parameters": [],
+          "returns": {
+            "type": "boolean",
+            "description": "True if AI player"
+          },
+          "side_effects": "None",
+          "validation": "None"
+        }
+      },
+      "dependencies": [],
+      "forbidden_imports": ["UI/*", "Network/*", "Systems/*"],
+      "max_lines": 150
+    },
+    
+    "AIPlayer": {
+      "description": "AI player implementation",
+      "extends": "PlayerInterface",
+      "methods": {
+        "findBestMove": {
+          "signature": "(gameState: GameState, context: any): {from: string, to: string}|null",
+          "description": "Find best move using AI logic",
+          "parameters": {
+            "gameState": {
+              "type": "GameState",
+              "required": true,
+              "description": "Current game state"
+            },
+            "context": {
+              "type": "any",
+              "required": true,
+              "description": "AI context"
+            }
+          },
+          "returns": {
+            "type": "{from: string, to: string}|null",
+            "description": "Best move or null"
+          },
+          "side_effects": "None - returns move data",
+          "validation": "Must validate move"
+        }
+      },
+      "dependencies": ["Core/GameEngine", "Systems/MatchHistory"],
+      "forbidden_imports": ["UI/*", "Network/*"],
+      "max_lines": 600
+    }
+  },
+  
+  "data_types": {
+    "GameState": {
+      "description": "Immutable game state snapshot",
+      "properties": {
+        "pieces": {
+          "type": "Object",
+          "description": "Map of coordinate to piece",
+          "example": {
+            "0,0": {
+              "type": "rubySquare",
+              "name": "Ruby",
+              "x": 0,
+              "y": 0
+            }
+          }
+        },
+        "selectedPieceCoord": {
+          "type": "string|null",
+          "description": "Currently selected piece coordinate",
+          "example": "1,2"
+        },
+        "goldenCoords": {
+          "type": "Array<string>",
+          "description": "Array of golden intersection coordinates",
+          "example": ["0,0", "1,1", "2,2"]
+        },
+        "goldenLinesDict": {
+          "type": "Object",
+          "description": "Dictionary of golden line connections",
+          "example": {
+            "0,0": [
+              {"x": 1, "y": 1},
+              {"x": 2, "y": 2}
+            ]
+          }
+        }
+      }
+    },
+    "Piece": {
+      "description": "Game piece object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Piece type identifier",
+          "example": "rubySquare"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of piece",
+          "example": "Ruby"
+        },
+        "x": {
+          "type": "number",
+          "description": "X coordinate",
+          "example": 0
+        },
+        "y": {
+          "type": "number",
+          "description": "Y coordinate",
+          "example": 0
+        }
+      }
+    },
+    "Player": {
+      "description": "Player object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Player display name",
+          "example": "Player 1"
+        },
+        "isAI": {
+          "type": "boolean",
+          "description": "Whether player is AI",
+          "example": false
+        },
+        "pieceType": {
+          "type": "Array<string>",
+          "description": "Piece types belonging to player",
+          "example": ["rubySquare", "pearlSquare"]
+        }
+      }
+    }
+  },
+  
+  "error_handling": {
+    "GameError": {
+      "description": "Base game error class",
+      "properties": {
+        "message": {
+          "type": "string",
+          "description": "Error message"
+        },
+        "code": {
+          "type": "string",
+          "description": "Error code"
+        },
+        "details": {
+          "type": "any",
+          "description": "Additional error details"
+        }
+      }
+    },
+    "ValidationError": {
+      "extends": "GameError",
+      "description": "Validation error for moves/rules"
+    },
+    "StateError": {
+      "extends": "GameError", 
+      "description": "State mutation error"
+    }
+  }
+}

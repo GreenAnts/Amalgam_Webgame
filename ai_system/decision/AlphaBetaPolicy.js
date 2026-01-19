@@ -10,6 +10,7 @@
  * @version 0.1
  */
 
+import { readFileSync } from 'fs';
 import { AlphaBetaSearch } from '../search/AlphaBetaSearch.js';
 import { SimulatedGameState } from '../simulation/SimulatedGameState.js';
 import { SearchNode } from '../search/SearchNode.js';
@@ -24,6 +25,23 @@ export class AlphaBetaPolicy {
         const tt = new TranspositionTable();
         
         this.search = new AlphaBetaSearch(evaluator, moveOrdering, tt);
+
+        // Load config once at initialization
+        try {
+            const configPath = new URL('../config/AIConfig.json', import.meta.url);
+            const rawConfig = JSON.parse(readFileSync(configPath, 'utf8'));
+            
+            // Ensure decision section exists with proper fallback
+            this.config = {
+                decision: {
+                    default_search_depth: rawConfig.decision?.default_search_depth || 3,
+                    strategy: rawConfig.decision?.strategy || 'random'
+                }
+            };
+        } catch (e) {
+            // Safe fallback if config is missing or invalid
+            this.config = { decision: { default_search_depth: 3 } };
+        }
     }
     
     /**
@@ -35,7 +53,18 @@ export class AlphaBetaPolicy {
      */
     async selectMove(gameState, context) {
         const { rng, gameLogic, playerManager } = context;
-        
+
+        // 1. DYNAMIC DEPTH: Fallback chain ensures the AI never has "null" depth
+        const searchDepth = context.searchDepth || 
+                            this.config.decision?.default_search_depth || 
+                            3;
+
+        // 2. CONTEXT BRIDGE: Arena provides board state; we provide turn state
+        const turnContext = context.turnContext || {
+            movedPieceCoord: null,
+            usedAbilities: new Set()
+        };
+
         // Create root simulation state
         const currentPlayer = playerManager.getCurrentPlayer().name;
         const rootSimState = new SimulatedGameState(
@@ -49,11 +78,11 @@ export class AlphaBetaPolicy {
         // Create root search node
         const rootNode = new SearchNode(rootSimState, null, null, 0);
         
-        // Run search (depth 3)
+        // Run search with configurable depth
         this.search.bestMove = null;
         this.search.alphaBeta(
             rootNode,
-            3,  // depth
+            searchDepth, // <--- Now fully configurable
             -Infinity,  // alpha
             +Infinity,  // beta
             true,  // maximizingPlayer
@@ -61,10 +90,7 @@ export class AlphaBetaPolicy {
                 gameLogic, 
                 playerManager, 
                 rng, 
-                turnContext: { 
-                    movedPieceCoord: null, 
-                    usedAbilities: new Set() 
-                } 
+                turnContext // <--- Crucial bridge for abilities
             }
         );
         

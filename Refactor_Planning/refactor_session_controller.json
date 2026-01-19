@@ -1,0 +1,1190 @@
+{
+  "version": "1.0.0",
+  "description": "Pre-packaged context bundles for AI agent refactoring sessions - designed for limited token/context windows",
+  "strategy": "Each session gets exactly what it needs: goal + contract + source + validation",
+  "usage": "Copy-paste the relevant session package into your AI chat. Start fresh chats for each session.",
+
+  "session_preamble_template": "I am refactoring the Amalgam WebGame. Here is my session context: [PASTE SESSION PACKAGE BELOW]. Please follow the architectural constraints and implement the specified goal.",
+
+  "context_inclusion_guidance": {
+    "session_packages_self_contained": "Each session package contains all necessary context (contracts, constraints, validation). AI agents should have everything they need.",
+    "planning_documents_optional": "The broader planning documents (README.md, architecture_blueprint.json, etc.) can be provided as additional reference if the AI agent requests broader architectural context.",
+    "when_to_include_planning_docs": [
+      "If AI agent asks for broader architectural understanding",
+      "If session seems ambiguous or lacks context",
+      "If AI agent requests clarification on architectural decisions",
+      "For complex sessions requiring deep architectural understanding"
+    ],
+    "token_efficiency_note": "Session packages are designed to fit within typical AI context limits (~8K-15K tokens). Only include additional planning documents when necessary."
+  },
+
+  "sessions": {
+    "core_gamestate_refactor": {
+      "session_id": "core_gamestate_refactor",
+      "phase": "Phase 1: Core Foundation Enhancement",
+      "priority": 1,
+      "estimated_tokens": 8500,
+      "estimated_time": "2-3 hours",
+
+      "goal": "Convert core/GameState.js to immutable pure functions that return new state objects",
+
+      "architectural_context": {
+        "module": "Core",
+        "responsibilities": [
+          "State storage and retrieval",
+          "State validation",
+          "State serialization",
+          "State comparison"
+        ],
+        "constraints": {
+          "no_mutation": true,
+          "immutable_data": true,
+          "validation_methods": true,
+          "pure_functions_only": true
+        }
+      },
+
+      "interface_contract": {
+        "getPiece": {
+          "signature": "(coord: string): Piece|null",
+          "description": "Get piece at coordinate",
+          "returns": "Piece object or null if empty",
+          "side_effects": "None",
+          "validation": "Must validate coordinate format"
+        },
+        "isLocationEmpty": {
+          "signature": "(coord: string): boolean",
+          "description": "Check if location is empty",
+          "returns": "True if location is empty",
+          "side_effects": "None",
+          "validation": "Must validate coordinate format"
+        },
+        "movePiece": {
+          "signature": "(fromCoord: string, toCoord: string): GameState",
+          "description": "Move piece from one location to another",
+          "returns": "New state after move",
+          "side_effects": "None - returns new state",
+          "validation": "Must validate coordinates and piece existence"
+        },
+        "removePiece": {
+          "signature": "(coord: string): GameState",
+          "description": "Remove piece from coordinate",
+          "returns": "New state after removal",
+          "side_effects": "None - returns new state",
+          "validation": "Must validate coordinate and piece existence"
+        },
+        "addPiece": {
+          "signature": "(coord: string, piece: Piece): GameState",
+          "description": "Add piece to coordinate",
+          "returns": "New state after addition",
+          "side_effects": "None - returns new state",
+          "validation": "Must validate coordinate and piece object"
+        }
+      },
+
+      "source_files": {
+        "primary": {
+          "path": "core/GameState.js",
+          "lines_to_refactor": "1-50",
+          "current_implementation": "Class with mutation methods"
+        }
+      },
+
+      "target_files": {
+        "primary": {
+          "path": "Core/gameState.js",
+          "requirements": "Pure functions returning new state objects",
+          "max_lines": 300
+        }
+      },
+
+      "validation_criteria": [
+        "All methods return new GameState objects",
+        "No direct property mutation",
+        "No array mutation methods",
+        "No object mutation methods",
+        "Comprehensive input validation",
+        "All existing functionality preserved"
+      ],
+
+      "testing_requirements": [
+        "Unit tests for all state operations",
+        "Immutability verification",
+        "Input validation coverage",
+        "Backward compatibility tests"
+      ],
+
+      "success_metrics": [
+        "✅ All state operations are pure functions",
+        "✅ No mutation of existing state objects",
+        "✅ All input parameters validated",
+        "✅ All existing game features still work",
+        "✅ File size under 300 lines"
+      ],
+
+      "dependencies": [],
+      "blocking_issues": [],
+      "rollback_plan": "Restore original core/GameState.js"
+    },
+
+    "core_gamerules_refactor": {
+      "session_id": "core_gamerules_refactor",
+      "phase": "Phase 1: Core Foundation Enhancement",
+      "priority": 2,
+      "estimated_tokens": 9200,
+      "estimated_time": "2-3 hours",
+
+      "goal": "Create Core/gameRules.js with pure validation functions extracted from GameLogic.js and Main.js",
+
+      "architectural_context": {
+        "module": "Core",
+        "responsibilities": [
+          "Rule validation",
+          "Game state validation",
+          "Move validation",
+          "Win condition checking"
+        ],
+        "constraints": {
+          "pure_functions": true,
+          "no_state": true,
+          "validation_only": true,
+          "no_external_dependencies": true
+        }
+      },
+
+      "interface_contract": {
+        "validateMove": {
+          "signature": "(gameState: GameState, fromCoord: string, toCoord: string): {valid: boolean, reason?: string}",
+          "description": "Validate if a move is legal",
+          "returns": "Validation result object",
+          "side_effects": "None - pure function",
+          "validation": "Must check all movement rules"
+        },
+        "validateAbility": {
+          "signature": "(gameState: GameState, abilityType: string, params: any): {valid: boolean, reason?: string}",
+          "description": "Validate if an ability can be used",
+          "returns": "Validation result object",
+          "side_effects": "None - pure function",
+          "validation": "Must check ability-specific rules"
+        },
+        "checkWinCondition": {
+          "signature": "(gameState: GameState): {winner: string|null, method: string|null}",
+          "description": "Check win conditions",
+          "returns": "Win result object",
+          "side_effects": "None - pure function",
+          "validation": "Must check all win conditions"
+        }
+      },
+
+      "source_files": {
+        "primary": {
+          "path": "GameLogic.js",
+          "lines_to_refactor": "101-200, 601-700",
+          "current_implementation": "Mixed with state management"
+        },
+        "secondary": {
+          "path": "Main.js",
+          "lines_to_refactor": "450-550",
+          "current_implementation": "Inline validation logic"
+        }
+      },
+
+      "target_files": {
+        "primary": {
+          "path": "Core/gameRules.js",
+          "requirements": "Pure validation functions only",
+          "max_lines": 400
+        }
+      },
+
+      "validation_criteria": [
+        "All functions are pure with no side effects",
+        "No state manipulation",
+        "No external dependencies",
+        "Comprehensive validation logic",
+        "Clear error messages"
+      ],
+
+      "testing_requirements": [
+        "Unit tests for all validation functions",
+        "Edge case coverage",
+        "Error message validation",
+        "Performance tests"
+      ],
+
+      "success_metrics": [
+        "✅ All validation logic centralized",
+        "✅ Pure functions with no side effects",
+        "✅ Comprehensive error reporting",
+        "✅ All game rules properly validated",
+        "✅ File size under 400 lines"
+      ],
+
+      "dependencies": ["core_gamestate_refactor"],
+      "blocking_issues": [],
+      "rollback_plan": "Remove Core/gameRules.js and restore inline validation"
+    },
+
+    "systems_movement_rules": {
+      "session_id": "systems_movement_rules",
+      "phase": "Phase 2: Systems Module Reorganization",
+      "priority": 3,
+      "estimated_tokens": 11800,
+      "estimated_time": "3-4 hours",
+
+      "goal": "Convert systems/MovementSystem.js to pure functions in Systems/Rules/movementRules.js",
+
+      "architectural_context": {
+        "module": "Systems/Rules",
+        "responsibilities": [
+          "Valid move calculation",
+          "Movement path validation",
+          "Special movement rules",
+          "Movement state updates"
+        ],
+        "constraints": {
+          "pure_functions": true,
+          "no_ui_imports": true,
+          "core_only_dependencies": true,
+          "stateless_operations": true
+        }
+      },
+
+      "interface_contract": {
+        "getValidMoves": {
+          "signature": "(coord: string, gameState: GameState): Array<{x: number, y: number}>",
+          "description": "Get all valid moves for a piece",
+          "returns": "Array of valid move coordinates",
+          "side_effects": "None - pure function",
+          "validation": "Must validate piece type and movement rules"
+        },
+        "isValidMove": {
+          "signature": "(fromCoord: string, toCoord: string, gameState: GameState): boolean",
+          "description": "Check if move is valid",
+          "returns": "True if move is valid",
+          "side_effects": "None - pure function",
+          "validation": "Must check movement rules"
+        },
+        "isPortalPiece": {
+          "signature": "(piece: Piece): boolean",
+          "description": "Check if piece is a portal",
+          "returns": "True if piece is portal",
+          "side_effects": "None - pure function",
+          "validation": "Must validate piece object"
+        }
+      },
+
+      "source_files": {
+        "primary": {
+          "path": "systems/MovementSystem.js",
+          "lines_to_refactor": "1-400",
+          "current_implementation": "Class with instance methods"
+        }
+      },
+
+      "target_files": {
+        "primary": {
+          "path": "Systems/Rules/movementRules.js",
+          "requirements": "Pure functions only, no classes",
+          "max_lines": 400
+        }
+      },
+
+      "validation_criteria": [
+        "No class instantiation",
+        "All functions are pure",
+        "No state mutation",
+        "Proper parameter passing",
+        "All movement rules implemented"
+      ],
+
+      "testing_requirements": [
+        "Unit tests for all movement calculations",
+        "Edge case validation",
+        "Performance benchmarks",
+        "Rule accuracy verification"
+      ],
+
+      "success_metrics": [
+        "✅ Pure functions only",
+        "✅ All movement rules preserved",
+        "✅ No class dependencies",
+        "✅ Proper parameter validation",
+        "✅ File size under 400 lines"
+      ],
+
+      "dependencies": ["core_gamestate_refactor", "core_gamerules_refactor"],
+      "blocking_issues": [],
+      "rollback_plan": "Remove Systems/Rules/movementRules.js"
+    },
+
+    "systems_attack_rules": {
+      "session_id": "systems_attack_rules",
+      "phase": "Phase 2: Systems Module Reorganization",
+      "priority": 4,
+      "estimated_tokens": 8900,
+      "estimated_time": "2-3 hours",
+
+      "goal": "Convert systems/AttackSystem.js to pure functions in Systems/Rules/attackRules.js",
+
+      "architectural_context": {
+        "module": "Systems/Rules",
+        "responsibilities": [
+          "Attack validation",
+          "Elimination logic",
+          "Combat resolution",
+          "Damage calculation"
+        ],
+        "constraints": {
+          "pure_functions": true,
+          "no_ui_imports": true,
+          "core_only_dependencies": true,
+          "stateless_operations": true
+        }
+      },
+
+      "interface_contract": {
+        "executeAttack": {
+          "signature": "(coord: string, gameState: GameState): Array<{type: string, coord: string}>",
+          "description": "Execute attack from coordinate",
+          "returns": "Array of eliminated pieces",
+          "side_effects": "None - pure function",
+          "validation": "Must validate attack rules"
+        },
+        "canAttack": {
+          "signature": "(attacker: Piece, target: Piece): boolean",
+          "description": "Check if attacker can eliminate target",
+          "returns": "True if attack is valid",
+          "side_effects": "None - pure function",
+          "validation": "Must check attack rules"
+        }
+      },
+
+      "source_files": {
+        "primary": {
+          "path": "systems/AttackSystem.js",
+          "lines_to_refactor": "1-300",
+          "current_implementation": "Class with instance methods"
+        }
+      },
+
+      "target_files": {
+        "primary": {
+          "path": "Systems/Rules/attackRules.js",
+          "requirements": "Pure functions only, no classes",
+          "max_lines": 300
+        }
+      },
+
+      "validation_criteria": [
+        "No class instantiation",
+        "All functions are pure",
+        "No state mutation",
+        "Proper parameter passing",
+        "All attack rules implemented"
+      ],
+
+      "testing_requirements": [
+        "Unit tests for attack calculations",
+        "Combat rule validation",
+        "Edge case testing",
+        "Performance verification"
+      ],
+
+      "success_metrics": [
+        "✅ Pure functions only",
+        "✅ All attack rules preserved",
+        "✅ No class dependencies",
+        "✅ Proper validation",
+        "✅ File size under 300 lines"
+      ],
+
+      "dependencies": ["core_gamestate_refactor", "core_gamerules_refactor"],
+      "blocking_issues": [],
+      "rollback_plan": "Remove Systems/Rules/attackRules.js"
+    },
+
+    "systems_match_history": {
+      "session_id": "systems_match_history",
+      "phase": "Phase 2: Systems Module Reorganization",
+      "priority": 5,
+      "estimated_tokens": 12100,
+      "estimated_time": "3-4 hours",
+
+      "goal": "Convert systems/MatchHistoryTracker.js to Systems/MatchHistory/ modules",
+
+      "architectural_context": {
+        "module": "Systems/MatchHistory",
+        "responsibilities": [
+          "Event collection",
+          "Turn tracking",
+          "Move logging",
+          "State snapshots",
+          "History validation",
+          "Event parsing",
+          "State reconstruction",
+          "Data serialization"
+        ],
+        "constraints": {
+          "modular_design": true,
+          "core_only_dependencies": true,
+          "no_ui_imports": true,
+          "no_network_imports": true
+        }
+      },
+
+      "interface_contract": {
+        "historyCollector": {
+          "trackMove": {
+            "signature": "(pieceType: string, fromCoord: string, toCoord: string): void",
+            "description": "Track a piece move",
+            "side_effects": "Updates internal history state",
+            "validation": "Must validate move data"
+          },
+          "trackAbility": {
+            "signature": "(abilityType: string, params: any): void",
+            "description": "Track an ability use",
+            "side_effects": "Updates internal history state",
+            "validation": "Must validate ability data"
+          }
+        },
+        "historyParser": {
+          "validateHistory": {
+            "signature": "(history: Array): boolean",
+            "description": "Validate history data",
+            "returns": "True if history is valid",
+            "side_effects": "None",
+            "validation": "Must check history integrity"
+          }
+        },
+        "historySerializer": {
+          "serialize": {
+            "signature": "(history: Array): string",
+            "description": "Serialize history for storage",
+            "returns": "Serialized history string",
+            "side_effects": "None",
+            "validation": "Must validate serialization format"
+          }
+        }
+      },
+
+      "source_files": {
+        "primary": {
+          "path": "systems/MatchHistoryTracker.js",
+          "lines_to_refactor": "1-400",
+          "current_implementation": "Single class with mixed responsibilities"
+        }
+      },
+
+      "target_files": {
+        "historyCollector": {
+          "path": "Systems/MatchHistory/historyCollector.js",
+          "responsibilities": ["Event collection", "Turn tracking", "Move logging"],
+          "max_lines": 350
+        },
+        "historyParser": {
+          "path": "Systems/MatchHistory/historyParser.js",
+          "responsibilities": ["History validation", "Event parsing", "State reconstruction"],
+          "max_lines": 300
+        },
+        "historySerializer": {
+          "path": "Systems/MatchHistory/historySerializer.js",
+          "responsibilities": ["Data serialization", "Format conversion", "Compression"],
+          "max_lines": 250
+        }
+      },
+
+      "validation_criteria": [
+        "Modular separation of concerns",
+        "No circular dependencies",
+        "Core-only dependencies",
+        "Proper interface contracts",
+        "All history functionality preserved"
+      ],
+
+      "testing_requirements": [
+        "Unit tests for each module",
+        "Integration tests for history flow",
+        "Serialization/deserialization tests",
+        "Validation accuracy tests"
+      ],
+
+      "success_metrics": [
+        "✅ Three focused modules created",
+        "✅ All history functionality preserved",
+        "✅ Proper separation of concerns",
+        "✅ No circular dependencies",
+        "✅ Files within size limits"
+      ],
+
+      "dependencies": ["core_gamestate_refactor"],
+      "blocking_issues": [],
+      "rollback_plan": "Remove Systems/MatchHistory/ directory"
+    },
+
+    "main_ui_controller": {
+      "session_id": "main_ui_controller",
+      "phase": "Phase 10: Main.js Refactoring",
+      "priority": 6,
+      "estimated_tokens": 15600,
+      "estimated_time": "4-5 hours",
+
+      "goal": "Extract UI orchestration logic from Main.js into UI/uiController.js",
+
+      "architectural_context": {
+        "module": "UI",
+        "responsibilities": [
+          "UI state management",
+          "Component coordination",
+          "Event handling",
+          "User input processing"
+        ],
+        "constraints": {
+          "read_only_state": true,
+          "no_state_mutation": true,
+          "visual_only": true,
+          "core_systems_dependencies": true
+        }
+      },
+
+      "interface_contract": {
+        "updateGameState": {
+          "signature": "(gameState: GameState): void",
+          "description": "Update UI with new game state",
+          "side_effects": "Updates UI components",
+          "validation": "Must validate game state"
+        },
+        "handleUserInput": {
+          "signature": "(input: any): void",
+          "description": "Handle user input events",
+          "side_effects": "May trigger game actions",
+          "validation": "Must validate input"
+        },
+        "render": {
+          "signature": "(): void",
+          "description": "Render current UI state",
+          "side_effects": "Updates DOM",
+          "validation": "None"
+        }
+      },
+
+      "source_files": {
+        "primary": {
+          "path": "Main.js",
+          "lines_to_refactor": "25-150, 300-500, 600-800",
+          "current_sections": [
+            "Canvas setup and UI element initialization",
+            "UI state update logic",
+            "Event handling delegation",
+            "Ability button state management",
+            "UI rendering coordination"
+          ]
+        }
+      },
+
+      "target_files": {
+        "primary": {
+          "path": "UI/uiController.js",
+          "requirements": "Central UI orchestration, read-only state access",
+          "max_lines": 400
+        }
+      },
+
+      "validation_criteria": [
+        "No direct game state mutation",
+        "Read-only state access",
+        "Proper event delegation",
+        "UI component coordination",
+        "No business logic"
+      ],
+
+      "testing_requirements": [
+        "UI state update tests",
+        "Event handling tests",
+        "Component coordination tests",
+        "State access validation tests"
+      ],
+
+      "success_metrics": [
+        "✅ UI orchestration centralized",
+        "✅ Read-only state access only",
+        "✅ Proper event delegation",
+        "✅ No business logic included",
+        "✅ File size under 400 lines"
+      ],
+
+      "dependencies": ["core_gamestate_refactor", "core_gamerules_refactor"],
+      "blocking_issues": [],
+      "rollback_plan": "Remove UI/uiController.js, restore logic to Main.js"
+    },
+
+    "main_player_management": {
+      "session_id": "main_player_management",
+      "phase": "Phase 10: Main.js Refactoring",
+      "priority": 7,
+      "estimated_tokens": 13200,
+      "estimated_time": "3-4 hours",
+
+      "goal": "Extract player management logic from Main.js into Players/Local/hotSeatPlayer.js",
+
+      "architectural_context": {
+        "module": "Players/Local",
+        "responsibilities": [
+          "Local input handling",
+          "Player state management",
+          "Turn coordination"
+        ],
+        "constraints": {
+          "no_ui_imports": true,
+          "core_interfaces_only": true,
+          "player_contract_compliance": true,
+          "stateless_operations": true
+        }
+      },
+
+      "interface_contract": {
+        "makeMove": {
+          "signature": "(gameState: GameState, context: any): {from: string, to: string}|null",
+          "description": "Make a move for local player",
+          "returns": "Move coordinates or null",
+          "side_effects": "None - returns move data",
+          "validation": "Must validate move"
+        },
+        "isAI": {
+          "signature": "(): boolean",
+          "description": "Check if player is AI",
+          "returns": "Always false for local player",
+          "side_effects": "None",
+          "validation": "None"
+        },
+        "handleSetup": {
+          "signature": "(setupData: any): boolean",
+          "description": "Handle setup phase for local player",
+          "returns": "True if setup action successful",
+          "side_effects": "None",
+          "validation": "Must validate setup data"
+        }
+      },
+
+      "source_files": {
+        "primary": {
+          "path": "Main.js",
+          "lines_to_refactor": "200-300, 900-1000",
+          "current_sections": [
+            "Setup phase player handling",
+            "Turn management for local players",
+            "Input validation",
+            "State synchronization"
+          ]
+        }
+      },
+
+      "target_files": {
+        "primary": {
+          "path": "Players/Local/hotSeatPlayer.js",
+          "requirements": "Local player management, implements PlayerInterface",
+          "max_lines": 200
+        }
+      },
+
+      "validation_criteria": [
+        "Implements PlayerInterface",
+        "No UI dependencies",
+        "Core interfaces only",
+        "Proper error handling",
+        "Setup phase handling"
+      ],
+
+      "testing_requirements": [
+        "Player interface compliance tests",
+        "Move validation tests",
+        "Setup phase tests",
+        "Input handling tests"
+      ],
+
+      "success_metrics": [
+        "✅ PlayerInterface implementation",
+        "✅ No UI dependencies",
+        "✅ Setup phase handling",
+        "✅ Proper validation",
+        "✅ File size under 200 lines"
+      ],
+
+      "dependencies": ["core_gamestate_refactor", "core_gamerules_refactor"],
+      "blocking_issues": [],
+      "rollback_plan": "Remove Players/Local/hotSeatPlayer.js, restore logic to Main.js"
+    },
+
+    "main_ai_orchestration": {
+      "session_id": "main_ai_orchestration",
+      "phase": "Phase 10: Main.js Refactoring",
+      "priority": 8,
+      "estimated_tokens": 14800,
+      "estimated_time": "4-5 hours",
+
+      "goal": "Extract AI orchestration logic from Main.js into enhanced Players/AI/aiPlayer.js",
+
+      "architectural_context": {
+        "module": "Players/AI",
+        "responsibilities": [
+          "AI decision making",
+          "Move calculation",
+          "Strategy implementation",
+          "Difficulty management",
+          "Turn execution"
+        ],
+        "constraints": {
+          "no_ui_imports": true,
+          "core_interfaces_only": true,
+          "player_contract_compliance": true,
+          "stateless_operations": true
+        }
+      },
+
+      "interface_contract": {
+        "makeMove": {
+          "signature": "(gameState: GameState, context: any): {from: string, to: string}|null",
+          "description": "Make AI move decision",
+          "returns": "Move coordinates or null",
+          "side_effects": "None - returns move data",
+          "validation": "Must validate move"
+        },
+        "isAI": {
+          "signature": "(): boolean",
+          "description": "Check if player is AI",
+          "returns": "Always true for AI player",
+          "side_effects": "None",
+          "validation": "None"
+        },
+        "findBestMove": {
+          "signature": "(gameState: GameState, context: any): {from: string, to: string}|null",
+          "description": "Find best move using AI logic",
+          "returns": "Best move or null",
+          "side_effects": "None - returns move data",
+          "validation": "Must validate move"
+        },
+        "executeAbility": {
+          "signature": "(abilityData: any, gameState: GameState): boolean",
+          "description": "Execute AI ability",
+          "returns": "True if ability executed",
+          "side_effects": "None",
+          "validation": "Must validate ability"
+        }
+      },
+
+      "source_files": {
+        "primary": {
+          "path": "Main.js",
+          "lines_to_refactor": "1200-1500, 1600-1800",
+          "current_sections": [
+            "AI turn execution logic",
+            "Strategy selection (policy/policy mode)",
+            "AI state management",
+            "Turn validation and tracking",
+            "Ability execution for AI"
+          ]
+        },
+        "secondary": {
+          "path": "ai_system/controller/AIController.js",
+          "lines_to_integrate": "1-100",
+          "current_implementation": "Existing AI controller logic"
+        }
+      },
+
+      "target_files": {
+        "primary": {
+          "path": "Players/AI/aiPlayer.js",
+          "requirements": "Enhanced AI player implementing PlayerInterface with orchestration",
+          "max_lines": 600
+        }
+      },
+
+      "validation_criteria": [
+        "Implements PlayerInterface",
+        "No UI dependencies",
+        "Core interfaces only",
+        "AI decision logic preserved",
+        "Proper error handling"
+      ],
+
+      "testing_requirements": [
+        "Player interface compliance tests",
+        "AI decision accuracy tests",
+        "Move validation tests",
+        "Ability execution tests",
+        "Performance tests"
+      ],
+
+      "success_metrics": [
+        "✅ PlayerInterface implementation",
+        "✅ AI logic preserved and enhanced",
+        "✅ No UI dependencies",
+        "✅ Proper orchestration",
+        "✅ File size under 600 lines"
+      ],
+
+      "dependencies": ["core_gamestate_refactor", "core_gamerules_refactor"],
+      "blocking_issues": [],
+      "rollback_plan": "Remove enhanced Players/AI/aiPlayer.js, restore logic to Main.js"
+    },
+
+    "main_game_engine_enhancement": {
+      "session_id": "main_game_engine_enhancement",
+      "phase": "Phase 10: Main.js Refactoring",
+      "priority": 9,
+      "estimated_tokens": 14200,
+      "estimated_time": "4-5 hours",
+
+      "goal": "Enhance Core/gameEngine.js with orchestration responsibilities extracted from Main.js",
+
+      "architectural_context": {
+        "module": "Core",
+        "responsibilities": [
+          "State mutation coordination",
+          "Game logic orchestration",
+          "Rule system integration",
+          "Turn management",
+          "Win condition checking",
+          "Game flow control",
+          "Event tracking"
+        ],
+        "constraints": {
+          "pure_functions_only": true,
+          "no_side_effects": true,
+          "immutable_state": true,
+          "comprehensive_validation": true
+        }
+      },
+
+      "interface_contract": {
+        "initialize": {
+          "signature": "(seed?: number): GameState",
+          "description": "Initialize game with optional seed",
+          "returns": "Initial game state",
+          "side_effects": "None - pure function",
+          "validation": "Must return valid initial state"
+        },
+        "movePiece": {
+          "signature": "(fromCoord: string, toCoord: string, gameState: GameState): GameState",
+          "description": "Execute piece move and return new state",
+          "returns": "New game state after move",
+          "side_effects": "None - pure function",
+          "validation": "Must validate move through Rules system"
+        },
+        "applyAbility": {
+          "signature": "(abilityType: string, params: any, gameState: GameState): GameState",
+          "description": "Apply ability and return new state",
+          "returns": "New game state after ability",
+          "side_effects": "None - pure function",
+          "validation": "Must validate ability through Rules system"
+        },
+        "checkWin": {
+          "signature": "(gameState: GameState): {winner: string|null, method: string|null}",
+          "description": "Check if game has reached terminal state",
+          "returns": "Win result object",
+          "side_effects": "None - pure function",
+          "validation": "Must use WinConditionSystem for validation"
+        },
+        "advanceTurn": {
+          "signature": "(gameState: GameState): GameState",
+          "description": "Advance to next turn",
+          "returns": "New game state with turn advanced",
+          "side_effects": "None - pure function",
+          "validation": "Must validate turn transition"
+        },
+        "trackEvent": {
+          "signature": "(eventType: string, eventData: any, gameState: GameState): GameState",
+          "description": "Track game event in history",
+          "returns": "New game state with event tracked",
+          "side_effects": "None - pure function",
+          "validation": "Must validate event data"
+        }
+      },
+
+      "source_files": {
+        "primary": {
+          "path": "Main.js",
+          "lines_to_refactor": "1800-2000, 2100-2300",
+          "current_sections": [
+            "Turn management orchestration",
+            "Win condition checking",
+            "Game state coordination",
+            "Event tracking coordination",
+            "Game flow control"
+          ]
+        },
+        "secondary": {
+          "path": "Core/gameEngine.js",
+          "lines_to_enhance": "1-200",
+          "current_implementation": "Basic game engine functions"
+        }
+      },
+
+      "target_files": {
+        "primary": {
+          "path": "Core/gameEngine.js",
+          "requirements": "Enhanced with orchestration responsibilities, pure functions only",
+          "max_lines": 500
+        }
+      },
+
+      "validation_criteria": [
+        "All functions are pure",
+        "No side effects",
+        "Immutable state operations",
+        "Comprehensive input validation",
+        "All game orchestration logic included"
+      ],
+
+      "testing_requirements": [
+        "Unit tests for all orchestration functions",
+        "State immutability tests",
+        "Validation coverage tests",
+        "Integration flow tests",
+        "Performance tests"
+      ],
+
+      "success_metrics": [
+        "✅ Pure functions only",
+        "✅ Complete game orchestration",
+        "✅ Immutable state operations",
+        "✅ Comprehensive validation",
+        "✅ File size under 500 lines"
+      ],
+
+      "dependencies": ["core_gamestate_refactor", "core_gamerules_refactor", "systems_movement_rules", "systems_attack_rules"],
+      "blocking_issues": [],
+      "rollback_plan": "Restore Core/gameEngine.js to original state"
+    },
+
+    "main_thinned_bootstrap": {
+      "session_id": "main_thinned_bootstrap",
+      "phase": "Phase 10: Main.js Refactoring",
+      "priority": 10,
+      "estimated_tokens": 6800,
+      "estimated_time": "2-3 hours",
+
+      "goal": "Thin Main.js to application bootstrap (< 200 lines) with proper module wiring",
+
+      "architectural_context": {
+        "module": "Application Root",
+        "responsibilities": [
+          "Module imports and initialization",
+          "Dependency injection wiring",
+          "Application startup coordination",
+          "High-level event binding"
+        ],
+        "constraints": {
+          "thin_bootstrap_only": true,
+          "no_business_logic": true,
+          "module_orchestration_only": true,
+          "clean_architecture": true
+        }
+      },
+
+      "interface_contract": {
+        "main": {
+          "signature": "(): void",
+          "description": "Application entry point",
+          "side_effects": "Initializes entire application",
+          "validation": "Must wire all modules correctly"
+        },
+        "initializeModules": {
+          "signature": "(): ModuleContainer",
+          "description": "Initialize and wire all application modules",
+          "returns": "Container with wired modules",
+          "side_effects": "Creates module instances",
+          "validation": "Must validate module dependencies"
+        },
+        "startApplication": {
+          "signature": "(modules: ModuleContainer): void",
+          "description": "Start the application with wired modules",
+          "side_effects": "Binds events, starts rendering",
+          "validation": "Must validate module container"
+        }
+      },
+
+      "source_files": {
+        "primary": {
+          "path": "Main.js",
+          "lines_to_preserve": "1-24, 2400-2500",
+          "current_sections": [
+            "Basic imports and setup",
+            "Final application startup",
+            "Global event bindings"
+          ]
+        }
+      },
+
+      "target_files": {
+        "primary": {
+          "path": "Main.js",
+          "requirements": "Thin bootstrap only (< 200 lines), module wiring, no business logic",
+          "max_lines": 200
+        }
+      },
+
+      "validation_criteria": [
+        "File size under 200 lines",
+        "No direct DOM manipulation except startup",
+        "No game state manipulation",
+        "No player logic",
+        "Clean module wiring only",
+        "Proper dependency injection"
+      ],
+
+      "testing_requirements": [
+        "Module wiring tests",
+        "Application startup tests",
+        "Dependency injection tests",
+        "Integration bootstrap tests"
+      ],
+
+      "success_metrics": [
+        "✅ File size under 200 lines",
+        "✅ No business logic",
+        "✅ Clean module orchestration",
+        "✅ Proper dependency injection",
+        "✅ Application starts correctly"
+      ],
+
+      "dependencies": [
+        "main_ui_controller",
+        "main_player_management",
+        "main_ai_orchestration",
+        "main_game_engine_enhancement",
+        "core_gamestate_refactor",
+        "core_gamerules_refactor"
+      ],
+      "blocking_issues": [],
+      "rollback_plan": "Restore full Main.js from backup"
+    }
+  },
+
+  "session_execution_order": [
+    "core_gamestate_refactor",
+    "core_gamerules_refactor",
+    "systems_movement_rules",
+    "systems_attack_rules",
+    "systems_match_history",
+    "main_ui_controller",
+    "main_player_management",
+    "main_ai_orchestration",
+    "main_game_engine_enhancement",
+    "main_thinned_bootstrap"
+  ],
+
+  "session_progress_tracking": {
+    "total_sessions": 10,
+    "completed_sessions": [],
+    "in_progress_sessions": [],
+    "pending_sessions": [
+      "core_gamestate_refactor",
+      "core_gamerules_refactor",
+      "systems_movement_rules",
+      "systems_attack_rules",
+      "systems_match_history",
+      "main_ui_controller",
+      "main_player_management",
+      "main_ai_orchestration",
+      "main_game_engine_enhancement",
+      "main_thinned_bootstrap"
+    ]
+  },
+
+  "ai_agent_guidelines": {
+    "context_management": {
+      "max_context_window": "Use only provided session package",
+      "fresh_sessions": "Start new chat for each session",
+      "no_external_context": "Don't reference other sessions or global state"
+    },
+    "implementation_rules": {
+      "follow_contracts": "Strictly follow interface contracts provided",
+      "pure_functions": "Implement pure functions where required",
+      "validation_first": "Add comprehensive input validation",
+      "no_global_state": "Never use window, document, or global state",
+      "json_serializable": "All state objects must be 100% JSON serializable",
+      "legacy_compatibility": "New modules must work with existing ai_system/ components"
+    },
+    "testing_requirements": {
+      "unit_tests": "Write unit tests for all functions",
+      "validation_coverage": "Test all validation scenarios",
+      "edge_cases": "Test edge cases and error conditions",
+      "contract_compliance": "Verify interface contract compliance",
+      "integration_tests": "Test module interactions every 3 sessions",
+      "serialization_tests": "Verify JSON.stringify() works on all state objects"
+    },
+    "success_criteria": {
+      "functionality_preserved": "All existing game features must work",
+      "architecture_compliance": "Must follow provided architectural constraints",
+      "performance_maintained": "No performance degradation",
+      "code_quality": "Clean, readable, well-documented code",
+      "serialization_ready": "All state objects are network-transmittable",
+      "legacy_compatible": "Works with existing ai_system/ components"
+    }
+  },
+
+  "integration_checkpoints": {
+    "description": "Critical integration tests to perform every 3 sessions",
+    "checkpoint_1_after_session_3": {
+      "test": "GameState + GameRules + MovementRules integration",
+      "validation": [
+        "Create game state",
+        "Validate a move",
+        "Execute the move",
+        "Verify state changes correctly"
+      ],
+      "rollback_if_failed": "Cannot proceed with dependent sessions"
+    },
+    "checkpoint_2_after_session_6": {
+      "test": "UI Controller + Core modules integration",
+      "validation": [
+        "Initialize UI controller",
+        "Update UI with game state",
+        "Handle user input",
+        "Verify no state mutation in UI"
+      ],
+      "rollback_if_failed": "UI sessions need rework"
+    },
+    "checkpoint_3_after_session_9": {
+      "test": "Full game engine + AI system integration",
+      "validation": [
+        "Initialize game with AI player",
+        "Make AI move using new GameEngine",
+        "Verify AI receives correct state format",
+        "Test ability execution through new system"
+      ],
+      "rollback_if_failed": "AI adapter needed before bootstrap"
+    }
+  },
+
+  "legacy_system_bridges": {
+    "ai_system_compatibility": {
+      "requirement": "New GameEngine must work with existing ai_system/",
+      "critical_interfaces": [
+        "GameState must be readable by AI evaluation functions",
+        "Move format must match AI expectations",
+        "State snapshots must be AI-compatible"
+      ],
+      "adapter_pattern": "Consider building AIAdapter if direct compatibility impossible",
+      "testing": "AI must win/lose games using new architecture"
+    },
+    "state_format_compatibility": {
+      "requirement": "GameState format must work with existing systems",
+      "constraints": [
+        "No circular references",
+        "No class instances",
+        "Plain objects only",
+        "JSON serializable"
+      ],
+      "validation": "JSON.stringify(gameState) must work perfectly"
+    }
+  },
+
+  "emergency_rollback_procedures": {
+    "single_session_rollback": "Delete target files and restore from backup",
+    "multiple_session_rollback": "Follow dependency order in reverse",
+    "full_project_rollback": "Restore entire duplicate folder from backup",
+    "validation_before_rollback": "Test that rollback restores working state"
+  }
+}

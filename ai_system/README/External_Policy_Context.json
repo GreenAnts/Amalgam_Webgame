@@ -95,6 +95,12 @@
       "gameLogic.isTerminal(gameState)",
       "gameLogic.getTerminalResult(gameState)"
     ],
+    "simulation_protocol": {
+      "pattern": "State Injection",
+      "description": "To simulate moves without crashing, do NOT mock GameLogic. Temporarily swap the gameState property.",
+      "code_snippet": "const original = gl.gameState; gl.gameState = simState; try { /* generate actions */ } finally { gl.gameState = original; }",
+      "reasoning": "Subsystems (Fireball, etc.) are bound to the GameLogic instance and require access to its internal state to validate formations."
+    },
     "note": "Policies should not mutate gameState directly. Use ActionGenerator + RandomSelector conversion helpers inside ai_system."
   },
   "determinism_rules": {

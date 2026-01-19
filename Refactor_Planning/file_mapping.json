@@ -1,0 +1,1063 @@
+{
+  "version": "2.0.0",
+  "refactor_date": "2026-01-19",
+  "project_name": "Amalgam WebGame Refactor",
+  "description": "Updated file mappings - reflecting current modular codebase with remaining implementation gaps",
+  
+  "file_mappings": {
+    "Main.js": {
+      "description": "Main game orchestrator - well-structured coordination logic",
+      "extract_to": [
+        {
+          "source_section": "game_logic_coordination",
+          "target_file": "Core/gameEngine.js",
+          "transformation": "Extract game coordination logic into pure GameEngine class",
+          "lines": "1-50, 100-200, 1000-1122",
+          "dependencies": ["GameLogic.js", "PlayerManager.js", "BoardRenderer.js"],
+          "new_imports": ["Core/GameEngine", "Core/GameState", "Core/GameRules"]
+        },
+        {
+          "source_section": "ui_coordination",
+          "target_file": "UI/uiController.js",
+          "transformation": "Extract UI coordination logic into UIController class",
+          "lines": "51-150, 800-900",
+          "dependencies": ["UIManager.js", "AbilityButtons.js", "BoardRenderer.js"],
+          "new_imports": ["UI/UIController", "Core/GameEngine", "Systems/MatchHistory"]
+        },
+        {
+          "source_section": "history_tracking",
+          "target_file": "Systems/MatchHistory/historyCollector.js",
+          "transformation": "Extract history tracking logic into MatchHistory system",
+          "lines": "201-300, 901-1000",
+          "dependencies": ["MatchHistoryTracker.js"],
+          "new_imports": ["Systems/MatchHistory/HistoryCollector", "Core/GameEngine"]
+        },
+        {
+          "source_section": "ai_integration",
+          "target_file": "Players/AI/aiPlayer.js",
+          "transformation": "Extract AI integration logic into AIPlayer class",
+          "lines": "301-400, 1200-1300",
+          "dependencies": ["AIController.js", "PlayerManager.js"],
+          "new_imports": ["Players/AI/AIPlayer", "Core/GameEngine", "Systems/MatchHistory"]
+        },
+        {
+          "source_section": "event_handling",
+          "target_file": "UI/Buttons/gameControls.js",
+          "transformation": "Extract game control event handling into GameControls class",
+          "lines": "401-500, 1400-1500",
+          "dependencies": ["AbilityButtons.js", "UIManager.js"],
+          "new_imports": ["UI/Buttons/GameControls", "Core/GameEngine"]
+        }
+      ],
+      "remove_after": true,
+      "dependencies": [
+        "GameLogic.js",
+        "PlayerManager.js", 
+        "BoardRenderer.js",
+        "PieceRenderer.js",
+        "IndicatorRenderer.js",
+        "UIManager.js",
+        "AbilityButtons.js",
+        "SetupManager.js",
+        "SetupUI.js",
+        "MatchHistoryTracker.js",
+        "AIController.js"
+      ],
+      "new_imports": [
+        "Core/GameEngine",
+        "UI/UIController", 
+        "Systems/MatchHistory",
+        "Players/AI/AIPlayer",
+        "UI/Buttons/GameControls"
+      ],
+      "transformation_notes": {
+        "pure_functions": "Convert all state mutations to pure functions",
+        "dependency_injection": "Use dependency injection instead of direct imports",
+        "event_delegation": "Implement proper event delegation pattern",
+        "separation_of_concerns": "Separate UI logic from game logic completely"
+      }
+    },
+    
+    "GameLogic.js": {
+      "description": "Game logic orchestrator with mixed responsibilities",
+      "extract_to": [
+        {
+          "source_section": "state_management",
+          "target_file": "Core/gameState.js",
+          "transformation": "Extract state management into pure GameState class",
+          "lines": "1-100, 500-600",
+          "dependencies": [],
+          "new_imports": ["Core/GameState"]
+        },
+        {
+          "source_section": "game_rules",
+          "target_file": "Core/gameRules.js",
+          "transformation": "Extract rule validation into GameRules class",
+          "lines": "101-200, 601-700",
+          "dependencies": [],
+          "new_imports": ["Core/GameRules"]
+        },
+        {
+          "source_section": "coordination_logic",
+          "target_file": "Core/gameEngine.js",
+          "transformation": "Extract coordination logic into GameEngine class",
+          "lines": "201-300, 701-800",
+          "dependencies": ["GameState", "GameRules"],
+          "new_imports": ["Core/GameEngine"]
+        },
+        {
+          "source_section": "arena_interface",
+          "target_file": "Core/gameEngine.js",
+          "transformation": "Extract Arena-specific methods into GameEngine",
+          "lines": "301-400, 801-900",
+          "dependencies": ["GameState", "GameRules"],
+          "new_imports": ["Core/GameEngine"]
+        }
+      ],
+      "keep_as": "Facade for backward compatibility",
+      "dependencies": [
+        "GameState.js",
+        "BoardUtils.js", 
+        "MovementSystem.js",
+        "PlayerManager.js",
+        "AttackSystem.js",
+        "PortalSwapSystem.js",
+        "RubyFireballSystem.js",
+        "PearlTidalwaveSystem.js",
+        "AmberSapSystem.js",
+        "JadeLaunchSystem.js",
+        "WinConditionSystem.js"
+      ],
+      "new_imports": [
+        "Core/GameEngine",
+        "Core/GameState",
+        "Core/GameRules"
+      ],
+      "transformation_notes": {
+        "immutable_state": "Convert all state mutations to return new state objects",
+        "pure_functions": "Ensure all functions are pure with no side effects",
+        "validation_first": "Add comprehensive input validation to all methods",
+        "error_handling": "Implement proper error handling and validation"
+      }
+    },
+    
+    "core/GameState.js": {
+      "description": "Current state management - needs to become immutable",
+      "extract_to": [
+        {
+          "source_section": "state_container",
+          "target_file": "Core/gameState.js",
+          "transformation": "Convert to immutable state container with pure methods",
+          "lines": "1-200",
+          "dependencies": [],
+          "new_imports": ["Core/GameState"]
+        }
+      ],
+      "keep_as": "Facade for backward compatibility",
+      "dependencies": [],
+      "new_imports": ["Core/GameState"],
+      "transformation_notes": {
+        "immutability": "All methods must return new state objects, never mutate existing state",
+        "validation": "Add comprehensive validation to all state operations",
+        "serialization": "Implement proper state serialization methods",
+        "comparison": "Add state comparison methods for change detection"
+      }
+    },
+    
+    "core/BoardUtils.js": {
+      "description": "Coordinate utilities - already well-structured",
+      "extract_to": [
+        {
+          "source_section": "coordinate_utilities",
+          "target_file": "Core/boardUtils.js",
+          "transformation": "Move to Core module with enhanced validation",
+          "lines": "1-100",
+          "dependencies": [],
+          "new_imports": ["Core/BoardUtils"]
+        }
+      ],
+      "keep_as": "Facade for backward compatibility",
+      "dependencies": [],
+      "new_imports": ["Core/BoardUtils"],
+      "transformation_notes": {
+        "enhanced_validation": "Add comprehensive coordinate validation",
+        "performance_optimization": "Optimize coordinate calculations",
+        "error_handling": "Add proper error handling for invalid coordinates"
+      }
+    },
+    
+    "systems/MovementSystem.js": {
+      "description": "Movement validation logic - needs to become pure",
+      "extract_to": [
+        {
+          "source_section": "movement_validation",
+          "target_file": "Systems/Rules/movementRules.js",
+          "transformation": "Convert to pure movement validation functions",
+          "lines": "1-300",
+          "dependencies": ["Core/GameEngine"],
+          "new_imports": ["Systems/Rules/MovementRules"]
+        },
+        {
+          "source_section": "phase_movement",
+          "target_file": "Systems/Rules/movementRules.js",
+          "transformation": "Extract phase movement logic into MovementRules",
+          "lines": "301-500",
+          "dependencies": ["Core/GameEngine"],
+          "new_imports": ["Systems/Rules/MovementRules"]
+        },
+        {
+          "source_section": "nexus_movement",
+          "target_file": "Systems/Rules/movementRules.js",
+          "transformation": "Extract nexus movement logic into MovementRules",
+          "lines": "501-700",
+          "dependencies": ["Core/GameEngine"],
+          "new_imports": ["Systems/Rules/MovementRules"]
+        }
+      ],
+      "keep_as": "Facade for backward compatibility",
+      "dependencies": ["GameState", "BoardUtils"],
+      "new_imports": ["Systems/Rules/MovementRules"],
+      "transformation_notes": {
+        "pure_functions": "Convert all methods to pure functions with no side effects",
+        "stateless": "Remove all instance state, use parameters only",
+        "validation": "Add comprehensive input validation",
+        "performance": "Optimize movement calculation algorithms"
+      }
+    },
+    
+    "systems/PlayerManager.js": {
+      "description": "Player management - needs interface definition",
+      "extract_to": [
+        {
+          "source_section": "player_interface",
+          "target_file": "Players/playerInterface.js",
+          "transformation": "Extract player interface definition",
+          "lines": "1-100",
+          "dependencies": [],
+          "new_imports": ["Players/PlayerInterface"]
+        },
+        {
+          "source_section": "player_management",
+          "target_file": "Players/Local/hotSeatPlayer.js",
+          "transformation": "Extract local player management logic",
+          "lines": "101-200",
+          "dependencies": ["Core/GameEngine"],
+          "new_imports": ["Players/Local/HotSeatPlayer"]
+        }
+      ],
+      "keep_as": "Facade for backward compatibility",
+      "dependencies": [],
+      "new_imports": ["Players/PlayerInterface", "Players/Local/HotSeatPlayer"],
+      "transformation_notes": {
+        "interface_definition": "Define clear player interface contracts",
+        "separation_of_concerns": "Separate player management from game logic",
+        "extensibility": "Design for easy addition of new player types"
+      }
+    },
+    
+    "systems/MatchHistoryTracker.js": {
+      "description": "Game state tracking - needs modularization",
+      "extract_to": [
+        {
+          "source_section": "history_collection",
+          "target_file": "Systems/MatchHistory/historyCollector.js",
+          "transformation": "Extract history collection logic",
+          "lines": "1-200",
+          "dependencies": ["Core/GameEngine"],
+          "new_imports": ["Systems/MatchHistory/HistoryCollector"]
+        },
+        {
+          "source_section": "history_parsing",
+          "target_file": "Systems/MatchHistory/historyParser.js",
+          "transformation": "Extract history parsing logic",
+          "lines": "201-300",
+          "dependencies": ["Core/GameEngine"],
+          "new_imports": ["Systems/MatchHistory/HistoryParser"]
+        },
+        {
+          "source_section": "history_serialization",
+          "target_file": "Systems/MatchHistory/historySerializer.js",
+          "transformation": "Extract history serialization logic",
+          "lines": "301-400",
+          "dependencies": ["Core/GameEngine"],
+          "new_imports": ["Systems/MatchHistory/HistorySerializer"]
+        }
+      ],
+      "keep_as": "Facade for backward compatibility",
+      "dependencies": [],
+      "new_imports": ["Systems/MatchHistory/HistoryCollector", "Systems/MatchHistory/HistoryParser", "Systems/MatchHistory/HistorySerializer"],
+      "transformation_notes": {
+        "modularization": "Split into focused, single-responsibility modules",
+        "serialization": "Implement proper data serialization formats",
+        "performance": "Optimize history tracking for large games",
+        "extensibility": "Design for easy addition of new history types"
+      }
+    },
+    
+    "systems/AttackSystem.js": {
+      "description": "Combat and elimination rules",
+      "extract_to": [
+        {
+          "source_section": "attack_validation",
+          "target_file": "Systems/Rules/attackRules.js",
+          "transformation": "Extract attack validation logic",
+          "lines": "1-150",
+          "dependencies": ["Core/GameEngine"],
+          "new_imports": ["Systems/Rules/AttackRules"]
+        },
+        {
+          "source_section": "elimination_logic",
+          "target_file": "Systems/Rules/attackRules.js",
+          "transformation": "Extract elimination logic",
+          "lines": "151-300",
+          "dependencies": ["Core/GameEngine"],
+          "new_imports": ["Systems/Rules/AttackRules"]
+        }
+      ],
+      "keep_as": "Facade for backward compatibility",
+      "dependencies": ["GameState", "PlayerManager"],
+      "new_imports": ["Systems/Rules/AttackRules"],
+      "transformation_notes": {
+        "pure_functions": "Convert to pure validation functions",
+        "rule_separation": "Separate attack rules from elimination logic",
+        "validation": "Add comprehensive attack validation"
+      }
+    },
+    
+    "systems/PortalSwapSystem.js": {
+      "description": "Portal swap ability rules",
+      "extract_to": [
+        {
+          "source_section": "swap_rules",
+          "target_file": "Systems/Rules/Abilities/swapRules.js",
+          "transformation": "Extract swap validation logic",
+          "lines": "1-200",
+          "dependencies": ["Core/GameEngine"],
+          "new_imports": ["Systems/Rules/Abilities/SwapRules"]
+        }
+      ],
+      "keep_as": "Facade for backward compatibility",
+      "dependencies": ["GameState", "PlayerManager", "AttackSystem"],
+      "new_imports": ["Systems/Rules/Abilities/SwapRules"],
+      "transformation_notes": {
+        "ability_isolation": "Isolate swap rules from other systems",
+        "validation": "Add comprehensive swap validation",
+        "state_management": "Ensure proper state management during swaps"
+      }
+    },
+    
+    "systems/RubyFireballSystem.js": {
+      "description": "Ruby fireball ability rules",
+      "extract_to": [
+        {
+          "source_section": "fireball_rules",
+          "target_file": "Systems/Rules/Abilities/fireballRules.js",
+          "transformation": "Extract fireball validation logic",
+          "lines": "1-200",
+          "dependencies": ["Core/GameEngine"],
+          "new_imports": ["Systems/Rules/Abilities/FireballRules"]
+        }
+      ],
+      "keep_as": "Facade for backward compatibility",
+      "dependencies": ["GameState", "PlayerManager"],
+      "new_imports": ["Systems/Rules/Abilities/FireballRules"],
+      "transformation_notes": {
+        "ability_isolation": "Isolate fireball rules from other systems",
+        "validation": "Add comprehensive fireball validation",
+        "amplification": "Handle fireball amplification logic"
+      }
+    },
+    
+    "systems/PearlTidalwaveSystem.js": {
+      "description": "Pearl tidal wave ability rules",
+      "extract_to": [
+        {
+          "source_section": "wave_rules",
+          "target_file": "Systems/Rules/Abilities/waveRules.js",
+          "transformation": "Extract wave validation logic",
+          "lines": "1-200",
+          "dependencies": ["Core/GameEngine"],
+          "new_imports": ["Systems/Rules/Abilities/WaveRules"]
+        }
+      ],
+      "keep_as": "Facade for backward compatibility",
+      "dependencies": ["GameState", "PlayerManager"],
+      "new_imports": ["Systems/Rules/Abilities/WaveRules"],
+      "transformation_notes": {
+        "ability_isolation": "Isolate wave rules from other systems",
+        "validation": "Add comprehensive wave validation",
+        "amplification": "Handle wave amplification logic"
+      }
+    },
+    
+    "systems/AmberSapSystem.js": {
+      "description": "Amber sap ability rules",
+      "extract_to": [
+        {
+          "source_section": "sap_rules",
+          "target_file": "Systems/Rules/Abilities/sapRules.js",
+          "transformation": "Extract sap validation logic",
+          "lines": "1-200",
+          "dependencies": ["Core/GameEngine"],
+          "new_imports": ["Systems/Rules/Abilities/SapRules"]
+        }
+      ],
+      "keep_as": "Facade for backward compatibility",
+      "dependencies": ["GameState", "PlayerManager"],
+      "new_imports": ["Systems/Rules/Abilities/SapRules"],
+      "transformation_notes": {
+        "ability_isolation": "Isolate sap rules from other systems",
+        "validation": "Add comprehensive sap validation",
+        "amplification": "Handle sap amplification logic"
+      }
+    },
+    
+    "systems/JadeLaunchSystem.js": {
+      "description": "Jade launch ability rules",
+      "extract_to": [
+        {
+          "source_section": "launch_rules",
+          "target_file": "Systems/Rules/Abilities/launchRules.js",
+          "transformation": "Extract launch validation logic",
+          "lines": "1-200",
+          "dependencies": ["Core/GameEngine"],
+          "new_imports": ["Systems/Rules/Abilities/LaunchRules"]
+        }
+      ],
+      "keep_as": "Facade for backward compatibility",
+      "dependencies": ["GameState", "PlayerManager"],
+      "new_imports": ["Systems/Rules/Abilities/LaunchRules"],
+      "transformation_notes": {
+        "ability_isolation": "Isolate launch rules from other systems",
+        "validation": "Add comprehensive launch validation",
+        "trajectory": "Handle launch trajectory calculation"
+      }
+    },
+    
+    "ui/UIManager.js": {
+      "description": "UI update and event handling - needs expansion",
+      "extract_to": [
+        {
+          "source_section": "ui_controller",
+          "target_file": "UI/uiController.js",
+          "transformation": "Expand into full UI controller with coordination logic",
+          "lines": "1-50",
+          "dependencies": ["Core/GameEngine", "Systems/MatchHistory"],
+          "new_imports": ["UI/UIController"]
+        },
+        {
+          "source_section": "event_handling",
+          "target_file": "UI/Buttons/gameControls.js",
+          "transformation": "Extract game control event handling",
+          "lines": "51-100",
+          "dependencies": ["Core/GameEngine"],
+          "new_imports": ["UI/Buttons/GameControls"]
+        }
+      ],
+      "keep_as": "Facade for backward compatibility",
+      "dependencies": [],
+      "new_imports": ["UI/UIController", "UI/Buttons/GameControls"],
+      "transformation_notes": {
+        "expansion": "Expand UI management to handle all UI coordination",
+        "event_delegation": "Implement proper event delegation pattern",
+        "state_management": "Add UI state management capabilities"
+      }
+    },
+    
+    "ui/BoardRenderer.js": {
+      "description": "Board rendering and visualization",
+      "extract_to": [
+        {
+          "source_section": "board_rendering",
+          "target_file": "UI/boardRenderer.js",
+          "transformation": "Move to UI module with enhanced rendering capabilities",
+          "lines": "1-300",
+          "dependencies": ["Core/GameState"],
+          "new_imports": ["UI/BoardRenderer"]
+        },
+        {
+          "source_section": "theme_application",
+          "target_file": "Config/Themes/Gameplay/defaultGameplay.js",
+          "transformation": "Extract theme application logic",
+          "lines": "301-400",
+          "dependencies": [],
+          "new_imports": ["Config/Themes/Gameplay/DefaultGameplay"]
+        }
+      ],
+      "keep_as": "Facade for backward compatibility",
+      "dependencies": [],
+      "new_imports": ["UI/BoardRenderer", "Config/Themes/Gameplay/DefaultGameplay"],
+      "transformation_notes": {
+        "visual_only": "Ensure board rendering is purely visual with no game logic",
+        "theme_integration": "Integrate with theme system for customization",
+        "performance": "Optimize rendering for large boards"
+      }
+    },
+    
+    "ui/PieceRenderer.js": {
+      "description": "Piece rendering and animation",
+      "extract_to": [
+        {
+          "source_section": "piece_rendering",
+          "target_file": "UI/pieceRenderer.js",
+          "transformation": "Move to UI module with enhanced animation capabilities",
+          "lines": "1-250",
+          "dependencies": ["Core/GameState"],
+          "new_imports": ["UI/PieceRenderer"]
+        },
+        {
+          "source_section": "animation_handling",
+          "target_file": "UI/Animations/moveAnimations.js",
+          "transformation": "Extract animation logic into dedicated module",
+          "lines": "251-350",
+          "dependencies": ["Core/GameState"],
+          "new_imports": ["UI/Animations/MoveAnimations"]
+        }
+      ],
+      "keep_as": "Facade for backward compatibility",
+      "dependencies": [],
+      "new_imports": ["UI/PieceRenderer", "UI/Animations/MoveAnimations"],
+      "transformation_notes": {
+        "animation_system": "Implement comprehensive animation system",
+        "visual_only": "Ensure piece rendering is purely visual",
+        "performance": "Optimize animation performance"
+      }
+    },
+    
+    "ui/IndicatorRenderer.js": {
+      "description": "Visual indicators and highlights",
+      "extract_to": [
+        {
+          "source_section": "movement_indicators",
+          "target_file": "UI/Indicators/movementIndicators.js",
+          "transformation": "Extract movement indicators into dedicated module",
+          "lines": "1-150",
+          "dependencies": ["Core/GameState"],
+          "new_imports": ["UI/Indicators/MovementIndicators"]
+        },
+        {
+          "source_section": "ability_indicators",
+          "target_file": "UI/Indicators/abilityIndicators.js",
+          "transformation": "Extract ability indicators into dedicated module",
+          "lines": "151-250",
+          "dependencies": ["Core/GameState"],
+          "new_imports": ["UI/Indicators/AbilityIndicators"]
+        }
+      ],
+      "keep_as": "Facade for backward compatibility",
+      "dependencies": [],
+      "new_imports": ["UI/Indicators/MovementIndicators", "UI/Indicators/AbilityIndicators"],
+      "transformation_notes": {
+        "indicator_separation": "Separate different types of indicators into dedicated modules",
+        "visual_only": "Ensure indicators are purely visual with no game logic",
+        "performance": "Optimize indicator rendering performance"
+      }
+    },
+    
+    "ui/AbilityButtons.js": {
+      "description": "Ability activation buttons",
+      "extract_to": [
+        {
+          "source_section": "ability_buttons",
+          "target_file": "UI/Buttons/abilityButtons.js",
+          "transformation": "Move to UI module with enhanced button management",
+          "lines": "1-200",
+          "dependencies": ["Core/GameEngine"],
+          "new_imports": ["UI/Buttons/AbilityButtons"]
+        }
+      ],
+      "keep_as": "Facade for backward compatibility",
+      "dependencies": [],
+      "new_imports": ["UI/Buttons/AbilityButtons"],
+      "transformation_notes": {
+        "button_management": "Implement comprehensive button state management",
+        "visual_only": "Ensure buttons are purely visual with no game logic",
+        "accessibility": "Add accessibility features for button interactions"
+      }
+    },
+    
+    "ui/SetupUI.js": {
+      "description": "Setup phase UI components",
+      "extract_to": [
+        {
+          "source_section": "setup_tray",
+          "target_file": "UI/Overlays/setupPieceTray.js",
+          "transformation": "Extract setup tray into dedicated overlay component",
+          "lines": "1-150",
+          "dependencies": ["Core/GameEngine"],
+          "new_imports": ["UI/Overlays/SetupPieceTray"]
+        },
+        {
+          "source_section": "placement_regions",
+          "target_file": "UI/Overlays/setupPieceTray.js",
+          "transformation": "Extract placement region rendering",
+          "lines": "151-250",
+          "dependencies": ["Core/GameEngine"],
+          "new_imports": ["UI/Overlays/SetupPieceTray"]
+        }
+      ],
+      "keep_as": "Facade for backward compatibility",
+      "dependencies": [],
+      "new_imports": ["UI/Overlays/SetupPieceTray"],
+      "transformation_notes": {
+        "overlay_system": "Implement proper overlay system for setup phase",
+        "visual_only": "Ensure setup UI is purely visual",
+        "user_experience": "Enhance setup phase user experience"
+      }
+    },
+    
+    "systems/SetupManager.js": {
+      "description": "Setup phase management",
+      "extract_to": [
+        {
+          "source_section": "setup_management",
+          "target_file": "UI/Overlays/setupPieceTray.js",
+          "transformation": "Integrate setup management with setup UI",
+          "lines": "1-200",
+          "dependencies": ["Core/GameEngine", "PlayerManager"],
+          "new_imports": ["UI/Overlays/SetupPieceTray"]
+        }
+      ],
+      "keep_as": "Facade for backward compatibility",
+      "dependencies": [],
+      "new_imports": ["UI/Overlays/SetupPieceTray"],
+      "transformation_notes": {
+        "ui_integration": "Integrate setup management with UI components",
+        "state_management": "Ensure proper state management during setup",
+        "validation": "Add comprehensive setup validation"
+      }
+    },
+    
+    "systems/WinConditionSystem.js": {
+      "description": "Win condition checking",
+      "extract_to": [
+        {
+          "source_section": "win_conditions",
+          "target_file": "Core/gameRules.js",
+          "transformation": "Extract win conditions into GameRules",
+          "lines": "1-100",
+          "dependencies": ["Core/GameEngine"],
+          "new_imports": ["Core/GameRules"]
+        }
+      ],
+      "keep_as": "Facade for backward compatibility",
+      "dependencies": ["GameState", "PlayerManager"],
+      "new_imports": ["Core/GameRules"],
+      "transformation_notes": {
+        "rule_integration": "Integrate win conditions with game rules system",
+        "validation": "Add comprehensive win condition validation",
+        "performance": "Optimize win condition checking"
+      }
+    },
+    
+    "ai_system/controller/AIController.js": {
+      "description": "AI player controller",
+      "extract_to": [
+        {
+          "source_section": "ai_player",
+          "target_file": "Players/AI/aiPlayer.js",
+          "transformation": "Extract AI player logic into dedicated module",
+          "lines": "1-300",
+          "dependencies": ["Core/GameEngine", "PlayerManager"],
+          "new_imports": ["Players/AI/AIPlayer"]
+        }
+      ],
+      "keep_as": "Facade for backward compatibility",
+      "dependencies": [],
+      "new_imports": ["Players/AI/AIPlayer"],
+      "transformation_notes": {
+        "player_integration": "Integrate AI player with player interface",
+        "game_engine": "Ensure proper integration with GameEngine",
+        "performance": "Optimize AI decision making performance"
+      }
+    }
+  },
+  
+  "new_files": {
+    "Core/gameEngine.js": {
+      "description": "Main game engine orchestrator",
+      "responsibilities": [
+        "State mutation coordination",
+        "Game logic orchestration",
+        "Rule system integration",
+        "Turn management"
+      ],
+      "dependencies": ["GameState", "GameRules"],
+      "forbidden_imports": ["UI/*", "Network/*", "Players/*", "Systems/*"],
+      "max_lines": 500
+    },
+    
+    "Core/gameRules.js": {
+      "description": "Shared rule helpers and validation utilities",
+      "responsibilities": [
+        "Rule validation",
+        "Game state validation",
+        "Move validation",
+        "Win condition checking"
+      ],
+      "dependencies": [],
+      "forbidden_imports": ["UI/*", "Network/*", "Players/*", "Systems/*"],
+      "max_lines": 400
+    },
+    
+    "Systems/Rules/movementRules.js": {
+      "description": "Piece movement validation and calculation",
+      "responsibilities": [
+        "Valid move calculation",
+        "Movement path validation",
+        "Special movement rules",
+        "Movement state updates"
+      ],
+      "dependencies": ["Core/GameEngine"],
+      "forbidden_imports": ["UI/*", "Network/*", "Players/*"],
+      "max_lines": 400
+    },
+    
+    "Systems/Rules/attackRules.js": {
+      "description": "Combat and elimination rules",
+      "responsibilities": [
+        "Attack validation",
+        "Elimination logic",
+        "Combat resolution",
+        "Damage calculation"
+      ],
+      "dependencies": ["Core/GameEngine"],
+      "forbidden_imports": ["UI/*", "Network/*", "Players/*"],
+      "max_lines": 300
+    },
+    
+    "Systems/Rules/Abilities/swapRules.js": {
+      "description": "Portal swap ability rules",
+      "responsibilities": ["Swap validation", "Target selection", "Swap execution"],
+      "dependencies": ["Core/GameEngine"],
+      "exports": ["SwapRules"]
+    },
+    
+    "Systems/Rules/Abilities/fireballRules.js": {
+      "description": "Ruby fireball ability rules",
+      "responsibilities": ["Fireball targeting", "Range calculation", "Damage application"],
+      "dependencies": ["Core/GameEngine"],
+      "exports": ["FireballRules"]
+    },
+    
+    "Systems/Rules/Abilities/waveRules.js": {
+      "description": "Pearl tidal wave ability rules",
+      "responsibilities": ["Wave area calculation", "Target validation", "Area effects"],
+      "dependencies": ["Core/GameEngine"],
+      "exports": ["WaveRules"]
+    },
+    
+    "Systems/Rules/Abilities/sapRules.js": {
+      "description": "Amber sap ability rules",
+      "responsibilities": ["Line targeting", "Parallel line calculation", "Area validation"],
+      "dependencies": ["Core/GameEngine"],
+      "exports": ["SapRules"]
+    },
+    
+    "Systems/Rules/Abilities/launchRules.js": {
+      "description": "Jade launch ability rules",
+      "responsibilities": ["Launch targeting", "Range validation", "Piece movement"],
+      "dependencies": ["Core/GameEngine"],
+      "exports": ["LaunchRules"]
+    },
+    
+    "Systems/MatchHistory/historyCollector.js": {
+      "description": "Collect and organize game events",
+      "responsibilities": [
+        "Event collection",
+        "Turn tracking",
+        "Move logging",
+        "State snapshots"
+      ],
+      "dependencies": ["Core/GameEngine"],
+      "forbidden_imports": ["UI/*", "Network/*"],
+      "max_lines": 350
+    },
+    
+    "Systems/MatchHistory/historyParser.js": {
+      "description": "Parse and validate history data",
+      "responsibilities": [
+        "History validation",
+        "Event parsing",
+        "State reconstruction",
+        "Error handling"
+      ],
+      "dependencies": ["Core/GameEngine"],
+      "forbidden_imports": ["UI/*", "Network/*"],
+      "max_lines": 300
+    },
+    
+    "Systems/MatchHistory/historySerializer.js": {
+      "description": "Serialize history for storage/display",
+      "responsibilities": [
+        "Data serialization",
+        "Format conversion",
+        "Compression",
+        "Export formatting"
+      ],
+      "dependencies": ["Core/GameEngine"],
+      "forbidden_imports": ["UI/*", "Network/*"],
+      "max_lines": 250
+    },
+    
+    "Players/playerInterface.js": {
+      "description": "Player interface definition",
+      "responsibilities": [
+        "Player contract definition",
+        "Interface validation",
+        "Player type checking"
+      ],
+      "dependencies": [],
+      "forbidden_imports": ["UI/*", "Network/*", "Systems/*"],
+      "max_lines": 150
+    },
+    
+    "Players/AI/aiPlayer.js": {
+      "description": "AI player implementation",
+      "responsibilities": [
+        "AI decision making",
+        "Move calculation",
+        "Strategy implementation",
+        "Difficulty management"
+      ],
+      "dependencies": ["Core/GameEngine", "Systems/MatchHistory"],
+      "forbidden_imports": ["UI/*", "Network/*"],
+      "max_lines": 600
+    },
+    
+    "Players/Local/hotSeatPlayer.js": {
+      "description": "Hot seat player implementation",
+      "responsibilities": [
+        "Local input handling",
+        "Player state management",
+        "Turn coordination"
+      ],
+      "dependencies": ["Core/GameEngine"],
+      "forbidden_imports": ["UI/*", "Network/*"],
+      "max_lines": 200
+    },
+    
+    "UI/uiController.js": {
+      "description": "Main UI controller and coordinator",
+      "responsibilities": [
+        "UI state management",
+        "Component coordination",
+        "Event handling",
+        "User input processing"
+      ],
+      "dependencies": ["Core/GameEngine", "Systems/MatchHistory"],
+      "forbidden_imports": ["Network/*", "Players/*"],
+      "max_lines": 400
+    },
+    
+    "UI/boardRenderer.js": {
+      "description": "Board rendering and visualization",
+      "responsibilities": [
+        "Board drawing",
+        "Grid rendering",
+        "Theme application",
+        "Visual effects"
+      ],
+      "dependencies": ["Core/GameState"],
+      "forbidden_imports": ["Network/*", "Players/*", "Systems/*"],
+      "max_lines": 500
+    },
+    
+    "UI/pieceRenderer.js": {
+      "description": "Piece rendering and animation",
+      "responsibilities": [
+        "Piece drawing",
+        "Animation handling",
+        "Visual state management",
+        "Theme integration"
+      ],
+      "dependencies": ["Core/GameState"],
+      "forbidden_imports": ["Network/*", "Players/*", "Systems/*"],
+      "max_lines": 400
+    },
+    
+    "UI/Indicators/movementIndicators.js": {
+      "description": "Movement option indicators",
+      "responsibilities": ["Valid move highlighting", "Path visualization", "Selection indicators"],
+      "dependencies": ["Core/GameState"],
+      "exports": ["MovementIndicators"]
+    },
+    
+    "UI/Indicators/abilityIndicators.js": {
+      "description": "Ability activation indicators",
+      "responsibilities": ["Ability targeting", "Range visualization", "Activation feedback"],
+      "dependencies": ["Core/GameState"],
+      "exports": ["AbilityIndicators"]
+    },
+    
+    "UI/Animations/moveAnimations.js": {
+      "description": "Piece movement animations",
+      "responsibilities": ["Move transitions", "Easing functions", "Animation timing"],
+      "dependencies": ["Core/GameState"],
+      "exports": ["MoveAnimations"]
+    },
+    
+    "UI/Animations/abilityAnimations.js": {
+      "description": "Ability effect animations",
+      "responsibilities": ["Ability effects", "Visual feedback", "Animation coordination"],
+      "dependencies": ["Core/GameState"],
+      "exports": ["AbilityAnimations"]
+    },
+    
+    "UI/Buttons/abilityButtons.js": {
+      "description": "Ability activation buttons",
+      "responsibilities": ["Button rendering", "State management", "User interaction"],
+      "dependencies": ["Core/GameEngine"],
+      "exports": ["AbilityButtons"]
+    },
+    
+    "UI/Buttons/gameControls.js": {
+      "description": "Game control buttons",
+      "responsibilities": ["Control rendering", "State management", "User interaction"],
+      "dependencies": ["Core/GameEngine"],
+      "exports": ["GameControls"]
+    },
+    
+    "UI/Overlays/defeatNotification.js": {
+      "description": "Defeat notification overlay",
+      "responsibilities": ["Defeat display", "Animation", "User interaction"],
+      "dependencies": ["Core/GameEngine"],
+      "exports": ["DefeatNotification"]
+    },
+    
+    "UI/Overlays/victoryNotification.js": {
+      "description": "Victory notification overlay",
+      "responsibilities": ["Victory display", "Animation", "User interaction"],
+      "dependencies": ["Core/GameEngine"],
+      "exports": ["VictoryNotification"]
+    },
+    
+    "UI/Overlays/setupPieceTray.js": {
+      "description": "Setup phase piece selection tray",
+      "responsibilities": ["Tray rendering", "Piece selection", "Setup state"],
+      "dependencies": ["Core/GameEngine"],
+      "exports": ["SetupPieceTray"]
+    },
+
+    "Main.js_refactor": {
+      "description": "Break down monolithic Main.js into architectural modules",
+      "extract_to": [
+        {
+          "source_section": "ui_orchestration",
+          "target_file": "UI/uiController.js",
+          "transformation": "Extract UI orchestration logic into dedicated UI controller",
+          "lines": "25-150, 300-500, 600-800",
+          "dependencies": ["Core/GameEngine", "Systems/MatchHistory"],
+          "new_imports": ["UI/UIController", "Core/GameEngine", "Systems/MatchHistory"],
+          "extraction_details": {
+            "Canvas initialization": "Move canvas setup to UI controller",
+            "UI element management": "Move DOM element setup to UI controller",
+            "Event handling delegation": "Move event binding to UI controller",
+            "UI state updates": "Move UI state management to UI controller",
+            "Ability button coordination": "Move button state management to UI controller"
+          }
+        },
+        {
+          "source_section": "player_management",
+          "target_file": "Players/Local/hotSeatPlayer.js",
+          "transformation": "Extract local player management into dedicated module",
+          "lines": "200-300, 900-1000",
+          "dependencies": ["Core/GameEngine"],
+          "new_imports": ["Players/Local/HotSeatPlayer"],
+          "extraction_details": {
+            "Setup phase logic": "Move setup phase player handling",
+            "Turn coordination": "Move turn management for local players",
+            "Input validation": "Move local player input validation",
+            "State synchronization": "Move local player state management"
+          }
+        },
+        {
+          "source_section": "ai_orchestration",
+          "target_file": "Players/AI/aiPlayer.js (enhanced)",
+          "transformation": "Extract AI orchestration into enhanced AI player module",
+          "lines": "1200-1500, 1600-1800",
+          "dependencies": ["Core/GameEngine", "Systems/MatchHistory"],
+          "new_imports": ["Players/AI/AIPlayer"],
+          "extraction_details": {
+            "AI turn execution": "Move AI move execution logic",
+            "Strategy selection": "Move policy/policy mode handling",
+            "AI state management": "Move AI-specific state coordination",
+            "Turn validation": "Move AI turn validation and tracking"
+          }
+        },
+        {
+          "source_section": "game_flow_control",
+          "target_file": "Core/gameEngine.js (enhanced)",
+          "transformation": "Enhance GameEngine with orchestration responsibilities",
+          "lines": "1800-2000, 2100-2300",
+          "dependencies": ["Core/GameState", "Systems/MatchHistory"],
+          "new_imports": ["Core/GameEngine"],
+          "extraction_details": {
+            "Turn management": "Move turn orchestration to GameEngine",
+            "Win condition checking": "Move win detection to GameEngine",
+            "Game state coordination": "Move state flow control to GameEngine",
+            "Event tracking": "Move history tracking coordination to GameEngine"
+          }
+        }
+      ],
+      "keep_as": "Main.js (thinned)",
+      "dependencies": [
+        "Core/GameEngine",
+        "UI/UIController",
+        "Players/Local/HotSeatPlayer",
+        "Players/AI/AIPlayer",
+        "Systems/MatchHistory"
+      ],
+      "new_imports": [
+        "Core/GameEngine",
+        "UI/UIController",
+        "Players/Local/HotSeatPlayer",
+        "Players/AI/AIPlayer",
+        "Systems/MatchHistory"
+      ],
+      "transformation_notes": {
+        "thin_bootstrap": "Reduce Main.js to <200 lines application bootstrap",
+        "dependency_injection": "Use proper DI container for module wiring",
+        "event_delegation": "Delegate all events to appropriate modules",
+        "orchestration_only": "Main.js only orchestrates module initialization",
+        "no_business_logic": "Remove all game logic, UI logic, and player logic"
+      },
+      "validation_criteria": [
+        "Main.js under 200 lines",
+        "No direct DOM manipulation in Main.js",
+        "No game state manipulation in Main.js",
+        "No player logic in Main.js",
+        "Clean module wiring only"
+      ]
+    }
+  },
+
+  "transformation_guidelines": {
+    "purity_requirements": {
+      "core_modules": "All Core module functions must be pure with no side effects",
+      "system_modules": "All System module functions must be pure with no side effects",
+      "ui_modules": "UI modules may have side effects for rendering only"
+    },
+    
+    "dependency_rules": {
+      "core_dependencies": "Core modules cannot depend on any other modules",
+      "system_dependencies": "System modules can only depend on Core modules",
+      "ui_dependencies": "UI modules can depend on Core and System modules",
+      "player_dependencies": "Player modules can depend on Core modules",
+      "network_dependencies": "Network modules can depend on Core and System modules"
+    },
+    
+    "interface_requirements": {
+      "game_engine": "GameEngine must provide clean API for state operations",
+      "game_state": "GameState must be immutable with pure methods",
+      "game_rules": "GameRules must contain only pure validation functions",
+      "system_interfaces": "All System modules must have clear interfaces"
+    },
+    
+    "testing_requirements": {
+      "unit_tests": "All modules must have comprehensive unit tests",
+      "integration_tests": "All module interactions must have integration tests",
+      "regression_tests": "All existing functionality must have regression tests"
+    }
+  }
+}

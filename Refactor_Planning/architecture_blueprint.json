@@ -1,0 +1,1026 @@
+{
+  "version": "2.0.0",
+  "refactor_date": "2026-01-19",
+  "project_name": "Amalgam WebGame Refactor",
+  "description": "Updated architectural blueprint - codebase already largely modularized with remaining gaps identified",
+  
+  "modules": {
+    "Core": {
+      "description": "Pure state management and game engine - the ONLY state mutator",
+      "files": [
+        {
+          "name": "gameEngine.js",
+          "description": "Main game engine orchestrator - pure functions only",
+          "responsibilities": [
+            "State mutation coordination",
+            "Game logic orchestration", 
+            "Rule system integration",
+            "Turn management"
+          ],
+          "dependencies": ["GameState", "GameRules"],
+          "forbidden_imports": ["UI/*", "Network/*", "Players/*", "Systems/*"],
+          "exports": ["GameEngine"],
+          "max_lines": 500,
+          "purity_requirements": {
+            "no_side_effects": true,
+            "pure_functions": true,
+            "immutable_state": true,
+            "no_global_state": true
+          },
+          "interface_contract": {
+            "initialize": {
+              "signature": "(seed?: number): GameState",
+              "description": "Initialize game with optional seed for determinism",
+              "returns": "New game state snapshot",
+              "purity": "pure function"
+            },
+            "movePiece": {
+              "signature": "(fromCoord: string, toCoord: string, gameState: GameState): GameState",
+              "description": "Execute a piece move and return new state",
+              "returns": "New game state after move",
+              "purity": "pure function"
+            },
+            "applyAbility": {
+              "signature": "(abilityType: string, params: any, gameState: GameState): GameState",
+              "description": "Apply ability effect and return new state",
+              "returns": "New game state after ability",
+              "purity": "pure function"
+            },
+            "checkWin": {
+              "signature": "(gameState: GameState): {winner: string|null, method: string|null}",
+              "description": "Check if game has reached terminal state",
+              "returns": "Win result object",
+              "purity": "pure function"
+            }
+          }
+        },
+        {
+          "name": "gameState.js", 
+          "description": "Pure state container - immutable state management",
+          "responsibilities": [
+            "State storage and retrieval",
+            "State validation",
+            "State serialization",
+            "State comparison"
+          ],
+          "dependencies": [],
+          "forbidden_imports": ["UI/*", "Network/*", "Players/*", "Systems/*"],
+          "exports": ["GameState"],
+          "max_lines": 300,
+          "purity_requirements": {
+            "no_mutation": true,
+            "immutable_data": true,
+            "validation_methods": true
+          },
+          "interface_contract": {
+            "getPiece": {
+              "signature": "(coord: string): Piece|null",
+              "description": "Get piece at coordinate",
+              "returns": "Piece object or null",
+              "purity": "no side effects"
+            },
+            "isLocationEmpty": {
+              "signature": "(coord: string): boolean",
+              "description": "Check if location is empty",
+              "returns": "True if empty",
+              "purity": "no side effects"
+            },
+            "movePiece": {
+              "signature": "(fromCoord: string, toCoord: string): GameState",
+              "description": "Move piece and return new state",
+              "returns": "New state with piece moved",
+              "purity": "returns new state"
+            },
+            "getState": {
+              "signature": "(): GameStateSnapshot",
+              "description": "Get current state snapshot",
+              "returns": "Immutable state snapshot",
+              "purity": "no side effects"
+            }
+          }
+        },
+        {
+          "name": "gameRules.js",
+          "description": "Shared rule helpers and validation utilities",
+          "responsibilities": [
+            "Rule validation",
+            "Game state validation",
+            "Move validation",
+            "Win condition checking"
+          ],
+          "dependencies": [],
+          "forbidden_imports": ["UI/*", "Network/*", "Players/*", "Systems/*"],
+          "exports": ["GameRules"],
+          "max_lines": 400,
+          "purity_requirements": {
+            "pure_functions": true,
+            "no_state": true,
+            "validation_only": true
+          },
+          "interface_contract": {
+            "validateMove": {
+              "signature": "(gameState: GameState, fromCoord: string, toCoord: string): {valid: boolean, reason?: string}",
+              "description": "Validate if a move is legal",
+              "returns": "Validation result",
+              "purity": "pure function"
+            },
+            "validateAbility": {
+              "signature": "(gameState: GameState, abilityType: string, params: any): {valid: boolean, reason?: string}",
+              "description": "Validate if an ability can be used",
+              "returns": "Validation result",
+              "purity": "pure function"
+            },
+            "checkWinCondition": {
+              "signature": "(gameState: GameState): {winner: string|null, method: string|null}",
+              "description": "Check win conditions",
+              "returns": "Win result",
+              "purity": "pure function"
+            }
+          }
+        }
+      ],
+      "module_rules": {
+        "no_ui_imports": true,
+        "no_external_state": true,
+        "pure_functions_only": true,
+        "max_file_size": 500,
+        "no_side_effects": true,
+        "immutable_state_mandatory": true,
+        "dependency_injection_required": true
+      },
+      "interface_contracts": {
+        "GameEngine": {
+          "required_methods": ["initialize", "movePiece", "applyAbility", "checkWin"],
+          "required_properties": ["state", "rules"],
+          "forbidden_methods": ["direct_state_mutation", "ui_interaction"],
+          "error_handling": "Must throw descriptive errors for invalid operations"
+        },
+        "GameState": {
+          "required_methods": ["getPiece", "isLocationEmpty", "movePiece", "getState"],
+          "forbidden_methods": ["direct_property_mutation", "array_mutation"],
+          "error_handling": "Must validate all inputs and throw descriptive errors"
+        },
+        "GameRules": {
+          "required_methods": ["validateMove", "validateAbility", "checkWinCondition"],
+          "forbidden_methods": ["state_mutation", "side_effects"],
+          "error_handling": "Must provide detailed validation failure reasons"
+        }
+      }
+    },
+    
+    "Systems": {
+      "description": "Game systems and business logic - importable by GameEngine ONLY",
+      "files": [
+        {
+          "name": "boardCoordinateConstants.js",
+          "description": "Board coordinate constants and utilities",
+          "responsibilities": [
+            "Coordinate validation",
+            "Board bounds checking",
+            "Coordinate conversion utilities"
+          ],
+          "dependencies": [],
+          "forbidden_imports": ["UI/*", "Network/*", "Players/*", "Core/*"],
+          "exports": ["boardCoordinateConstants"],
+          "max_lines": 100
+        }
+      ],
+      "submodules": {
+        "Rules": {
+          "description": "Movement, attack, and ability rules - Core import restriction enforced",
+          "files": [
+            {
+              "name": "movementRules.js",
+              "description": "Piece movement validation and calculation",
+              "responsibilities": [
+                "Valid move calculation",
+                "Movement path validation",
+                "Special movement rules",
+                "Movement state updates"
+              ],
+              "dependencies": ["Core/GameEngine"],
+              "forbidden_imports": ["UI/*", "Network/*", "Players/*"],
+              "exports": ["MovementRules"],
+              "max_lines": 400
+            },
+            {
+              "name": "attackRules.js", 
+              "description": "Combat and elimination rules",
+              "responsibilities": [
+                "Attack validation",
+                "Elimination logic",
+                "Combat resolution",
+                "Damage calculation"
+              ],
+              "dependencies": ["Core/GameEngine"],
+              "forbidden_imports": ["UI/*", "Network/*", "Players/*"],
+              "exports": ["AttackRules"],
+              "max_lines": 300
+            }
+          ],
+          "submodules": {
+            "Abilities": {
+              "description": "Individual ability rule implementations",
+              "files": [
+                {
+                  "name": "swapRules.js",
+                  "description": "Portal swap ability rules",
+                  "responsibilities": ["Swap validation", "Target selection", "Swap execution"],
+                  "dependencies": ["Core/GameEngine"],
+                  "exports": ["SwapRules"]
+                },
+                {
+                  "name": "fireballRules.js",
+                  "description": "Ruby fireball ability rules", 
+                  "responsibilities": ["Fireball targeting", "Range calculation", "Damage application"],
+                  "dependencies": ["Core/GameEngine"],
+                  "exports": ["FireballRules"]
+                },
+                {
+                  "name": "waveRules.js",
+                  "description": "Pearl tidal wave ability rules",
+                  "responsibilities": ["Wave area calculation", "Target validation", "Area effects"],
+                  "dependencies": ["Core/GameEngine"],
+                  "exports": ["WaveRules"]
+                },
+                {
+                  "name": "sapRules.js",
+                  "description": "Amber sap ability rules",
+                  "responsibilities": ["Line targeting", "Parallel line calculation", "Area validation"],
+                  "dependencies": ["Core/GameEngine"],
+                  "exports": ["SapRules"]
+                },
+                {
+                  "name": "launchRules.js",
+                  "description": "Jade launch ability rules",
+                  "responsibilities": ["Launch targeting", "Range validation", "Piece movement"],
+                  "dependencies": ["Core/GameEngine"],
+                  "exports": ["LaunchRules"]
+                }
+              ]
+            }
+          ]
+        },
+        "MatchHistory": {
+          "description": "Game state tracking and serialization",
+          "files": [
+            {
+              "name": "historyCollector.js",
+              "description": "Collect and organize game events",
+              "responsibilities": [
+                "Event collection",
+                "Turn tracking",
+                "Move logging",
+                "State snapshots"
+              ],
+              "dependencies": ["Core/GameEngine"],
+              "forbidden_imports": ["UI/*", "Network/*"],
+              "exports": ["HistoryCollector"],
+              "max_lines": 350
+            },
+            {
+              "name": "historyParser.js",
+              "description": "Parse and validate history data",
+              "responsibilities": [
+                "History validation",
+                "Event parsing",
+                "State reconstruction",
+                "Error handling"
+              ],
+              "dependencies": ["Core/GameEngine"],
+              "forbidden_imports": ["UI/*", "Network/*"],
+              "exports": ["HistoryParser"],
+              "max_lines": 300
+            },
+            {
+              "name": "historySerializer.js",
+              "description": "Serialize history for storage/display",
+              "responsibilities": [
+                "Data serialization",
+                "Format conversion",
+                "Compression",
+                "Export formatting"
+              ],
+              "dependencies": ["Core/GameEngine"],
+              "forbidden_imports": ["UI/*", "Network/*"],
+              "exports": ["HistorySerializer"],
+              "max_lines": 250
+            }
+          ]
+        }
+      },
+      "module_rules": {
+        "no_direct_ui": true,
+        "must_use_core_interfaces": true,
+        "max_circular_dependencies": 0,
+        "import_restriction": "Core/GameEngine only"
+      }
+    },
+    
+    "Players": {
+      "description": "Player management and interaction logic",
+      "submodules": {
+        "AI": {
+          "description": "AI player implementation",
+          "files": [
+            {
+              "name": "aiPlayer.js",
+              "description": "Main AI player class",
+              "responsibilities": [
+                "AI decision making",
+                "Move calculation",
+                "Strategy implementation",
+                "Difficulty management"
+              ],
+              "dependencies": ["Core/GameEngine", "Systems/MatchHistory"],
+              "forbidden_imports": ["UI/*", "Network/*"],
+              "exports": ["AIPlayer"],
+              "max_lines": 600
+            }
+          ]
+        },
+        "Local": {
+          "description": "Local player management",
+          "files": [
+            {
+              "name": "hotSeatPlayer.js",
+              "description": "Hot seat player implementation",
+              "responsibilities": [
+                "Local input handling",
+                "Player state management",
+                "Turn coordination"
+              ],
+              "dependencies": ["Core/GameEngine"],
+              "forbidden_imports": ["UI/*", "Network/*"],
+              "exports": ["HotSeatPlayer"],
+              "max_lines": 200
+            }
+          ]
+        },
+        "Online": {
+          "description": "Online player management",
+          "files": [
+            {
+              "name": "onlinePlayer.js",
+              "description": "Online player implementation",
+              "responsibilities": [
+                "Network communication",
+                "Remote input handling",
+                "Sync management"
+              ],
+              "dependencies": ["Core/GameEngine", "Network/*"],
+              "forbidden_imports": ["UI/*"],
+              "exports": ["OnlinePlayer"],
+              "max_lines": 300
+            }
+          ]
+        },
+        {
+          "name": "playerInterface.js",
+          "description": "Player interface definition",
+          "responsibilities": [
+            "Player contract definition",
+            "Interface validation",
+            "Player type checking"
+          ],
+          "dependencies": [],
+          "forbidden_imports": ["UI/*", "Network/*", "Systems/*"],
+          "exports": ["PlayerInterface"],
+          "max_lines": 150
+        }
+      },
+      "module_rules": {
+        "no_direct_ui": true,
+        "must_use_core_interfaces": true,
+        "player_contract_compliance": true
+      }
+    },
+    
+    "UI": {
+      "description": "User interface components and rendering",
+      "files": [
+        {
+          "name": "uiController.js",
+          "description": "Main UI controller and coordinator",
+          "responsibilities": [
+            "UI state management",
+            "Component coordination",
+            "Event handling",
+            "User input processing"
+          ],
+          "dependencies": ["Core/GameEngine", "Systems/MatchHistory"],
+          "forbidden_imports": ["Network/*", "Players/*"],
+          "exports": ["UIController"],
+          "max_lines": 400
+        },
+        {
+          "name": "boardRenderer.js",
+          "description": "Board rendering and visualization",
+          "responsibilities": [
+            "Board drawing",
+            "Grid rendering",
+            "Theme application",
+            "Visual effects"
+          ],
+          "dependencies": ["Core/GameState"],
+          "forbidden_imports": ["Network/*", "Players/*", "Systems/*"],
+          "exports": ["BoardRenderer"],
+          "max_lines": 500
+        },
+        {
+          "name": "pieceRenderer.js",
+          "description": "Piece rendering and animation",
+          "responsibilities": [
+            "Piece drawing",
+            "Animation handling",
+            "Visual state management",
+            "Theme integration"
+          ],
+          "dependencies": ["Core/GameState"],
+          "forbidden_imports": ["Network/*", "Players/*", "Systems/*"],
+          "exports": ["PieceRenderer"],
+          "max_lines": 400
+        }
+      ],
+      "submodules": {
+        "Overlays": {
+          "description": "UI overlay components",
+          "files": [
+            {
+              "name": "defeatNotification.js",
+              "description": "Defeat notification overlay",
+              "responsibilities": ["Defeat display", "Animation", "User interaction"],
+              "dependencies": ["Core/GameEngine"],
+              "exports": ["DefeatNotification"]
+            },
+            {
+              "name": "victoryNotification.js",
+              "description": "Victory notification overlay",
+              "responsibilities": ["Victory display", "Animation", "User interaction"],
+              "dependencies": ["Core/GameEngine"],
+              "exports": ["VictoryNotification"]
+            },
+            {
+              "name": "setupPieceTray.js",
+              "description": "Setup phase piece selection tray",
+              "responsibilities": ["Tray rendering", "Piece selection", "Setup state"],
+              "dependencies": ["Core/GameEngine"],
+              "exports": ["SetupPieceTray"]
+            }
+          ]
+        },
+        "Indicators": {
+          "description": "Visual indicators and highlights",
+          "files": [
+            {
+              "name": "movementIndicators.js",
+              "description": "Movement option indicators",
+              "responsibilities": ["Valid move highlighting", "Path visualization", "Selection indicators"],
+              "dependencies": ["Core/GameState"],
+              "exports": ["MovementIndicators"]
+            },
+            {
+              "name": "abilityIndicators.js",
+              "description": "Ability activation indicators",
+              "responsibilities": ["Ability targeting", "Range visualization", "Activation feedback"],
+              "dependencies": ["Core/GameState"],
+              "exports": ["AbilityIndicators"]
+            }
+          ]
+        },
+        "Animations": {
+          "description": "Animation system and effects",
+          "files": [
+            {
+              "name": "moveAnimations.js",
+              "description": "Piece movement animations",
+              "responsibilities": ["Move transitions", "Easing functions", "Animation timing"],
+              "dependencies": ["Core/GameState"],
+              "exports": ["MoveAnimations"]
+            },
+            {
+              "name": "abilityAnimations.js",
+              "description": "Ability effect animations",
+              "responsibilities": ["Ability effects", "Visual feedback", "Animation coordination"],
+              "dependencies": ["Core/GameState"],
+              "exports": ["AbilityAnimations"]
+            }
+          ]
+        },
+        "Buttons": {
+          "description": "Interactive button components",
+          "files": [
+            {
+              "name": "abilityButtons.js",
+              "description": "Ability activation buttons",
+              "responsibilities": ["Button rendering", "State management", "User interaction"],
+              "dependencies": ["Core/GameEngine"],
+              "exports": ["AbilityButtons"]
+            },
+            {
+              "name": "gameControls.js",
+              "description": "Game control buttons",
+              "responsibilities": ["Control rendering", "State management", "User interaction"],
+              "dependencies": ["Core/GameEngine"],
+              "exports": ["GameControls"]
+            }
+          ]
+        }
+      },
+      "module_rules": {
+        "read_only_state": true,
+        "no_state_mutation": true,
+        "visual_only": true,
+        "no_business_logic": true
+      }
+    },
+    
+    "Network": {
+      "description": "Network communication and multiplayer support",
+      "files": [
+        {
+          "name": "networkController.js",
+          "description": "Main network controller and coordinator",
+          "responsibilities": [
+            "Connection management",
+            "Message routing",
+            "Error handling",
+            "State synchronization"
+          ],
+          "dependencies": ["Core/GameEngine", "Systems/MatchHistory"],
+          "forbidden_imports": ["UI/*", "Players/*"],
+          "exports": ["NetworkController"],
+          "max_lines": 500
+        }
+      ],
+      "submodules": {
+        "Supabase": {
+          "description": "Supabase integration and database operations",
+          "files": [
+            {
+              "name": "auth.js",
+              "description": "Authentication and user management",
+              "responsibilities": ["User login", "Session management", "Auth validation"],
+              "dependencies": [],
+              "forbidden_imports": ["UI/*", "Players/*", "Systems/*"],
+              "exports": ["SupabaseAuth"]
+            },
+            {
+              "name": "profiles.js",
+              "description": "User profile management",
+              "responsibilities": ["Profile creation", "Data storage", "Profile updates"],
+              "dependencies": [],
+              "forbidden_imports": ["UI/*", "Players/*", "Systems/*"],
+              "exports": ["SupabaseProfiles"]
+            },
+            {
+              "name": "leaderboard.js",
+              "description": "Leaderboard and ranking system",
+              "responsibilities": ["Score tracking", "Rank calculation", "Leaderboard display"],
+              "dependencies": [],
+              "forbidden_imports": ["UI/*", "Players/*", "Systems/*"],
+              "exports": ["SupabaseLeaderboard"]
+            },
+            {
+              "name": "matchmaking.js",
+              "description": "Player matchmaking and game creation",
+              "responsibilities": ["Player matching", "Game creation", "Queue management"],
+              "dependencies": [],
+              "forbidden_imports": ["UI/*", "Players/*", "Systems/*"],
+              "exports": ["SupabaseMatchmaking"]
+            },
+            {
+              "name": "gameState.js",
+              "description": "Game state synchronization",
+              "responsibilities": ["State sync", "Real-time updates", "Conflict resolution"],
+              "dependencies": ["Core/GameEngine"],
+              "forbidden_imports": ["UI/*", "Players/*", "Systems/*"],
+              "exports": ["SupabaseGameState"]
+            }
+          ]
+        },
+        "Serializers": {
+          "description": "Data serialization and format conversion",
+          "files": [
+            {
+              "name": "gameStateSerializer.js",
+              "description": "Game state serialization",
+              "responsibilities": ["State conversion", "Format validation", "Compression"],
+              "dependencies": ["Core/GameState"],
+              "exports": ["GameStateSerializer"]
+            },
+            {
+              "name": "moveSerializer.js",
+              "description": "Move data serialization",
+              "responsibilities": ["Move conversion", "Validation", "Optimization"],
+              "dependencies": ["Core/GameEngine"],
+              "exports": ["MoveSerializer"]
+            }
+          ]
+        },
+        "Validators": {
+          "description": "Data validation and security",
+          "files": [
+            {
+              "name": "inputValidator.js",
+              "description": "Input validation and sanitization",
+              "responsibilities": ["Input validation", "Security checks", "Error handling"],
+              "dependencies": [],
+              "exports": ["InputValidator"]
+            },
+            {
+              "name": "stateValidator.js",
+              "description": "Game state validation",
+              "responsibilities": ["State validation", "Consistency checks", "Integrity verification"],
+              "dependencies": ["Core/GameState"],
+              "exports": ["StateValidator"]
+            }
+          ]
+        }
+      },
+      "module_rules": {
+        "no_ui_imports": true,
+        "security_first": true,
+        "validation_required": true,
+        "error_handling_mandatory": true
+      }
+    },
+    
+    "EdgeFunctions": {
+      "description": "Server-side edge functions for Supabase",
+      "files": [
+        {
+          "name": "matchmaking.js",
+          "description": "Server-side matchmaking logic",
+          "responsibilities": ["Player matching", "Game creation", "Queue management"],
+          "dependencies": [],
+          "forbidden_imports": ["UI/*", "Players/*", "Systems/*"],
+          "exports": ["matchmaking"]
+        },
+        {
+          "name": "validateTurn.js",
+          "description": "Server-side turn validation",
+          "responsibilities": ["Turn validation", "Rule enforcement", "Cheating prevention"],
+          "dependencies": [],
+          "forbidden_imports": ["UI/*", "Players/*", "Systems/*"],
+          "exports": ["validateTurn"]
+        },
+        {
+          "name": "updateLeaderboard.js",
+          "description": "Server-side leaderboard updates",
+          "responsibilities": ["Score calculation", "Rank updates", "Data persistence"],
+          "dependencies": [],
+          "forbidden_imports": ["UI/*", "Players/*", "Systems/*"],
+          "exports": ["updateLeaderboard"]
+        },
+        {
+          "name": "createGame.js",
+          "description": "Server-side game creation",
+          "responsibilities": ["Game initialization", "Player assignment", "State setup"],
+          "dependencies": [],
+          "forbidden_imports": ["UI/*", "Players/*", "Systems/*"],
+          "exports": ["createGame"]
+        },
+        {
+          "name": "syncGameState.js",
+          "description": "Server-side game state synchronization",
+          "responsibilities": ["State sync", "Real-time updates", "Conflict resolution"],
+          "dependencies": [],
+          "forbidden_imports": ["UI/*", "Players/*", "Systems/*"],
+          "exports": ["syncGameState"]
+        },
+        {
+          "name": "forfeitGame.js",
+          "description": "Server-side game forfeit handling",
+          "responsibilities": ["Forfeit processing", "State cleanup", "Score updates"],
+          "dependencies": [],
+          "forbidden_imports": ["UI/*", "Players/*", "Systems/*"],
+          "exports": ["forfeitGame"]
+        },
+        {
+          "name": "saveReplay.js",
+          "description": "Server-side replay saving",
+          "responsibilities": ["Replay capture", "Data storage", "Compression"],
+          "dependencies": [],
+          "forbidden_imports": ["UI/*", "Players/*", "Systems/*"],
+          "exports": ["saveReplay"]
+        }
+      ],
+      "configuration": {
+        "env_file": ".env.example",
+        "required_vars": [
+          "SUPABASE_URL",
+          "SUPABASE_ANON_KEY",
+          "SUPABASE_SERVICE_ROLE_KEY"
+        ],
+        "deployment": {
+          "platform": "Supabase",
+          "functions_path": "EdgeFunctions/",
+          "runtime": "Node.js 18+"
+        }
+      },
+      "module_rules": {
+        "server_side_only": true,
+        "security_critical": true,
+        "no_client_code": true,
+        "error_handling_mandatory": true
+      }
+    },
+    
+    "Pages": {
+      "description": "Page-specific components and layouts",
+      "submodules": {
+        "Landing": {
+          "description": "Landing page components",
+          "files": [
+            {"name": "index.html", "description": "Landing page HTML structure"},
+            {"name": "index.css", "description": "Landing page styling"},
+            {"name": "index.js", "description": "Landing page logic"}
+          ]
+        },
+        "Menu": {
+          "description": "Game menu components",
+          "files": [
+            {"name": "index.html", "description": "Menu page HTML structure"},
+            {"name": "index.css", "description": "Menu page styling"},
+            {"name": "index.js", "description": "Menu page logic"}
+          ]
+        },
+        "Gameplay": {
+          "description": "Main gameplay page components",
+          "files": [
+            {"name": "index.html", "description": "Gameplay page HTML structure"},
+            {"name": "index.css", "description": "Gameplay page styling"},
+            {"name": "index.js", "description": "Gameplay page logic"}
+          ]
+        },
+        "Replay": {
+          "description": "Game replay page components",
+          "files": [
+            {"name": "index.html", "description": "Replay page HTML structure"},
+            {"name": "index.css", "description": "Replay page styling"},
+            {"name": "index.js", "description": "Replay page logic"}
+          ]
+        },
+        "Settings": {
+          "description": "Settings page components",
+          "files": [
+            {"name": "index.html", "description": "Settings page HTML structure"},
+            {"name": "index.css", "description": "Settings page styling"},
+            {"name": "index.js", "description": "Settings page logic"}
+          ]
+        },
+        "OnlineHub": {
+          "description": "Online multiplayer hub components",
+          "files": [
+            {"name": "index.html", "description": "Online hub HTML structure"},
+            {"name": "index.css", "description": "Online hub styling"},
+            {"name": "index.js", "description": "Online hub logic"}
+          ]
+        },
+        "Tutorial": {
+          "description": "Game tutorial components",
+          "files": [
+            {"name": "index.html", "description": "Tutorial page HTML structure"},
+            {"name": "index.css", "description": "Tutorial page styling"},
+            {"name": "index.js", "description": "Tutorial page logic"}
+          ]
+        },
+        "Profile": {
+          "description": "User profile page components",
+          "files": [
+            {"name": "index.html", "description": "Profile page HTML structure"},
+            {"name": "index.css", "description": "Profile page styling"},
+            {"name": "index.js", "description": "Profile page logic"}
+          ]
+        }
+      },
+      "module_rules": {
+        "page_isolation": true,
+        "no_cross_page_imports": true,
+        "self_contained": true,
+        "theme_integration": true
+      }
+    },
+    
+    "Config": {
+      "description": "Configuration and theming system",
+      "submodules": {
+        "Themes": {
+          "description": "Visual theming and styling configuration",
+          "submodules": {
+            "Gameplay": {
+              "description": "Canvas/gameplay-specific theming",
+              "files": [
+                {
+                  "name": "defaultGameplay.js",
+                  "description": "Default gameplay theme configuration",
+                  "responsibilities": [
+                    "Board colors",
+                    "Piece colors",
+                    "Indicator colors",
+                    "Accessibility palettes"
+                  ],
+                  "dependencies": [],
+                  "exports": ["defaultGameplayTheme"]
+                },
+                {
+                  "name": "highContrastGameplay.js",
+                  "description": "High contrast gameplay theme",
+                  "responsibilities": [
+                    "High contrast colors",
+                    "Accessibility features",
+                    "Visual clarity"
+                  ],
+                  "dependencies": [],
+                  "exports": ["highContrastGameplayTheme"]
+                },
+                {
+                  "name": "teaHouseGameplay.js",
+                  "description": "Tea house aesthetic theme",
+                  "responsibilities": [
+                    "Tea house colors",
+                    "Aesthetic styling",
+                    "Cultural theming"
+                  ],
+                  "dependencies": [],
+                  "exports": ["teaHouseGameplayTheme"]
+                }
+              ]
+            },
+            "Pages": {
+              "description": "Page-specific themes (CSS for DOM/layout)",
+              "files": [
+                {
+                  "name": "defaultLight.css",
+                  "description": "Default light theme for pages",
+                  "responsibilities": [
+                    "Light theme colors",
+                    "Layout styling",
+                    "Component themes"
+                  ]
+                },
+                {
+                  "name": "defaultDark.css",
+                  "description": "Default dark theme for pages",
+                  "responsibilities": [
+                    "Dark theme colors",
+                    "Layout styling",
+                    "Component themes"
+                  ]
+                },
+                {
+                  "name": "minimalLight.css",
+                  "description": "Minimal light theme for pages",
+                  "responsibilities": [
+                    "Minimal design",
+                    "Clean aesthetics",
+                    "Simple styling"
+                  ]
+                },
+                {
+                  "name": "minimalDark.css",
+                  "description": "Minimal dark theme for pages",
+                  "responsibilities": [
+                    "Minimal dark design",
+                    "Clean aesthetics",
+                    "Simple styling"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "graphicsConfig.js",
+          "description": "Board/piece/indicator colors, shapes, sizes, etc.",
+          "responsibilities": [
+            "Visual configuration",
+            "Size settings",
+            "Color palettes",
+            "Shape definitions"
+          ],
+          "dependencies": [],
+          "exports": ["graphicsConfig"],
+          "max_lines": 200
+        },
+        {
+          "name": "matchHistoryConfig.js",
+          "description": "Notation styling, coloring, etc.",
+          "responsibilities": [
+            "History formatting",
+            "Notation styles",
+            "Display configuration"
+          ],
+          "dependencies": [],
+          "exports": ["matchHistoryConfig"],
+          "max_lines": 150
+        },
+        {
+          "name": "supabaseConfig.example.js",
+          "description": "Supabase configuration template",
+          "responsibilities": [
+            "Database configuration",
+            "API keys template",
+            "Connection settings"
+          ],
+          "dependencies": [],
+          "exports": ["supabaseConfig"],
+          "max_lines": 100
+        }
+      },
+      "module_rules": {
+        "configuration_only": true,
+        "no_business_logic": true,
+        "theme_separation": true,
+        "easy_customization": true
+      }
+    },
+    
+    "Assets": {
+      "description": "Static assets (images, audio, etc.)",
+      "submodules": {
+        "Images": {
+          "description": "Static image assets",
+          "files": [
+            {"name": "favicon.ico", "description": "Website favicon"},
+            {"name": "logo.png", "description": "Game logo"},
+            {"name": "pieces/", "description": "Piece artwork"},
+            {"name": "ui/", "description": "UI element images"}
+          ]
+        },
+        "Audio": {
+          "description": "Sound effects and music",
+          "files": [
+            {"name": "move.wav", "description": "Piece move sound"},
+            {"name": "attack.wav", "description": "Attack sound"},
+            {"name": "ability.wav", "description": "Ability activation sound"},
+            {"name": "victory.mp3", "description": "Victory music"},
+            {"name": "defeat.mp3", "description": "Defeat music"}
+          ]
+        },
+        "Fonts": {
+          "description": "Custom fonts and typography",
+          "files": [
+            {"name": "ZenMaruGothic.ttf", "description": "Main game font"},
+            {"name": "DM-Mono.ttf", "description": "Monospace font for notation"}
+          ]
+        }
+      },
+      "module_rules": {
+        "static_assets_only": true,
+        "no_code": true,
+        "optimized_sizes": true,
+        "format_standards": true
+      }
+    }
+  },
+  
+  "dependency_graph": {
+    "Core": [],
+    "Systems": ["Core"],
+    "Players": ["Core"],
+    "UI": ["Core", "Systems"],
+    "Network": ["Core", "Systems"],
+    "EdgeFunctions": [],
+    "Pages": ["UI", "Config"],
+    "Config": [],
+    "Assets": []
+  },
+  
+  "architectural_constraints": {
+    "layered_architecture": true,
+    "dependency_inversion": true,
+    "interface_segregation": true,
+    "single_responsibility": true,
+    "open_closed": true,
+    "no_circular_dependencies": true,
+    "pure_functions_preferred": true,
+    "immutable_state_preferred": true
+  },
+  
+  "quality_assurance": {
+    "test_coverage_minimum": "80%",
+    "code_review_required": true,
+    "linting_enabled": true,
+    "formatting_enforced": true,
+    "documentation_required": true,
+    "performance_monitoring": true
+  },
+  
+  "migration_strategy": {
+    "phased_approach": true,
+    "backward_compatibility": "During transition",
+    "rollback_plan": "Restore original files",
+    "validation_required": "At each phase",
+    "testing_mandatory": "Unit and integration tests"
+  },
+  
+  "version_control": {
+    "branch_strategy": "feature branches",
+    "commit_frequency": "Small, atomic commits",
+    "pull_request_required": true,
+    "code_review_mandatory": true,
+    "automated_testing": true
+  }
+}

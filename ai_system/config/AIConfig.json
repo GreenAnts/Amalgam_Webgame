@@ -27,6 +27,7 @@
     "weights_file": "config/EvaluationWeights.json"
   },
   "decision": {
-    "strategy": "random"
+    "strategy": "random",
+    "default_search_depth": 4
   }
 }
