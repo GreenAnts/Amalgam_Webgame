@@ -61,13 +61,16 @@ window.onload = function() {
             const response = await fetch('arena/ArenaConfig.json');
             const arenaConfig = await response.json();
             const activeAnchors = arenaConfig.active_anchors
-                .filter(a => a.status !== 'validation_only')
+                .filter(a => a.status !== 'validation_only' || a.competency_level === 'experimental') // Include experimental policies
                 .sort((a, b) => new Date(b.date_established) - new Date(a.date_established)); // Newest first
 
             const dynamicOptions = activeAnchors.map(anchor => ({
                 value: anchor.policy_name,
-                text: `${anchor.id.replace('ANCHOR_', '').replace('_', ' ')} (${anchor.competency_level})`,
-                position: 1 // All anchors go after Current
+                text: anchor.competency_level === 'experimental'
+                    ? `⚠️ ${anchor.id.replace('ANCHOR_', '').replace('_', ' ')} (${anchor.competency_level})`
+                    : `${anchor.id.replace('ANCHOR_', '').replace('_', ' ')} (${anchor.competency_level})`,
+                position: 1, // All anchors go after Current
+                isExperimental: anchor.competency_level === 'experimental' // Flag for styling
             }));
 
             // 🎯 COMBINE WITH PROPER ORDERING
@@ -86,6 +89,9 @@ window.onload = function() {
                 const option = document.createElement('option');
                 option.value = opt.value;
                 option.textContent = opt.text;
+                if (opt.isExperimental) {
+                    option.classList.add('experimental-ai-option');
+                }
                 aiDifficultyDropdown.appendChild(option);
             });
 
@@ -258,6 +264,12 @@ window.onload = function() {
                 aiDifficultyDropdown.value = 'DEFAULT';
             }
         }
+
+        // Rebuild dropdown to preserve experimental styling
+        await loadAIDifficulties();
+
+        // Restore the selected value after rebuilding
+        aiDifficultyDropdown.value = selectedValue;
 
         // Store current value for next change
         aiDifficultyDropdown.dataset.previousValue = selectedValue;

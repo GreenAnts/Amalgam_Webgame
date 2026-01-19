@@ -32,8 +32,8 @@
     "BASELINE_S02": {
       "start": 500,
       "count": 300,
-      "locked": false,
-      "description": "Available for next baseline"
+      "locked": true,
+      "description": "LOCKED - AI_v0.2_NEXUS_CHAIN baseline (DO NOT REUSE)"
     },
     "BASELINE_S03": {
       "start": 800,
@@ -135,6 +135,23 @@
       "original_evaluation_seeds": "200-499 (BASELINE_S01, 300 games)",
       "promotion_criteria": "Candidate must beat this anchor by ≥15% (≥65% absolute win rate)",
       "note": "Validates using first 50 games from original 300-game evaluation. Seeds 200-249 should reproduce ~97.7% win rate vs RANDOM if no drift."
+    },
+    {
+      "id": "ANCHOR_UNDER_DEVELOPMENT",
+      "policy_name": "UNDER_DEVELOPMENT",
+      "status": "validation_only",
+      "date_established": "2026-01-19",
+      "description": "Under development policy - experimental tactics",
+      "competency_level": "experimental",
+      "validation_mode": null,
+      "validation_opponent": null,
+      "expected_vs_opponent_rate": null,
+      "drift_tolerance": null,
+      "validation_seed_base": null,
+      "validation_game_count": null,
+      "original_evaluation_seeds": null,
+      "promotion_criteria": "In development - not for validation",
+      "note": "Experimental policy for browser testing. Not suitable for baseline evaluation."
     }
   ],
   "notes": {

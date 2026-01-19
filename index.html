@@ -321,12 +321,7 @@
 	  box-shadow: inset 0 2px 3px rgba(255,255,255,0.5),
 	              0 3px 6px rgba(0,0,0,0.12);
 	  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-	  appearance: none;
-	  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
-	  background-position: right 8px center;
-	  background-repeat: no-repeat;
-	  background-size: 16px;
-	  padding-right: 36px;
+	  /* Let browser handle dropdown arrow natively */
   }
 
   .difficulty-dropdown:hover {
@@ -342,11 +337,25 @@
   body.dark .difficulty-dropdown {
 	  background: #3a3833;
 	  color: #efe6d8;
-	  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23efe6d8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
   }
 
   body.dark .difficulty-dropdown:focus {
 	  background: #a2a56d;
+  }
+
+  /* Experimental AI Policy Styling */
+  select.difficulty-dropdown option.experimental-ai-option {
+	  color: #dc2626 !important; /* Red-600 for light mode */
+	  font-style: italic !important;
+	  font-family: 'Zen Maru Gothic', sans-serif !important;
+	  font-weight: 600 !important;
+  }
+
+  body.dark select.difficulty-dropdown option.experimental-ai-option {
+	  color: #f87171 !important; /* Red-400 for better dark mode contrast */
+	  font-style: italic !important;
+	  font-family: 'Zen Maru Gothic', sans-serif !important;
+	  font-weight: 600 !important;
   }
 
   /* Legacy button styles (kept for compatibility) */
