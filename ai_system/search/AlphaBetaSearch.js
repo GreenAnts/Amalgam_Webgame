@@ -23,7 +23,7 @@ export class AlphaBetaSearch extends SearchStrategy {
 		const isRoot = node.depth === 0;
 	
 		if (depth === 0) {
-			return this.evaluator.evaluate(node.simulationState);
+			return this.evaluator.evaluate(node.simulationState, context);
 		}
 	
 		const { gameLogic, turnContext } = context;
@@ -85,7 +85,7 @@ export class AlphaBetaSearch extends SearchStrategy {
 		
 		// Optimization: If no actions found (e.g., stuck), return evaluation
 		if (actions.length === 0) {
-			return this.evaluator.evaluate(simState);
+			return this.evaluator.evaluate(simState, context);
 		}
 
 		let bestScore = maximizingPlayer ? -Infinity : Infinity;

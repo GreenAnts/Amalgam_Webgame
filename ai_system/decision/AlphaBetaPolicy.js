@@ -1,13 +1,9 @@
 /**
  * AlphaBetaPolicy.js
- * 
- * Thin adapter exposing AlphaBetaSearch via Arena policy interface.
- * Uses adapter pattern to avoid duplicating search logic.
- * 
- * Session: 7 — Alpha-Beta Search Implementation
- * 
- * @author AI Decision Layer
- * @version 0.1
+ * * Thin adapter exposing AlphaBetaSearch via Arena policy interface.
+ * Fixed to handle async weight initialization while keeping search synchronous.
+ * * @author AI Decision Layer
+ * @version 1.1
  */
 
 import { AlphaBetaSearch } from '../search/AlphaBetaSearch.js';
@@ -24,73 +20,61 @@ export class AlphaBetaPolicy {
         const tt = new TranspositionTable();
 
         this.search = new AlphaBetaSearch(evaluator, moveOrdering, tt);
-        this.config = null; // Will be loaded asynchronously when needed
+        this.config = null;
+        this.initialized = false;
     }
 
-    /**
-     * Load AI configuration asynchronously
-     * @returns {Promise<Object>} Configuration object
-     */
+    async initialize() {
+        if (this.initialized) return;
+        await this.search.evaluator.loadWeights();
+        this.initialized = true;
+    }
+
     async loadConfig() {
         if (this.config) return this.config;
+        const configPath = new URL('../config/AIConfig.json', import.meta.url);
 
-        // Prevent race conditions - set a loading flag
-        if (this.configLoading) {
-            return this.configLoading;
-        }
-
-        this.configLoading = (async () => {
-            try {
-                // Use import.meta.url for correct path resolution like original code
-                const configPath = new URL('../config/AIConfig.json', import.meta.url);
+        try {
+            if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+                const fs = await import('fs/promises');
+                const { fileURLToPath } = await import('url');
+                const path = fileURLToPath(configPath);
+                const content = await fs.readFile(path, 'utf8');
+                this.config = JSON.parse(content);
+            } else {
                 const response = await fetch(configPath);
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const rawConfig = await response.json();
-
-                // Ensure decision section exists with proper fallback
-                this.config = {
-                    decision: {
-                        default_search_depth: rawConfig.decision?.default_search_depth || 3,
-                        strategy: rawConfig.decision?.strategy || 'random'
-                    }
-                };
-            } catch (e) {
-                // Safe fallback if config is missing or invalid
-                this.config = { decision: { default_search_depth: 3 } };
+                if (!response.ok) throw new Error(`Status: ${response.status}`);
+                this.config = await response.json();
             }
-
-            this.configLoading = null;
             return this.config;
-        })();
-
-        return this.configLoading;
+        } catch (error) {
+            console.warn('AlphaBetaPolicy: Using default config due to load error');
+            return { decision: { default_search_depth: 3 } };
+        }
     }
-    
+
     /**
-     * Select move using alpha-beta search
-     * 
-     * @param {Object} gameState - Game state snapshot
-     * @param {Object} context - {rng, gameLogic, playerManager}
-     * @returns {Object} Selected move
+     * Arena Policy Entry Point
      */
     async selectMove(gameState, context) {
         const { rng, gameLogic, playerManager } = context;
 
-        // Load config if not already loaded
+        // 1. PRE-SEARCH ASYNC WORK
+        // Ensure weights and configs are loaded before we start the CPU-heavy search
+        await this.initialize();
         const config = await this.loadConfig();
 
-        // 1. DYNAMIC DEPTH: Fallback chain ensures the AI never has "null" depth
+        // 2. SETUP PARAMETERS
         const searchDepth = context.searchDepth ||
                             config.decision?.default_search_depth ||
                             3;
 
-        // 2. CONTEXT BRIDGE: Arena provides board state; we provide turn state
         const turnContext = context.turnContext || {
             movedPieceCoord: null,
             usedAbilities: new Set()
         };
 
-        // Create root simulation state
+        // 3. INITIALIZE SEARCH NODES
         const currentPlayer = playerManager.getCurrentPlayer().name;
         const rootSimState = new SimulatedGameState(
             gameState,
@@ -100,25 +84,27 @@ export class AlphaBetaPolicy {
             null    // lastAction
         );
         
-        // Create root search node
         const rootNode = new SearchNode(rootSimState, null, null, 0);
         
-        // Run search with configurable depth
+        // 4. RUN SYNCHRONOUS SEARCH
+        // We do NOT 'await' this. Searching must block the thread to prevent
+        // the UI from rendering partial "glitch" moves.
         this.search.bestMove = null;
         this.search.alphaBeta(
             rootNode,
-            searchDepth, // <--- Now fully configurable
+            searchDepth,
             -Infinity,  // alpha
             +Infinity,  // beta
-            true,  // maximizingPlayer
+            true,       // maximizingPlayer
             { 
                 gameLogic, 
                 playerManager, 
                 rng, 
-                turnContext // <--- Crucial bridge for abilities
+                turnContext 
             }
         );
         
+        // 5. RETURN BEST MOVE
         return this.search.bestMove;
     }
 }
