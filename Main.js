@@ -10,7 +10,6 @@ import { SetupManager } from './systems/SetupManager.js';
 import { SetupUI } from './ui/SetupUI.js';
 import { MatchHistoryTracker } from './systems/MatchHistoryTracker.js';
 import { AIController } from './ai_system/controller/AIController.js';  //AI System
-import { createPolicy } from './ai_system/decision/PolicyRegistry.js';
 
 window.onload = function() {
     // Get canvas and UI elements
@@ -225,7 +224,7 @@ window.onload = function() {
 
         // Clean up resize listener when dialog closes
         const originalClose = closeDialog;
-        closeDialog = () => {
+        const cleanupCloseDialog = () => {
             window.removeEventListener('resize', handleResize);
             originalClose();
         };
@@ -253,7 +252,8 @@ window.onload = function() {
             // 🔄 DYNAMIC OPTIONS (arena anchors)
             try {
                 currentPolicyMode = 'POLICY';
-                currentPolicy = createPolicy(selectedValue);
+                await aiController.setPolicy(selectedValue);
+                currentPolicy = aiController.currentPolicy;
                 console.log(`Switched to ${selectedValue} policy`);
             } catch (error) {
                 console.error(`Failed to init ${selectedValue} policy:`, error);
@@ -1361,7 +1361,7 @@ window.onload = function() {
                 let move = null;
                 
                 // POLICY MODE vs DEFAULT AI MODE
-                if (currentPolicyMode !== 'DEFAULT' && currentPolicy) {
+                if (aiController.currentPolicyMode !== 'DEFAULT' && aiController.currentPolicy) {
                     // === POLICY MODE: Use Arena policy ===
                     const gameState = gameLogic.getState();
                     const context = {
@@ -1371,7 +1371,7 @@ window.onload = function() {
                     };
                     
                     try {
-                        move = await currentPolicy.selectMove(gameState, context);
+                        move = await aiController.currentPolicy.selectMove(gameState, context);
                     } catch (error) {
                         console.error('Policy error:', error);
                         move = null;

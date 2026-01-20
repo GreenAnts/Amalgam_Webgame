@@ -114,6 +114,23 @@ export class AIController {
     }
 
     /**
+     * Create and set a policy by name
+     */
+    async setPolicy(policyName) {
+        try {
+            const { createPolicy } = await import('../decision/PolicyRegistry.js');
+            this.currentPolicy = createPolicy(policyName);
+            this.currentPolicyMode = 'POLICY';
+            this.logger.info(`Policy set to: ${policyName}`);
+        } catch (error) {
+            this.logger.error(`Failed to create policy ${policyName}`, error);
+            // Fallback to default mode
+            this.currentPolicy = null;
+            this.currentPolicyMode = 'DEFAULT';
+        }
+    }
+
+    /**
      * Reset turn state (call at start of AI turn)
      */
     resetTurnState() {
