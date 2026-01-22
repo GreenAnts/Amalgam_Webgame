@@ -67,3 +67,30 @@ export function initializePieces() {
         }
     };
 }
+
+/**
+ * Create a gem piece object
+ * @param {string} gemType - 'ruby' | 'pearl' | 'amber' | 'jade'  
+ * @param {string} player - 'square' | 'circle'
+ * @returns {Object} Piece object
+ */
+export function createGemPiece(gemType, player) {
+    const normalPieceSize = 25 * 0.38;
+    
+    const colors = {
+        ruby: { outer: '#b72d4c', inner: '#e4395f' },
+        pearl: { outer: '#c4c2ad', inner: '#f7f4d8' },
+        amber: { outer: '#c19832', inner: '#f4bf3f' },
+        jade: { outer: '#86b76a', inner: '#a8e685' }
+    };
+    
+    const typeStr = player === 'square' ? 'Square' : 'Circle';
+    
+    return {
+        name: `${gemType.charAt(0).toUpperCase() + gemType.slice(1)}-${typeStr}`,
+        type: `${gemType}${typeStr}`,
+        outerColor: colors[gemType].outer,
+        innerColor: colors[gemType].inner,
+        size: normalPieceSize
+    };
+}

@@ -381,85 +381,140 @@ window.onload = function() {
     }
 
     // AI Setup Logic
-    async function handleAISetup() {
-        if (!setupManager.isSetupPhase) return;
+    function handleAISetup() {
+        console.log('[handleAISetup] Called');
         
-        // --- GUARD 1: Ensure it's still the AI's turn before starting ---
-        if (setupManager.getCurrentPlayer() !== 'circle') return;
+        if (!setupManager.isSetupPhase) {
+            console.log('[handleAISetup] Not in setup phase, returning');
+            return;
+        }
+        
+        if (setupManager.getCurrentPlayer() !== 'circle') {
+            console.log('[handleAISetup] Not AI turn, returning');
+            return;
+        }
+        
+        console.log('[handleAISetup] AI turn confirmed');
         
         if (window.updateTurnIndicator) {
             window.updateTurnIndicator('Player 2 (AI)');
         }
         
-        // await new Promise(resolve => setTimeout(resolve, 200));
-        
-        // --- GUARD 2: Check again after the first delay ---
-        if (setupManager.getCurrentPlayer() !== 'circle') return;
-        
-        // await new Promise(resolve => setTimeout(resolve, 600));
+        // Use opening book for AI setup placement
+        (async () => {
+            try {
+                console.log('[handleAISetup] Starting async setup logic');
+                
+                // Ensure RNG exists
+                if (!window.currentGameRNG) {
+                    window.currentGameRNG = {
+                        seed: Date.now(),
+                        nextInt: function(max) {
+                            this.seed = (this.seed * 1664525 + 1013904223) % 4294967296;
+                            return Math.floor((this.seed / 4294967296) * max);
+                        }
+                    };
+                    console.log('[handleAISetup] Created RNG');
+                }
+                
+                // Import setup handler
+                const { SetupBookHandler } = await import('./ai_system/utils/SetupBookHandler.js');
+                console.log('[handleAISetup] Imported SetupBookHandler');
+                
+                // Initialize if needed
+                if (!window.aiSetupHandler) {
+                    console.log('[handleAISetup] Creating new SetupBookHandler');
+                    window.aiSetupHandler = new SetupBookHandler();
+                    await window.aiSetupHandler.loadBook();
+                    console.log('[handleAISetup] Book loaded');
+                }
+                
+                // Get current player and select setup
+                const side = 'circles';
+                const seed = window.currentGameRNG.seed;
+                console.log('[handleAISetup] Selecting setup with seed:', seed);
+                
+                const setup = window.aiSetupHandler.selectSetup(side, seed);
+                console.log('[handleAISetup] Setup selected:', setup);
+                
+                // Get next placement
+                // Get FRESH state - must be called here to see pieces placed by setupManager
+                const gameState = gameLogic.getState();
+                console.log('[handleAISetup] Getting next placement, gameState pieces count:', Object.keys(gameState.pieces).length);
 
-        // --- GUARD 3: Final check before actually placing the piece ---
-        if (setupManager.getCurrentPlayer() !== 'circle') return;
-        
-        const gemTypes = ['ruby', 'pearl', 'amber', 'jade'];
-        const counts = setupManager.getPieceCounts('circle');
-        const availableGems = gemTypes.filter(gem => counts[gem] < 2);
-        
-        if (availableGems.length === 0) return;
-        
-        const selectedGem = availableGems[Math.floor(Math.random() * availableGems.length)];
-        setupManager.selectPiece(selectedGem);
-        
-        const validPositions = setupManager.getValidPlacementPositions();
-        if (validPositions.length === 0) return;
-        
-        const selectedPosition = validPositions[Math.floor(Math.random() * validPositions.length)];
-        const setupPlayer = setupManager.getCurrentPlayer();
-        const selectedPieceType = setupManager.selectedPieceType;
-        
-        const result = setupManager.placePiece(selectedPosition);
-    
-        if (result.success) {
-            // Track AI setup placement
-            matchHistoryTracker.trackSetupPlacement(
-                setupPlayer,
-                selectedPieceType,
-                selectedPosition
-            );
-            
-            drawBoard();
-            
-            if (result.setupComplete) {
-                matchHistoryTracker.finalizeSetup();
+                const placement = window.aiSetupHandler.getNextPlacement(setup, gameState, side);
+
+                console.log('[handleAISetup] Placement returned:', placement);
                 
-                // Initialize the tracker for Turn 1
-                const firstPlayer = playerManager.getCurrentPlayer();
-                matchHistoryTracker.startTurn(1, firstPlayer.name);
-                
-                updateLogDisplay();
-                
-                // Update turn indicator to show who goes first
-                if (window.updateTurnIndicator) {
-                    window.updateTurnIndicator(playerManager.getCurrentPlayer().name);
-                }
-                uiManager.updatePlayerInfo(
-                    playerManager.getTurnCount(),
-                    playerManager.getCurrentPlayer()
-                );
-                updateAbilityButtonStates();
-            } else {
-                // Update indicator for next turn BEFORE continuing
-                const nextSetupPlayer = setupManager.getCurrentPlayer();
-                const nextPlayerName = nextSetupPlayer === 'square' ? 'Player 1' : 'Player 2 (AI)';
-                
-                if (window.updateTurnIndicator) {
-                    window.updateTurnIndicator(nextPlayerName);
+                if (!placement) {
+                    console.error('[handleAISetup] No placement returned!');
+                    return;
                 }
                 
-                // Continue to next setup turn with delay
-                setTimeout(handleAISetup, 200);
+                // Execute placement
+                const setupPlayer = setupManager.getCurrentPlayer();
+                console.log('[handleAISetup] Setup player:', setupPlayer);
+                
+                console.log('[handleAISetup] Selecting piece:', placement.gem);
+                const selectSuccess = setupManager.selectPiece(placement.gem);
+                console.log('[handleAISetup] Select success:', selectSuccess);
+                
+                if (!selectSuccess) {
+                    console.error('[handleAISetup] Failed to select piece!');
+                    return;
+                }
+                
+                console.log('[handleAISetup] Placing piece at:', placement.position);
+                const result = setupManager.placePiece(placement.position);
+                console.log('[handleAISetup] Place result:', result);
+                
+                if (result.success) {
+                    matchHistoryTracker.trackSetupPlacement(
+                        setupPlayer,
+                        placement.gem,
+                        placement.position
+                    );
+                    
+                    drawBoard();
+                    
+                    if (result.setupComplete) {
+                        console.log('[handleAISetup] Setup complete!');
+                        matchHistoryTracker.finalizeSetup();
+                        
+                        const firstPlayer = playerManager.getCurrentPlayer();
+                        matchHistoryTracker.startTurn(1, firstPlayer.name);
+                        
+                        updateLogDisplay();
+                        
+                        if (window.updateTurnIndicator) {
+                            window.updateTurnIndicator(playerManager.getCurrentPlayer().name);
+                        }
+                        uiManager.updatePlayerInfo(
+                            playerManager.getTurnCount(),
+                            playerManager.getCurrentPlayer()
+                        );
+                        updateAbilityButtonStates();
+                    } else {
+                        const nextSetupPlayer = setupManager.getCurrentPlayer();
+                        const nextPlayerName = nextSetupPlayer === 'square' ? 'Player 1' : 'Player 2 (AI)';
+                        
+                        console.log('[handleAISetup] Setup not complete, next player:', nextPlayerName);
+                        
+                        if (window.updateTurnIndicator) {
+                            window.updateTurnIndicator(nextPlayerName);
+                        }
+                        
+                        console.log('[handleAISetup] Scheduling next AI turn');
+                        setTimeout(handleAISetup, 200);
+                    }
+                } else {
+                    console.error('[handleAISetup] Placement failed:', result.message);
+                }
+            } catch (error) {
+                console.error('[handleAISetup] Error in async block:', error);
+                console.error('[handleAISetup] Error stack:', error.stack);
             }
-        }
+        })();
     }
 
     // Update action button states (Offer Draw, Forfeit, Request Takeback)

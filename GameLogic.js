@@ -154,12 +154,68 @@ export class GameLogic {
     
     /**
      * Initialize game with a seed (for Arena determinism)
-     * @param {number} seed - Seed value (currently unused, but required for interface)
-     * @returns {Object} Initial game state snapshot
+     * AUTO-PLACES GEMS: Arena has no setup phase UI, so gems are placed automatically
+     * @param {number} seed - Seed value for deterministic setup
+     * @returns {Object} Initial game state snapshot with all pieces placed
      */
-    initialize(seed) {
+    async initialize(seed) {
+        // 1. Reset to base state (Amalgam, Void, Portals)
         this.resetGame();
+        
+        // 2. Auto-place gems for Arena compatibility
+        try {
+            // Dynamic imports to avoid issues if files don't exist
+            const { SetupBookHandler } = await import('./ai_system/utils/SetupBookHandler.js');
+            const { createGemPiece } = await import('./core/PieceDefinitions.js');
+            
+            const setupHandler = new SetupBookHandler();
+            await setupHandler.loadBook();
+            
+            // Select setups deterministically
+            const squareSetup = setupHandler.selectSetup('squares', seed);
+            const circleSetup = setupHandler.selectSetup('circles', seed);
+            
+            // Get placement sequences
+            const squarePlacements = setupHandler.getPlacementSequence(squareSetup);
+            const circlePlacements = setupHandler.getPlacementSequence(circleSetup);
+            
+            // Place all gems
+            squarePlacements.forEach(placement => {
+                const piece = createGemPiece(placement.gem, 'square');
+                this.gameState.addPiece(placement.coord, piece);
+            });
+            
+            circlePlacements.forEach(placement => {
+                const piece = createGemPiece(placement.gem, 'circle');
+                this.gameState.addPiece(placement.coord, piece);
+            });
+            
+        } catch (error) {
+            console.error('Failed to auto-place gems during initialization:', error);
+            // Continue with base pieces only (graceful degradation)
+        }
+        
         return this.getState();
+    }
+
+
+    /**
+     * Check if game is in setup phase (browser only)
+     * @returns {boolean} True if < 16 gems placed
+     */
+    isInSetupPhase() {
+        const gameState = this.gameState.getState();
+        
+        let gemCount = 0;
+        for (const piece of Object.values(gameState.pieces)) {
+            const type = piece.type.toLowerCase();
+            if (type.includes('ruby') || type.includes('pearl') || 
+                type.includes('amber') || type.includes('jade')) {
+                gemCount++;
+            }
+        }
+        
+        return gemCount < 16;
     }
 
     /**

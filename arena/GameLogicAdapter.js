@@ -11,14 +11,56 @@ export class GameLogicAdapter {
     }
 
     /**
-     * Perform deterministic setup phase
-     * Places all 16 gems in valid starting positions based on RNG seed
+     * Perform deterministic setup phase using opening book
      * @param {Object} rng - Random number generator
      */
-    _performDeterministicSetup(rng) {
+    async _performDeterministicSetup(rng) {
+        try {
+            // Import dependencies
+            const { SetupBookHandler } = await import('../ai_system/utils/SetupBookHandler.js');
+            const { createGemPiece } = await import('../core/PieceDefinitions.js');
+            
+            // Load opening book
+            const setupHandler = new SetupBookHandler();
+            await setupHandler.loadBook();
+            
+            // Select setups deterministically
+            const seed = rng.seed || 12345; // Use RNG's seed
+            const squareSetup = setupHandler.selectSetup('squares', seed);
+            const circleSetup = setupHandler.selectSetup('circles', seed);
+            
+            // Get placement sequences
+            const squarePlacements = setupHandler.getPlacementSequence(squareSetup);
+            const circlePlacements = setupHandler.getPlacementSequence(circleSetup);
+            
+            // Get gameState
+            const gameState = this.gameLogic.getGameState();
+            
+            // Place all gems
+            squarePlacements.forEach(placement => {
+                const piece = createGemPiece(placement.gem, 'square');
+                gameState.addPiece(placement.coord, piece);
+            });
+            
+            circlePlacements.forEach(placement => {
+                const piece = createGemPiece(placement.gem, 'circle');
+                gameState.addPiece(placement.coord, piece);
+            });
+            
+        } catch (error) {
+            console.error('Failed to load opening book, falling back to random placement:', error);
+            // Fallback to original random placement logic
+            this._performRandomSetup(rng);
+        }
+    }
+
+    /**
+     * Fallback random setup (original logic)
+     * @private
+     */
+    _performRandomSetup(rng) {
         const gameState = this.gameLogic.getGameState();
         
-        // Import constants
         const CIRCLE_START_COORDS = [
             "1,8", "1,9", "1,10", "1,11", "2,7", "2,9", "2,10", "2,11",
             "3,7", "3,8", "3,10", "3,11", "4,7", "4,8", "4,9", "4,11",
@@ -39,7 +81,6 @@ export class GameLogicAdapter {
             "6,-9", "6,-10", "7,-8", "7,-9"
         ];
         
-        // Shuffle positions deterministically
         const shuffleArray = (arr) => {
             const shuffled = [...arr];
             for (let i = shuffled.length - 1; i > 0; i--) {
@@ -52,17 +93,14 @@ export class GameLogicAdapter {
         const circlePositions = shuffleArray(CIRCLE_START_COORDS);
         const squarePositions = shuffleArray(SQUARE_START_COORDS);
         
-        // Gem types (2 of each)
         const gemTypes = ['ruby', 'ruby', 'pearl', 'pearl', 'amber', 'amber', 'jade', 'jade'];
         
-        // Place Circle gems
         gemTypes.forEach((gemType, i) => {
             const coord = circlePositions[i];
             const piece = this._createGemPiece(gemType, 'circle');
             gameState.addPiece(coord, piece);
         });
         
-        // Place Square gems
         gemTypes.forEach((gemType, i) => {
             const coord = squarePositions[i];
             const piece = this._createGemPiece(gemType, 'square');
@@ -100,15 +138,16 @@ export class GameLogicAdapter {
      * @param {number} seed - Game seed (currently unused by main game)
      * @returns {Object} Initial game state snapshot
      */
-    initialize(seed) {
+    async initialize(seed) {
         this.playerManager.reset();
         this.gameLogic.resetGame();
         
-        // Create RNG from seed for deterministic setup
+        // Create RNG from seed
         const rng = this._createSetupRNG(seed);
+        rng.seed = seed; // Store seed for deterministic setup selection
         
         // Perform deterministic setup (place all gems)
-        this._performDeterministicSetup(rng);
+        await this._performDeterministicSetup(rng);
         
         return this.getStateSnapshot();
     }

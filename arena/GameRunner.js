@@ -19,7 +19,7 @@ export async function playGame({ playerA, playerB, seed }) {
     const rng = createRNG(seed);
     const adapter = new GameLogicAdapter();
     
-    let gameState = adapter.initialize(seed);
+    let gameState = await adapter.initialize(seed);
     let turnCount = 0;
     const maxTurns = ArenaConfig.game_settings.max_turns;
 
