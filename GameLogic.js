@@ -234,13 +234,23 @@ export class GameLogic {
      * @returns {boolean} True if game is over
      */
     isTerminal(gameState) {
-        // Restore game state from snapshot
-        this.gameState.pieces = { ...gameState.pieces };
-        this.gameState.selectedPieceCoord = gameState.selectedPieceCoord || null;
+        // DON'T mutate this.gameState - just temporarily check win condition
+        // Save current state
+        const savedPieces = this.gameState.pieces;
+        const savedSelectedCoord = this.gameState.selectedPieceCoord;
         
-        // Check win condition
-        const winResult = this.winConditionSystem.checkWin();
-        return winResult !== null;
+        try {
+            // Temporarily set state for win check (restore in finally)
+            this.gameState.pieces = gameState.pieces;  // Don't copy, just reference
+            this.gameState.selectedPieceCoord = gameState.selectedPieceCoord || null;
+            
+            const winResult = this.winConditionSystem.checkWin();
+            return winResult !== null;
+        } finally {
+            // ALWAYS restore original state
+            this.gameState.pieces = savedPieces;
+            this.gameState.selectedPieceCoord = savedSelectedCoord;
+        }
     }
 
     /**
@@ -277,28 +287,26 @@ export class GameLogic {
      * @returns {Object} New game state snapshot
      */
     applyMove(gameState, move) {
-        // Restore game state from snapshot
-        this.gameState.pieces = { ...gameState.pieces };
-        this.gameState.selectedPieceCoord = null;
+        const savedPieces = this.gameState.pieces;
+        const savedSelectedCoord = this.gameState.selectedPieceCoord;
         
-        // Select piece
-        this.gameState.selectPiece(move.from);
-        
-        // Convert move to coordinates
-        const fromCoord = this.boardUtils.stringToCoord(move.from);
-        const toCoord = this.boardUtils.stringToCoord(move.to);
-        
-        // Execute move using handleClick logic
-        this.gameState.movePiece(move.from, move.to);
-        
-        // Execute attack from new position
-        this.attackSystem.executeAttackAndReturnEliminated(move.to);
-        
-        // Switch turn
-        this.playerManager.switchTurn();
-        
-        // Return new state snapshot
-        return this.getState();
+        try {
+            this.gameState.pieces = gameState.pieces;
+            this.gameState.selectedPieceCoord = null;
+            
+            this.gameState.selectPiece(move.from);
+            const fromCoord = this.boardUtils.stringToCoord(move.from);
+            const toCoord = this.boardUtils.stringToCoord(move.to);
+            
+            this.gameState.movePiece(move.from, move.to);
+            this.attackSystem.executeAttackAndReturnEliminated(move.to);
+            this.playerManager.switchTurn();
+            
+            return this.getState();
+        } finally {
+            this.gameState.pieces = savedPieces;
+            this.gameState.selectedPieceCoord = savedSelectedCoord;
+        }
     }
 
     /**
@@ -307,10 +315,15 @@ export class GameLogic {
      * @returns {Object} {winnerId: string|null, winConditionType: string|null}
      */
     getTerminalResult(gameState) {
-        // Restore game state from snapshot
-        this.gameState.pieces = { ...gameState.pieces };
-        
-        const winResult = this.winConditionSystem.checkWin();
+        const savedPieces = this.gameState.pieces;
+    
+        try {
+            this.gameState.pieces = gameState.pieces;
+            const winResult = this.winConditionSystem.checkWin();
+            
+            if (!winResult) {
+                return { winnerId: null, winConditionType: null };
+            }
         
         if (!winResult) {
             return { winnerId: null, winConditionType: null };
@@ -333,5 +346,9 @@ export class GameLogic {
         }
         
         return { winnerId, winConditionType };
+
+        } finally {
+            this.gameState.pieces = savedPieces;
+        }
     }
 }

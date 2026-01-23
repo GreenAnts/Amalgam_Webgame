@@ -101,7 +101,14 @@ export class ModeManager {
             const evaluator = new LayeredEvaluator();
             const alphaBeta = new AlphaBetaSearch(evaluator, moveOrdering, tt);
             
-            const decisionEngine = new DecisionEngine();
+            // CRITICAL FIX: Pass decision config to DecisionEngine
+            const decisionConfig = {
+                searchDepth: this.config.decision?.default_search_depth || 3,
+                timeLimit: this.config.decision?.timeLimit || 5000,
+                nodeLimit: this.config.decision?.nodeLimit || 100000
+            };
+            
+            const decisionEngine = new DecisionEngine(decisionConfig);
             decisionEngine.setSearchStrategy(alphaBeta);
             
             const move = decisionEngine.selectMove(gameLogic, playerManager, {

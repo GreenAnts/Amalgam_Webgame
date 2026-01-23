@@ -3,6 +3,8 @@
 import { SearchStrategy } from './SearchStrategy.js';
 import { Logger } from '../utils/Logger.js';
 import { ActionGenerator } from '../utils/ActionGenerator.js';
+import { SimulatedGameState } from '../simulation/SimulatedGameState.js';
+import { SearchNode } from './SearchNode.js';
 
 export class AlphaBetaSearch extends SearchStrategy {
 	constructor(evaluator, moveOrdering = null, transpositionTable = null) {
@@ -16,6 +18,35 @@ export class AlphaBetaSearch extends SearchStrategy {
 		this.nodesSearched = 0; // Initialize counter
 	}
 
+	/**
+     * Execute alpha-beta search (SearchStrategy interface implementation)
+     */
+    search(gameLogic, playerManager, depth, constraints = {}) {
+        this.logger.info('Alpha-beta search starting', { depth });
+        this.resetStats();
+        
+        const { rng, turnContext } = constraints;
+        const gameState = gameLogic.getState();
+        const currentPlayer = playerManager.getCurrentPlayer().name;
+        
+        const rootSimState = new SimulatedGameState(gameState, currentPlayer, 0, null, null);
+        const rootNode = new SearchNode(rootSimState, null, null, 0);
+        
+        const context = { 
+            gameLogic, 
+            playerManager, 
+            rng, 
+            turnContext: turnContext || { movedPieceCoord: null, usedAbilities: new Set() }
+        };
+        
+        this.bestMove = null;
+        const score = this.alphaBeta(rootNode, depth, -Infinity, +Infinity, true, context);
+        
+        this.logger.info('Search complete', { move: this.bestMove, score, nodes: this.nodesSearched });
+        
+        return { move: this.bestMove, score, stats: this.getStats() };
+    }
+	
 	alphaBeta(node, depth, alpha, beta, maximizingPlayer, context) {
 		this.nodesSearched++;
 	
@@ -30,44 +61,53 @@ export class AlphaBetaSearch extends SearchStrategy {
 		const simState = node.simulationState;
 		const simPieces = simState.getPieces();
 
-		/* CRITICAL FIX: State Injection 
-		   Instead of creating a mock 'tempGameLogic' which lacks ability systems,
-		   we temporarily swap the state in the REAL GameLogic instance.
+		/* CRITICAL FIX: State Mutation (not replacement)
+		   We MUTATE the existing GameState instance instead of replacing it.
+		   This preserves all methods like getState() while updating data.
 		*/
-		const originalState = gameLogic.gameState;
+		const gameStateInstance = gameLogic.gameState;  // Keep the instance
 		
-		// Create a temporary state object that matches the structure GameLogic expects
-		// We preserve selectedPieceCoord/etc from original if needed, or null them
-		const tempState = {
-			pieces: simPieces,
-			selectedPieceCoord: null, // Simulation doesn't select
-			currentPlayer: simState.currentPlayer 
-		};
-
+		// Save original values for restoration
+		const originalPieces = gameStateInstance.pieces;
+		const originalSelectedCoord = gameStateInstance.selectedPieceCoord;
+		
 		// Player Manager Proxy: Tells ActionGenerator who the current simulation player is
 		const tempPlayerManager = {
-			getCurrentPlayer: () => ({
-				name: simState.currentPlayer,
-				// Ensure pieceType checks work (mapping name to types)
-				pieceType: simState.currentPlayer.includes('Player 1') 
-					? ['ruby', 'pearl', 'amber', 'jade'] // Assuming P1 owns these for now, or fetch from real PM
-					: ['ruby', 'pearl', 'amber', 'jade'] // Simplified: ActionGenerator checks piece ownership usually via logic
-			}),
-			canMovePiece: () => true, // Simulation assumes validity is checked by generator
-			// Forward other calls if necessary
-			getTurnCount: () => context.playerManager.getTurnCount()
+			getCurrentPlayer: () => {
+				const playerName = simState.currentPlayer;
+				if (playerName === 'Player 1') {
+					return {
+						name: 'Player 1',
+						pieceType: ['voidSquare', 'amalgamSquare', 'portalSquare', 
+								   'rubySquare', 'pearlSquare', 'amberSquare', 'jadeSquare'],
+						isAI: false
+					};
+				} else {
+					return {
+						name: 'Player 2 (AI)',
+						pieceType: ['voidCircle', 'amalgamCircle', 'portalCircle',
+								   'rubyCircle', 'pearlCircle', 'amberCircle', 'jadeCircle'],
+						isAI: true
+					};
+				}
+			},
+			canMovePiece: (pieceType) => {
+				const currentPlayer = tempPlayerManager.getCurrentPlayer();
+				return currentPlayer.pieceType.includes(pieceType);
+			},
+			getTurnCount: () => context.playerManager?.getTurnCount() || 1
 		};
-
-		// We also need to patch the player's piece types if ActionGenerator relies on them.
-		// For robustness, we'll rely on the fact that ActionGenerator often checks piece.type directly.
 
 		let actions = [];
 
 		try {
-			// INJECT SIMULATION STATE
-			gameLogic.gameState = tempState;
+			// MUTATE (don't replace) the GameState instance
+			gameStateInstance.pieces = simPieces;
+			gameStateInstance.selectedPieceCoord = null;
+			
+			// Now gameLogic.getState() will work correctly because gameState still has its methods
 
-			// Generate actions using the REAL systems bound to our TEMP state
+			// Generate actions using the REAL systems bound to our MUTATED state
 			actions = this.actionGenerator.generateAllActions(
 				gameLogic,
 				tempPlayerManager,
@@ -76,11 +116,11 @@ export class AlphaBetaSearch extends SearchStrategy {
 			);
 		} catch (error) {
 			this.logger.error('Error generating actions in search', error);
-			// Fallback to empty actions to prevent crash loop
 			actions = []; 
 		} finally {
-			// RESTORE REAL STATE
-			gameLogic.gameState = originalState;
+			// RESTORE ORIGINAL STATE
+			gameStateInstance.pieces = originalPieces;
+			gameStateInstance.selectedPieceCoord = originalSelectedCoord;
 		}
 		
 		// Optimization: If no actions found (e.g., stuck), return evaluation

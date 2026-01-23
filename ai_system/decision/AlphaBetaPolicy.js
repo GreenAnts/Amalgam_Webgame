@@ -42,7 +42,7 @@ export class AlphaBetaPolicy {
                 const content = await fs.readFile(path, 'utf8');
                 this.config = JSON.parse(content);
             } else {
-                const response = await fetch(configPath);
+                const response = await fetch(configPath, { cache: 'no-store' });
                 if (!response.ok) throw new Error(`Status: ${response.status}`);
                 this.config = await response.json();
             }
