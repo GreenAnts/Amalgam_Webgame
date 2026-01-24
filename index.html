@@ -123,8 +123,12 @@
 	.header h1 { font-size:1.9rem; font-weight:700; letter-spacing:0.05em; }
 	.subtitle { font-size:0.8rem; color:#7a6d60; }
 	body.dark .subtitle { color:#b6afa6; }
-	.footer { font-size:0.8rem; color:#7a6d60; text-align: right; }
+	.footer { font-size:0.7rem; color:#7a6d60; text-align: right; display:flex; align-items:center; justify-content:flex-end; gap:0.2em; }
+	.footer a { color:#7a6d60; text-decoration:none; }
+	.footer a:hover { text-decoration:underline; }
+	.footer img { vertical-align: middle; }
 	body.dark .footer { color:#b6afa6; }
+	body.dark .footer a { color:#b6afa6; }
 
 	.icon-btn {
 		border:none; background:#e6d6c2; border-radius:50%; width:36px; height:36px;
@@ -823,7 +827,8 @@
 	<div class="header">
 		<div>
 			<h1>Amalgam</h1>
-			<div class="subtitle">Abstract Strategy · Open Source · V0.01</div>
+			<div class="subtitle">A Two Player Abstract Strategy Board Game</div>
+			<div class="subtitle">Open Source (GPLv3) · CC-BY 4.0</div>
 		</div>
 		<div style="display:flex;gap:8px;align-items:center;">
 			<div class="theme-slider" id="toggleTheme" >
@@ -912,7 +917,7 @@
 		</div>
 	</div>
   
-	<div class="footer">Game Design by Anthony Davis · Patreon@UnfinishedProjects</div>
+	<div class="footer"><a href="https://www.patreon.com/collection/787282?view=expanded" target="_blank" rel="noopener noreferrer">Amalgam Board Game</a> © 2026 by <a href="https://www.patreon.com/UnfinishedProjects" target="_blank" rel="noopener noreferrer">Anthony Davis</a> is licensed under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a><img src="https://mirrors.creativecommons.org/presskit/icons/cc.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;"><img src="https://mirrors.creativecommons.org/presskit/icons/by.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;"></div>
 	
 </div>
 
