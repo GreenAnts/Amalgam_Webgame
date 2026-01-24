@@ -13,5 +13,21 @@ A two player abstract strategy game that requires you to tactically utilize your
 | [Board Game Geek (BGG) Page](https://boardgamegeek.com/boardgame/433428/amalgam) | Game listing on Board Game Geek - A well known website in the board game industry |
 
 
+- - -
 
-###### Support me on Patreon @UnfinishedProjects
+## The source code is Open Source under the GNU GPL Version 3 License.
+### The boardgame and its accompanied assets within this repository are licensed under the Creative Commons Attribution 4.0 International. 
+<a href="https://www.patreon.com/collection/787282?view=expanded">Amalgam Board Game</a> © 2026 by <a href="https://www.patreon.com/UnfinishedProjects">Anthony Davis</a> is licensed under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>
+
+<img src="https://mirrors.creativecommons.org/presskit/icons/cc.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;"><img src="https://mirrors.creativecommons.org/presskit/icons/by.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;">
+
+- - -
+
+### A Personal Note:
+I’ve been working on this board game on and off for many years, but I’ve never managed to get a working digital version up and running that others could easily play online. This repository is my latest attempt to finally make that happen.
+
+I’ve decided to open source the project and release the game under Creative Commons, in the hope that making it public might give it its best chance of becoming playable. While I wish my programming skills were sufficient to do this on my own, they’re not — and up to this point I’ve largely been relying on AI-assisted coding to get things moving.
+
+I’m very aware that this kind of “vibe coding” isn’t the most efficient or maintainable way forward, but for now it’s the best option I have. If you’re a capable programmer, software engineer, or someone who enjoys untangling and improving early-stage projects, I would genuinely love your help in getting this game up and running. Any contributions, big or small, would be hugely appreciated.
+
+And if coding isn’t your thing, or you’re not in a position to contribute code right now, that’s completely okay too. I’d still love it if you’d check out the game, share it with others who might be interested, or offer feedback on the gameplay and rules. Even just knowing what works, what doesn’t, or what feels confusing is incredibly helpful.
