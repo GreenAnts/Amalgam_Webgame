@@ -1,0 +1,114 @@
+Amalgam/
+├── ai_system/
+│   ├── // ~ Refactor not needed
+
+
+├── ai_arena/
+│   ├── //  ~ Refactor not needed
+
+
+├── Core/
+│   ├── gameEngine.js          # ONLY state mutator
+│   ├── gameState.js           # Pure state container
+│   ├── gameRules.js           # Shared rule helpers
+│   └── core_README.md
+
+├── Systems/
+│   ├── boardCoordinateConstants.js
+│   ├── Rules/                 # IMPORTABLE BY GAMEENGINE ONLY
+│   │   ├── movementRules.js
+│   │   ├── attackRules.js
+│   │   └── Abilities/
+│   │       ├── swapRules.js
+│   │       ├── fireballRules.js
+│   │       ├── waveRules.js
+│   │       ├── sapRules.js
+│   │       └── launchRules.js
+│   │
+│   └── MatchHistory/
+│       ├── historyCollector.js
+│       ├── historyParser.js
+│       └── historySerializer.js
+
+├── Players/
+│   ├── AI/
+│   │   └── aiPlayer.js
+│   ├── Local/
+│   │   └── hotSeatPlayer.js
+│   ├── Online/
+│   │   └── onlinePlayer.js
+│   └── playerInterface.js
+
+├── UI/
+│   ├── uiController.js
+│   ├── boardRenderer.js
+│   ├── pieceRenderer.js
+│   ├── Overlays
+│   │   ├── defeatNotification.js
+│   │   ├── victoryNotification.js
+│   │   └── setupPieceTray.js
+│   └── Indicators/
+│       ├── movementIndicators.js
+│       └── abilityIndicators.js
+│   └── Animations/
+│       ├── moveAnimations.js
+│       └── abilityAnimations.js
+│   └── Buttons/
+│       ├── abilityButtons.js
+│       └── gameControls.js
+
+Config/
+├── Themes/
+│   ├── Gameplay/               # Canvas/gameplay-specific theming (board, pieces, indicators, accessibility palettes)
+│   │   ├── defaultGameplay.js
+│   │   ├── highContrastGameplay.js
+│   │   └── teaHouseGameplay.js
+│   │
+│   └── Pages/                  # Page-specific themes (CSS for DOM/layout, do NOT affect gameplay)
+│       ├── defaultLight.css
+│       ├── defaultDark.css
+│       ├── minimalLight.css
+│       └── minimalDark.css
+│
+├── graphicsConfig.js           # Board/piece/indicator colors, shapes, sizes, etc. for quick tuning
+├── matchHistoryConfig.js       # Notation styling, coloring, etc.
+└── supabaseConfig.example.js
+
+
+├── Network/
+│   ├── Supabase/
+│   │   ├── auth.js
+│   │   ├── profiles.js
+│   │   ├── leaderboard.js
+│   │   ├── matchmaking.js
+│   │   └── gameState.js
+│   ├── Serializers/
+│   ├── Validators/
+│   └── networkController.js
+
+├── EdgeFunctions/
+│   ├── matchmaking.js
+│   ├── validateTurn.js
+│   ├── updateLeaderboard.js
+│   ├── createGame.js
+│   ├── syncGameState.js
+│   ├── forfeitGame.js
+│   ├── saveReplay.js
+│   └── .env.example
+
+├── Pages/  //each page folder has a .css .html .js
+│   ├── Landing/
+│   ├── Menu/
+│   ├── Gameplay/
+│   ├── Replay/
+│   ├── Settings/
+│   ├── OnlineHub/
+│   ├── Tutorial/
+│   └── Profile/
+
+├── Assets/
+│   └── (images, audio, etc)
+
+├── ARCHITECTURE.md
+├── README.md
+└── main.js
