@@ -67,16 +67,22 @@ export class AIController {
 
     /**
      * Check if game is in setup phase
-     * Delegates to GameLogic for single source of truth
+     * CRITICAL: Use turn count, NOT gem count
+     * Gem count drops when pieces are eliminated, causing false positives
      * @returns {boolean}
      */
     isInSetupPhase() {
-        // Check if GameLogic has the method (browser mode)
+        // Setup phase only happens at turn 0 (before turn 1 starts)
+        if (this.playerManager.getTurnCount() > 0) {
+            return false;
+        }
+        
+        // Fallback: Check if GameLogic has the method (browser mode)
         if (typeof this.gameLogic.isInSetupPhase === 'function') {
             return this.gameLogic.isInSetupPhase();
         }
         
-        // Fallback: count gems manually (for compatibility)
+        // Double fallback: count gems (but only if turn count is 0)
         const gameState = this.gameLogic.getState();
         let gemCount = 0;
         

@@ -82,6 +82,78 @@ export class LayeredEvaluator {
         return winnerName === this.ourPlayer ? weights.terminal.WIN_SCORE : weights.terminal.LOSS_SCORE;
     }
 
-    evaluateMaterial() { return 0; }
+    /**
+     * Evaluate material balance
+     * Counts piece values: our pieces - opponent pieces
+     * @param {SimulatedGameState} simulationState - Current position
+     * @param {Object} context - {gameLogic, playerManager}
+     * @returns {number} Material score (positive = we're ahead)
+     */
+    evaluateMaterial(simulationState, context) {
+        if (!this.weights || !this.weights.material) return 0;
+        
+        const pieces = typeof simulationState.getPieces === 'function'
+            ? simulationState.getPieces()
+            : simulationState.pieces;
+        
+        if (!pieces || Object.keys(pieces).length === 0) return 0;
+        
+        // Determine our player
+        let ourPlayer = this.ourPlayer;
+        if (!ourPlayer && context.playerManager) {
+            ourPlayer = context.playerManager.getCurrentPlayer().name;
+            this.ourPlayer = ourPlayer;
+        }
+        
+        // If we still don't know our player, try simulation state
+        if (!ourPlayer && simulationState.currentPlayer) {
+            ourPlayer = simulationState.currentPlayer;
+            this.ourPlayer = ourPlayer;
+        }
+        
+        // Safety: can't evaluate without knowing our player
+        if (!ourPlayer) return 0;
+        
+        const ourSuffix = ourPlayer === 'Player 1' ? 'Square' : 'Circle';
+        const oppSuffix = ourPlayer === 'Player 1' ? 'Circle' : 'Square';
+        
+        let ourScore = 0;
+        let oppScore = 0;
+        
+        const materialWeights = this.weights.material;
+        
+        for (const piece of Object.values(pieces)) {
+            const pieceType = piece.type;
+            
+            // Determine piece value based on type
+            let value = 0;
+            if (pieceType.includes('void')) {
+                value = materialWeights.void;
+            } else if (pieceType.includes('amalgam')) {
+                value = materialWeights.amalgam;
+            } else if (pieceType.includes('portal')) {
+                value = materialWeights.portal;
+            } else if (pieceType.includes('ruby')) {
+                value = materialWeights.ruby;
+            } else if (pieceType.includes('pearl')) {
+                value = materialWeights.pearl;
+            } else if (pieceType.includes('amber')) {
+                value = materialWeights.amber;
+            } else if (pieceType.includes('jade')) {
+                value = materialWeights.jade;
+            }
+            
+            // Add to appropriate player's total
+            if (pieceType.includes(ourSuffix)) {
+                ourScore += value;
+            } else if (pieceType.includes(oppSuffix)) {
+                oppScore += value;
+            }
+        }
+        
+        // Return material advantage (positive = we're ahead)
+        return ourScore - oppScore;
+    }
+
     evaluatePosition() { return 0; }
 }

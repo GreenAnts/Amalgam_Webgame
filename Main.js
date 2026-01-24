@@ -39,6 +39,8 @@ window.onload = function() {
     // Policy mode state
     let currentPolicyMode = 'DEFAULT'; // 'DEFAULT' or policy name
     let currentPolicy = null; // Policy instance when in policy mode
+    let clickEpoch = 0;
+    let currentClickEpoch = 0;
 
     // Make these available to AILogic
     window.matchHistoryTracker = matchHistoryTracker;
@@ -677,11 +679,19 @@ window.onload = function() {
     async function handleCanvasClick(event) {
         // GUARD: Block all interactions if game has ended
         if (gameEnded) return;
-
+    
         // GUARD: Block all clicks during AI's turn
         const currentPlayerTurn = playerManager.getCurrentPlayer();
         if (currentPlayerTurn.isAI) {
-            return; // Silently ignore clicks during AI's turn
+            event.stopPropagation();
+            event.preventDefault();
+            return;
+        }
+        
+        // GUARD: Invalidate stale clicks from previous turn
+        const capturedEpoch = currentClickEpoch;
+        if (capturedEpoch !== clickEpoch) {
+            return; // This click is from a previous turn, ignore it
         }
         
         const rect = canvas.getBoundingClientRect();
@@ -1389,6 +1399,8 @@ window.onload = function() {
         
         // 2. Switch Turn
         playerManager.switchTurn();
+        // Update click epoch for new turn
+        currentClickEpoch = clickEpoch;
         uiManager.updatePlayerInfo(
             playerManager.getTurnCount(),
             playerManager.getCurrentPlayer()
@@ -1400,6 +1412,11 @@ window.onload = function() {
         if (playerManager.getCurrentPlayer().isAI) {
             // Check if game is already over before AI thinks
             if (checkForWin()) return;
+            // Disable canvas pointer events during AI turn
+            canvas.style.pointerEvents = 'none';
+            canvas.style.cursor = 'wait';
+            // Invalidate any pending clicks from human turn
+            clickEpoch++;
 
             setTimeout(async () => {
                 // 1. Ensure we have an RNG
@@ -1482,6 +1499,10 @@ window.onload = function() {
                 
                 updateAbilityButtonStates();
                 drawBoard();
+
+                // Re-enable canvas interaction
+                canvas.style.pointerEvents = 'auto';
+                canvas.style.cursor = 'default';
             }, 50);
         }
     }
@@ -1995,7 +2016,7 @@ window.onload = function() {
         drawBoard();
         requestAnimationFrame(animate);
     }
-1122
+
     // Initial setup
     animate();
     uiManager.updatePlayerInfo(

@@ -28,6 +28,6 @@
   },
   "decision": {
     "strategy": "random",
-    "default_search_depth": 3
+    "default_search_depth": 4
   }
 }
