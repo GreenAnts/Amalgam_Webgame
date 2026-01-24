@@ -27,14 +27,69 @@ export class SimulatedGameState {
 			childPieces[coord] = { ...piece };
 		}
 	
-		// Apply the action
+		// Apply the action based on type
 		if (action.type === 'MOVE' && childPieces[action.from]) {
 			childPieces[action.to] = childPieces[action.from];
 			delete childPieces[action.from];
 			
-			// CRITICAL: Apply attacks after move
+			// Apply attacks after move
 			const attackedPieces = this._computeAttacks(action.to, childPieces);
 			attackedPieces.forEach(coord => delete childPieces[coord]);
+			
+		} else if (action.type === 'ABILITY_PORTAL_SWAP') {
+			// Portal swap: exchange pieces and apply attacks from BOTH positions
+			const portalCoord = action.portalCoord;
+			const targetCoord = action.target;
+			
+			if (childPieces[portalCoord] && childPieces[targetCoord]) {
+				// Swap pieces
+				const temp = childPieces[portalCoord];
+				childPieces[portalCoord] = childPieces[targetCoord];
+				childPieces[targetCoord] = temp;
+				
+				// Attack from portal position (now has target piece)
+				const attacks1 = this._computeAttacks(portalCoord, childPieces);
+				attacks1.forEach(coord => delete childPieces[coord]);
+				
+				// Attack from target position (now has portal piece)
+				const attacks2 = this._computeAttacks(targetCoord, childPieces);
+				attacks2.forEach(coord => delete childPieces[coord]);
+			}
+			
+		} else if (action.type === 'ABILITY_FIREBALL') {
+			// Fireball: Remove target piece (simplified - no AOE calculation)
+			if (childPieces[action.target]) {
+				delete childPieces[action.target];
+			}
+			
+		} else if (action.type === 'ABILITY_TIDALWAVE') {
+			// Tidal wave: Remove target piece (simplified - no AOE calculation)
+			if (childPieces[action.target]) {
+				delete childPieces[action.target];
+			}
+			
+		} else if (action.type === 'ABILITY_SAP') {
+			// Sap: Remove target piece (simplified - no line calculation)
+			if (childPieces[action.target]) {
+				delete childPieces[action.target];
+			}
+			
+		} else if (action.type === 'ABILITY_LAUNCH') {
+			// Launch: Move piece and attack from new position
+			if (childPieces[action.pieceCoord]) {
+				// Remove any piece at landing position (collision)
+				if (childPieces[action.target]) {
+					delete childPieces[action.target];
+				}
+				
+				// Move launched piece
+				childPieces[action.target] = childPieces[action.pieceCoord];
+				delete childPieces[action.pieceCoord];
+				
+				// Apply attacks from landing position
+				const attackedPieces = this._computeAttacks(action.target, childPieces);
+				attackedPieces.forEach(coord => delete childPieces[coord]);
+			}
 		}
 	
 		// Determine next player (all actions end turn for now)

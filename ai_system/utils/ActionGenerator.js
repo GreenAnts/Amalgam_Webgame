@@ -33,11 +33,23 @@ export class ActionGenerator {
     _generateMoveActions(gl, player) {
         const moves = [];
         const pieces = gl.getState().pieces;
+        
         for (const [coord, piece] of Object.entries(pieces)) {
             if (!player.pieceType.includes(piece.type)) continue;
+            
             const valid = gl.movementSystem.getValidMoves(coord);
-            valid.forEach(m => moves.push({ type: 'MOVE', from: coord, to: `${m.x},${m.y}` }));
+            
+            // SAFEGUARD: Limit moves per piece to prevent explosion
+            const moveLimit = 50; // Reasonable maximum for any piece
+            const limitedMoves = valid.slice(0, moveLimit);
+            
+            if (valid.length > moveLimit) {
+                console.warn(`Piece at ${coord} has ${valid.length} moves, limiting to ${moveLimit}`);
+            }
+            
+            limitedMoves.forEach(m => moves.push({ type: 'MOVE', from: coord, to: `${m.x},${m.y}` }));
         }
+        
         return moves;
     }
 
