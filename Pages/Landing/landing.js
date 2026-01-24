@@ -300,7 +300,7 @@ guestBtn.addEventListener('click', () => {
 
     // D. Redirect
     setTimeout(() => {
-        window.location.href = '/Pages/Gameplay/gameplay.html';
+        window.location.href = '../Gameplay/gameplay.html';
     }, 1600);
 });
 
