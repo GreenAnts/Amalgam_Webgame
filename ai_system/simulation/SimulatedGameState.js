@@ -27,33 +27,19 @@ export class SimulatedGameState {
 			childPieces[coord] = { ...piece };
 		}
 	
+		// Apply the action
 		if (action.type === 'MOVE' && childPieces[action.from]) {
 			childPieces[action.to] = childPieces[action.from];
 			delete childPieces[action.from];
+			
+			// CRITICAL: Apply attacks after move
+			const attackedPieces = this._computeAttacks(action.to, childPieces);
+			attackedPieces.forEach(coord => delete childPieces[coord]);
 		}
 	
-		// Determine next player
-		// LOGIC: PASS keeps same player? Or switch?
-		// Standard rule: PASS ends turn.
-		// MOVE might end turn depending on Arena rules. 
-		// For safety in this environment where Arena ends turn on MOVE:
-		
-		let nextPlayer;
-		
-		// If it's a PASS, we definitely switch.
-		if (action.type === 'PASS') {
-			nextPlayer = (this.currentPlayer === 'Player 1' ? 'Player 2 (AI)' : 'Player 1');
-		} 
-		// If it's an ABILITY, we definitely switch (usually ends turn).
-		else if (action.type && action.type.startsWith('ABILITY_')) {
-			nextPlayer = (this.currentPlayer === 'Player 1' ? 'Player 2 (AI)' : 'Player 1');
-		}
-		// If it's a MOVE, check if we want to support Move->Ability.
-		// Currently Arena adapters imply Move ends turn. 
-		else {
-			nextPlayer = (this.currentPlayer === 'Player 1' ? 'Player 2 (AI)' : 'Player 1');
-		}
-
+		// Determine next player (all actions end turn for now)
+		const nextPlayer = (this.currentPlayer === 'Player 1' ? 'Player 2 (AI)' : 'Player 1');
+	
 		return new SimulatedGameState(
 			{ pieces: childPieces },
 			nextPlayer,
@@ -61,6 +47,66 @@ export class SimulatedGameState {
 			this,
 			action
 		);
+	}
+	
+	/**
+	 * Compute which pieces would be eliminated by an attack from coordStr
+	 * Mirrors AttackSystem logic without mutating state
+	 * @private
+	 */
+	_computeAttacks(coordStr, pieces) {
+		const eliminated = [];
+		const attackingPiece = pieces[coordStr];
+		if (!attackingPiece) return eliminated;
+		
+		const attackingPlayer = attackingPiece.type.includes('Square') ? 'player1' : 'player2';
+		const isVoid = attackingPiece.type.includes('void');
+		const isPortal = attackingPiece.type.includes('portal');
+		
+		// Parse coordinate
+		const [x, y] = coordStr.split(',').map(Number);
+		
+		// 8 adjacent directions
+		const directions = [
+			{x: 1, y: 0}, {x: 1, y: 1}, {x: 0, y: 1}, {x: -1, y: 1},
+			{x: -1, y: 0}, {x: -1, y: -1}, {x: 0, y: -1}, {x: 1, y: -1}
+		];
+		
+		// Check adjacent squares
+		for (const dir of directions) {
+			const targetX = x + dir.x;
+			const targetY = y + dir.y;
+			const targetCoord = `${targetX},${targetY}`;
+			const targetPiece = pieces[targetCoord];
+			
+			if (!targetPiece) continue;
+			
+			const targetPlayer = targetPiece.type.includes('Square') ? 'player1' : 'player2';
+			if (targetPlayer === attackingPlayer) continue; // Can't attack own pieces
+			
+			const targetIsPortal = targetPiece.type.includes('portal');
+			
+			// Void attacks all adjacent enemies
+			if (isVoid) {
+				eliminated.push(targetCoord);
+			}
+			// Portal attacks adjacent portals only
+			else if (isPortal && targetIsPortal) {
+				eliminated.push(targetCoord);
+			}
+			// Non-portal attacks adjacent non-portals only
+			else if (!isPortal && !targetIsPortal) {
+				eliminated.push(targetCoord);
+			}
+		}
+		
+		// If portal, check golden line attacks
+		if (isPortal) {
+			// We need golden line data - for now, skip this
+			// This is an optimization we can add later
+		}
+		
+		return eliminated;
 	}
 
 	/* ---- Compatibility / Introspection ---- */

@@ -1896,7 +1896,14 @@ window.onload = function() {
     window.updateLogDisplay = updateLogDisplay;
 
     // Event listeners
-    canvas.addEventListener('click', handleCanvasClick);
+    canvas.addEventListener('click', (event) => {
+        if (playerManager.getCurrentPlayer().isAI) {
+            event.stopImmediatePropagation();
+            event.preventDefault();
+            return;
+        }
+        handleCanvasClick(event);
+    });
     canvas.addEventListener('mousemove', handleMouseMove);
     resetButton.addEventListener('click', handleResetClick);
     

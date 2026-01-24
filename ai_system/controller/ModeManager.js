@@ -99,6 +99,7 @@ export class ModeManager {
             const tt = new TranspositionTable();
             const moveOrdering = new MoveOrdering(null);
             const evaluator = new LayeredEvaluator();
+            await evaluator.loadWeights();
             const alphaBeta = new AlphaBetaSearch(evaluator, moveOrdering, tt);
             
             // CRITICAL FIX: Pass decision config to DecisionEngine
