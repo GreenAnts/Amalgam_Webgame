@@ -11,6 +11,7 @@ import { MoveOrdering } from '../move_ordering/MoveOrdering.js';
 import { TranspositionTable } from '../caching/TranspositionTable.js';
 import { ThreatMapGenerator } from '../caching/ThreatMapGenerator.js';
 import { FormationDetector } from '../caching/FormationDetector.js';
+import { getProjectRoot } from '../../paths.js'; // Adjust dots based on folder depth
 
 export class ModeManager {
     constructor() {
@@ -18,11 +19,12 @@ export class ModeManager {
         this.currentMode = 'trace'; // Default
         this.config = null;
         this.loadConfig();
+        const root = getProjectRoot();
     }
 
     async loadConfig() {
         try {
-            const response = await fetch('../config/AIConfig.json');
+            const response = await fetch(`${root}ai_system/config/AIConfig.json`);
             this.config = await response.json();
             this.currentMode = this.config.runtime_mode;
             this.logger.info('Configuration loaded', { mode: this.currentMode });

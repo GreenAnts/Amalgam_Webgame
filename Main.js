@@ -10,6 +10,7 @@ import { SetupManager } from './systems/SetupManager.js';
 import { SetupUI } from './ui/SetupUI.js';
 import { MatchHistoryTracker } from './systems/MatchHistoryTracker.js';
 import { AIController } from './ai_system/controller/AIController.js';  //AI System
+import { getProjectRoot } from './paths.js';
 
 window.onload = function() {
     // Get canvas and UI elements
@@ -21,6 +22,8 @@ window.onload = function() {
     };
     
     const resetButton = document.getElementById('confirmRestart');
+
+    const root = getProjectRoot();
 
     // Initialize systems
     const playerManager = new PlayerManager();
@@ -59,7 +62,7 @@ window.onload = function() {
             ];
 
             // 🔄 DYNAMIC OPTIONS (anchors sorted by date, newest first)
-            const response = await fetch('/arena/ArenaConfig.json');
+            const response = await fetch(`${root}arena/ArenaConfig.json`);
             const arenaConfig = await response.json();
             const activeAnchors = arenaConfig.active_anchors
                 .filter(a => a.status !== 'validation_only' || a.competency_level === 'experimental') // Include experimental policies
