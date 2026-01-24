@@ -1,6 +1,4 @@
-// Paths.js
+// paths.js
 export const getProjectRoot = () => {
-    const isGitHub = window.location.hostname.includes('github.io');
-    // Important: Include the trailing slash
-    return isGitHub ? '/Amalgam_Webgame/' : '/'; 
+	return new URL('./', import.meta.url).pathname;
 };

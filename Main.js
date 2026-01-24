@@ -24,7 +24,6 @@ window.onload = function() {
     const resetButton = document.getElementById('confirmRestart');
 
     const root = getProjectRoot();
-
     // Initialize systems
     const playerManager = new PlayerManager();
     const gameLogic = new GameLogic(playerManager);
@@ -63,6 +62,7 @@ window.onload = function() {
 
             // 🔄 DYNAMIC OPTIONS (anchors sorted by date, newest first)
             const response = await fetch(`${root}arena/ArenaConfig.json`);
+            // console.log(response);
             const arenaConfig = await response.json();
             const activeAnchors = arenaConfig.active_anchors
                 .filter(a => a.status !== 'validation_only' || a.competency_level === 'experimental') // Include experimental policies

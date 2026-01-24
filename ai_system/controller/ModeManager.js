@@ -18,13 +18,14 @@ export class ModeManager {
         this.logger = new Logger('ModeManager');
         this.currentMode = 'trace'; // Default
         this.config = null;
+        this.root = getProjectRoot();
         this.loadConfig();
-        const root = getProjectRoot();
+        
     }
 
     async loadConfig() {
         try {
-            const response = await fetch(`${root}ai_system/config/AIConfig.json`);
+            const response = await fetch(`${this.root}ai_system/config/AIConfig.json`);
             this.config = await response.json();
             this.currentMode = this.config.runtime_mode;
             this.logger.info('Configuration loaded', { mode: this.currentMode });
