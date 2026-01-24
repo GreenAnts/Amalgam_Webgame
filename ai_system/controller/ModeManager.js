@@ -22,7 +22,7 @@ export class ModeManager {
 
     async loadConfig() {
         try {
-            const response = await fetch('ai_system/config/AIConfig.json');
+            const response = await fetch('/ai_system/config/AIConfig.json');
             this.config = await response.json();
             this.currentMode = this.config.runtime_mode;
             this.logger.info('Configuration loaded', { mode: this.currentMode });

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="apple-touch-icon" sizes="57x57" href="/assets/assets/favicon/apple-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/assets/favicon/apple-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/assets/favicon/apple-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/assets/favicon/apple-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/assets/favicon/apple-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/assets/favicon/apple-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/assets/favicon/apple-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/assets/favicon/apple-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-icon-180x180.png">
+    <link rel="icon" type="image/png" sizes="192x192"  href="/assets/favicon/android-icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="/assets/favicon/favicon-96x96.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon/favicon-16x16.png">
+    <link rel="manifest" href="/assets/favicon/manifest.json">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="/ms-icon-144x144.png">
+    <meta name="theme-color" content="#ffffff">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amalgam Board Game</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&family=Montserrat:wght@100;300&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="landing.css">
+</head>
+<body>
+    <canvas id="bg-canvas"></canvas>
+    <div id="flash-overlay"></div>
+
+    <div id="intro-stage">
+        <div class="intro-sigil s-ruby">⦿</div>
+        <div class="intro-sigil s-jade">⦿</div>
+        <div class="intro-sigil s-pearl">⦿</div>
+        <div class="intro-sigil s-amber">⦿</div>
+        <div class="intro-portal p1">⦿</div>
+        <div class="intro-portal p2">⦿</div>
+        <div class="intro-sigil s-void-sigil">⦿</div>
+        <div class="intro-void"></div>
+    </div>
+
+    <main id="ui-layer">
+        <div id="ui-parallax-wrapper">
+            <div class="ui-content">
+                <div class="title-card-base">
+                    <h1 class="main-title">Amalgam</h1>
+                    <p class="main-tagline">an abstract board game</p>
+                </div>
+            </div>
+
+            <button id="login-btn" class="nav-btn left-btn" onmouseover="setPointer('left')" onmouseout="clearPointer()">Login</button>
+
+            <div class="piece-container">
+                <div class="compass-ring"></div>
+                <div class="piece-base">
+                    <div class="amalgam-piece">
+                        <div class="q ruby"></div>
+                        <div class="q jade"></div>
+                        <div class="q amber"></div>
+                        <div class="q pearl"></div>
+                    </div>
+                </div>
+            </div>
+
+            <button id="guest-btn" class="nav-btn right-btn" onmouseover="setPointer('right')" onmouseout="clearPointer()">Guest</button>
+        </div>
+    </main>
+
+    <div id="login-modal-overlay">
+        <div class="login-modal-card">
+            <h2>Development Notice</h2>
+            <p>The login feature is not yet developed.<br>We apologize for the inconvenience.</p>
+            <button id="close-login-btn">Dismiss</button>
+        </div>
+    </div>
+
+    <div id="transition-curtain"></div>
+
+    <script src="landing.js"></script>
+</body>
+</html>

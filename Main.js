@@ -59,7 +59,7 @@ window.onload = function() {
             ];
 
             // 🔄 DYNAMIC OPTIONS (anchors sorted by date, newest first)
-            const response = await fetch('arena/ArenaConfig.json');
+            const response = await fetch('/arena/ArenaConfig.json');
             const arenaConfig = await response.json();
             const activeAnchors = arenaConfig.active_anchors
                 .filter(a => a.status !== 'validation_only' || a.competency_level === 'experimental') // Include experimental policies
