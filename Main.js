@@ -1590,6 +1590,10 @@ window.onload = function() {
                 // ✅ DON'T COMMIT YET - wait for abilities
             }
             
+            // ✅ CRITICAL FIX: Set turn state variables so abilities can be detected
+            moveMadeThisTurn = true;
+            lastMovedPieceCoord = gameLogic.boardUtils.coordToString(coords.moveX, coords.moveY);
+            
             return true;
         } else {
             console.error('Failed to execute move', coords, result);
