@@ -1432,7 +1432,7 @@ window.onload = function() {
                         }
                     };
                 }
-        
+
                 let move = null;
                 
                 // POLICY MODE vs DEFAULT AI MODE
@@ -1480,19 +1480,41 @@ window.onload = function() {
                             success = await executeAIAbility(coords);
                         } else {
                             success = await executeAIMove(coords);
+                            
+                            // NEW: After move, check for best ability
+                            if (success) {
+                                let abilityUsed = true;
+                                while (abilityUsed) {
+                                    const bestAbility = await findAndExecuteBestAbility();
+                                    if (bestAbility) {
+                                        const abilityCoords = aiController.convertMoveToCoordinates(bestAbility);
+                                        abilityUsed = await executeAIAbility(abilityCoords);
+                                        
+                                        // Check for win after each ability
+                                        if (checkForWin()) {
+                                            drawBoard();
+                                            canvas.style.pointerEvents = 'auto';
+                                            canvas.style.cursor = 'default';
+                                            return;
+                                        }
+                                    } else {
+                                        abilityUsed = false; // No more good abilities
+                                    }
+                                }
+                            }
                         }
                         
-                        // --- CRITICAL FIX: CHECK WIN IMMEDIATELY AFTER MOVE ---
-                        // If AI triggered a win, checkForWin() returns true.
-                        // We must RETURN here to stop endTurn() from called recursively
-                        // or waiting for human input when the game is over.
+                        // Check for win after all AI actions
                         if (checkForWin()) {
-                            drawBoard(); // Ensure board shows final state
-                            return; 
+                            drawBoard();
+                            canvas.style.pointerEvents = 'auto';
+                            canvas.style.cursor = 'default';
+                            return;
                         }
 
+                        // CRITICAL: Only call endTurn ONCE after all AI actions complete
                         if (success) {
-                            await endTurn(); 
+                            await endTurn();
                         }
                     }
                 } else {
@@ -1570,6 +1592,81 @@ window.onload = function() {
             console.error('Failed to execute move', coords, result);
             return false;
         }
+    }
+
+    // Search for best ability to use after AI move
+    async function findAndExecuteBestAbility() {
+        // Check if any abilities are available
+        const movedPiece = lastMovedPieceCoord;
+        
+        const rubyAvail = rubyFireballSystem.checkFireball(movedPiece);
+        const pearlAvail = pearlTidalwaveSystem.checkTidalwave(movedPiece);
+        const amberAvail = amberSapSystem.checkSap(movedPiece);
+        const jadeAvail = !launchUsedThisTurn && jadeLaunchSystem.checkLaunch(movedPiece);
+        
+        if (!rubyAvail && !pearlAvail && !amberAvail && !jadeAvail) {
+            return null; // No abilities available
+        }
+        
+        // Generate all available abilities
+        const { ActionGenerator } = await import('./ai_system/utils/ActionGenerator.js');
+        const generator = new ActionGenerator();
+        
+        const turnContext = {
+            movedPieceCoord: lastMovedPieceCoord,
+            usedAbilities: new Set(launchUsedThisTurn ? ['LAUNCH'] : [])
+        };
+        
+        const allActions = generator.generateAllActions(
+            gameLogic,
+            playerManager,
+            turnContext.movedPieceCoord,
+            turnContext.usedAbilities
+        );
+        
+        // Filter for only abilities
+        const abilityActions = allActions.filter(a => 
+            a.type && a.type.startsWith('ABILITY_')
+        );
+        
+        if (abilityActions.length === 0) return null;
+        
+        // Evaluate each ability by simulating it
+        const { SimulatedGameState } = await import('./ai_system/simulation/SimulatedGameState.js');
+        const { LayeredEvaluator } = await import('./ai_system/evaluation/LayeredEvaluator.js');
+        
+        const evaluator = new LayeredEvaluator();
+        await evaluator.loadWeights();
+        
+        const currentState = gameLogic.getState();
+        const currentPlayer = playerManager.getCurrentPlayer().name;
+        
+        let bestAbility = null;
+        let bestScore = -Infinity;
+        
+        for (const ability of abilityActions) {
+            // Simulate this ability
+            const simState = new SimulatedGameState(currentState, currentPlayer, 0, null, null);
+            const afterAbility = simState.applyAction(ability);
+            
+            // Evaluate resulting position
+            const score = evaluator.evaluate(afterAbility, {
+                gameLogic: gameLogic,
+                playerManager: playerManager
+            });
+            
+            if (score > bestScore) {
+                bestScore = score;
+                bestAbility = ability;
+            }
+        }
+        
+        // Only use ability if it improves position
+        if (bestScore > 0 && bestAbility) {
+            return bestAbility;
+        }
+        
+        return null;
     }
 
     async function executeAIAbility(coords) {

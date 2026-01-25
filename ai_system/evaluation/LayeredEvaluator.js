@@ -48,15 +48,15 @@ export class LayeredEvaluator {
 
     evaluate(simulationState, context = {}) {
         const currentWeights = this.weights || this.defaultWeights;
-
+    
         const terminal = this.checkTerminal(simulationState, context, currentWeights);
         if (terminal !== null) return terminal;
-
-        // Ensure these return 0 if not implemented yet
+    
         const material = this.evaluateMaterial(simulationState, context);
         const position = this.evaluatePosition(simulationState, context);
-
-        return material + position;
+        const tactical = this.evaluateTactical(simulationState, context);
+    
+        return material + position + tactical;
     }
 
     checkTerminal(simulationState, context, weights) {
@@ -155,5 +155,113 @@ export class LayeredEvaluator {
         return ourScore - oppScore;
     }
 
-    evaluatePosition() { return 0; }
+    /**
+     * Evaluate position for simulation states
+     * Checks material difference to determine advantage
+     */
+    evaluatePosition(simulationState, context) {
+        if (!this.weights || !this.weights.position) return 0;
+        
+        const pieces = typeof simulationState.getPieces === 'function'
+            ? simulationState.getPieces()
+            : simulationState.pieces;
+        
+        if (!pieces || Object.keys(pieces).length === 0) return 0;
+        
+        let score = 0;
+        
+        // Void goal distance (only if we have our player info)
+        if (this.ourPlayer && simulationState.currentPlayer === this.ourPlayer) {
+            const voidType = this.ourPlayer === 'Player 1' ? 'voidSquare' : 'voidCircle';
+            const goalY = this.ourPlayer === 'Player 1' ? 6 : -6;
+            
+            for (const [coord, piece] of Object.entries(pieces)) {
+                if (piece.type === voidType) {
+                    const [x, y] = coord.split(',').map(Number);
+                    const distToGoal = Math.abs(y - goalY) + Math.abs(x - 0);
+                    score += this.weights.position.voidGoalDistance * distToGoal;
+                    break; // Only one void
+                }
+            }
+        }
+        
+        return score;
+    }
+
+    /**
+     * Evaluate tactical opportunities (formations, threats)
+     */
+    evaluateTactical(simulationState, context) {
+        if (!this.weights || !this.weights.tactical) return 0;
+        
+        const pieces = typeof simulationState.getPieces === 'function'
+            ? simulationState.getPieces()
+            : simulationState.pieces;
+        
+        if (!pieces) return 0;
+        
+        let score = 0;
+        
+        // Detect ability formations
+        const formations = this.detectFormations(pieces);
+        
+        // Bonus for having formations ready
+        score += formations.rubyPairs * 200;  // Fireball ready
+        score += formations.pearlPairs * 200; // Tidal wave ready
+        score += formations.amberLines * 150; // Sap ready
+        score += formations.jadePairs * 150;  // Launch ready
+        
+        return score;
+    }
+
+    /**
+     * Simple formation detection for evaluation
+     * @private
+     */
+    detectFormations(pieces) {
+        const formations = {
+            rubyPairs: 0,
+            pearlPairs: 0,
+            amberLines: 0,
+            jadePairs: 0
+        };
+        
+        // This is simplified - just counts gem pairs
+        // Real implementation would check adjacency/alignment
+        const coords = Object.keys(pieces);
+        
+        for (let i = 0; i < coords.length; i++) {
+            const coord1 = coords[i];
+            const piece1 = pieces[coord1];
+            
+            if (!piece1.type.includes('ruby') && !piece1.type.includes('Amalgam')) continue;
+            
+            for (let j = i + 1; j < coords.length; j++) {
+                const coord2 = coords[j];
+                const piece2 = pieces[coord2];
+                
+                if (piece2.type.includes('ruby') || piece2.type.includes('Amalgam')) {
+                    if (this.isAdjacent(coord1, coord2)) {
+                        formations.rubyPairs++;
+                    }
+                }
+            }
+        }
+        
+        // Similar for other gems... (simplified for now)
+        
+        return formations;
+    }
+
+    /**
+     * Check if two coordinates are adjacent
+     * @private
+     */
+    isAdjacent(coord1Str, coord2Str) {
+        const [x1, y1] = coord1Str.split(',').map(Number);
+        const [x2, y2] = coord2Str.split(',').map(Number);
+        
+        return Math.abs(x1 - x2) <= 1 && Math.abs(y1 - y2) <= 1 && 
+            (x1 !== x2 || y1 !== y2);
+    }
 }

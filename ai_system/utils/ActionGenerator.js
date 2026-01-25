@@ -39,8 +39,8 @@ export class ActionGenerator {
             
             const valid = gl.movementSystem.getValidMoves(coord);
             
-            // SAFEGUARD: Limit moves per piece to prevent explosion
-            const moveLimit = 50; // Reasonable maximum for any piece
+            // Only cap at extreme move counts (keep phasing viable)
+            const moveLimit = 100; // Increased from 50
             const limitedMoves = valid.slice(0, moveLimit);
             
             if (valid.length > moveLimit) {
@@ -55,44 +55,41 @@ export class ActionGenerator {
 
     _generateAbilityActions(gl, pm, movedCoord, used) {
         const abilities = [];
-
-        // 1. Ruby Fireball
+    
+        // 1. Ruby Fireball - ONE action per formation (all targets in that direction)
         if (!used.has('FIREBALL')) {
             const rubySystem = gl.getRubyFireballSystem();
-            // Checking populates the system's internal targets
             if (rubySystem.checkFireball(movedCoord)) {
                 for (const group of rubySystem.fireballTargets) {
-                    for (const target of group.targets) {
-                        abilities.push({
-                            type: 'ABILITY_FIREBALL',
-                            target: target,
-                            // Store metadata for debugging if needed
-                            desc: `Fireball at ${target}`
-                        });
-                    }
+                    // One action per formation - targets handled by system
+                    abilities.push({
+                        type: 'ABILITY_FIREBALL',
+                        target: group.targets[0], // System handles direction
+                        formationData: group, // Store for simulation
+                        desc: `Fireball via ${group.ruby1}-${group.ruby2}`
+                    });
                 }
             }
         }
-
-        // 2. Pearl Tidal Wave
+    
+        // 2. Pearl Tidal Wave - ONE action per formation
         if (!used.has('TIDALWAVE')) {
             const pearlSystem = gl.getPearlTidalwaveSystem();
             if (pearlSystem.checkTidalwave(movedCoord)) {
                 for (const group of pearlSystem.tidalwaveTargets) {
                     if (group.targets.length > 0) {
-                        // For tidal wave, hitting ANY target in the group activates the same wave
-                        // We pick the first valid target coordinate to trigger it
                         abilities.push({
                             type: 'ABILITY_TIDALWAVE',
-                            target: group.targets[0],
+                            target: group.targets[0], // Representative target
+                            formationData: group, // Full AOE data
                             desc: `Tidal Wave via ${group.pearl1}-${group.pearl2}`
                         });
                     }
                 }
             }
         }
-
-        // 3. Amber Sap
+    
+        // 3. Amber Sap - ONE action per amber pair
         if (!used.has('SAP')) {
             const amberSystem = gl.getAmberSapSystem();
             if (amberSystem.checkSap(movedCoord)) {
@@ -100,15 +97,16 @@ export class ActionGenerator {
                     if (group.targets.length > 0) {
                         abilities.push({
                             type: 'ABILITY_SAP',
-                            target: group.targets[0],
+                            target: group.targets[0], // Representative target
+                            formationData: group, // Full line data
                             desc: `Sap Line ${group.amber1}-${group.amber2}`
                         });
                     }
                 }
             }
         }
-
-        // 4. Jade Launch
+    
+        // 4. Jade Launch - ONE action per (piece, landing) combination
         if (!used.has('LAUNCH')) {
             const jadeSystem = gl.getJadeLaunchSystem();
             if (jadeSystem.checkLaunch(movedCoord)) {
@@ -118,28 +116,26 @@ export class ActionGenerator {
                             type: 'ABILITY_LAUNCH',
                             pieceCoord: option.pieceCoord,
                             target: target,
-                            desc: `Launch piece at ${option.pieceCoord} to ${target}`
+                            formationData: option, // Jade pair data
+                            desc: `Launch ${option.pieceCoord} to ${target}`
                         });
                     }
                 }
             }
         }
-
-        // 5. Portal Swap (Only available at start of turn)
+    
+        // 5. Portal Swap (Only at start of turn)
         if (!movedCoord && !used.has('PORTAL_SWAP')) {
             const portalSystem = gl.getPortalSwapSystem();
             const state = gl.getState();
             const currentPlayer = pm.getCurrentPlayer();
-
-            // We must simulate selecting each friendly portal to see valid swaps
+    
             for (const [coord, piece] of Object.entries(state.pieces)) {
-                // Must be my portal
                 if (!currentPlayer.pieceType.includes(piece.type)) continue;
                 if (!piece.type.includes('portal')) continue;
-
-                // Simulate selection
+    
                 if (portalSystem.selectPortal(coord)) {
-                    const targets = portalSystem.getTargets(); // Gets swap targets for this portal
+                    const targets = portalSystem.getTargets();
                     for (const target of targets) {
                         abilities.push({
                             type: 'ABILITY_PORTAL_SWAP',
@@ -148,12 +144,11 @@ export class ActionGenerator {
                             desc: `Swap portal ${coord} with ${target}`
                         });
                     }
-                    // Clean up simulation
-                    portalSystem.reset(); 
+                    portalSystem.reset();
                 }
             }
         }
-
+    
         return abilities;
     }
 }

@@ -49,8 +49,14 @@ export class AlphaBetaSearch extends SearchStrategy {
 	
 	alphaBeta(node, depth, alpha, beta, maximizingPlayer, context) {
 		this.nodesSearched++;
-	
-		// Track if this is root node (for best move tracking)
+		
+		// SAFEGUARD: Increased limit for complex positions
+		const MAX_NODES = 100000; // Increased from 50000
+		if (this.nodesSearched > MAX_NODES) {
+			console.warn(`Search stopped at ${this.nodesSearched} nodes (limit: ${MAX_NODES})`);
+			return this.evaluator.evaluate(node.simulationState, context);
+		}
+		
 		const isRoot = node.depth === 0;
 	
 		if (depth === 0) {
