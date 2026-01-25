@@ -28,6 +28,9 @@ A two player abstract strategy game that requires you to tactically utilize your
 
 - - -
 
+> While this is a personal pet project - I want it to be a community project. . . one that can evolve and adapt as more people get involved. I am sure some of the rules will need tweaking as players learn how to "break" the meta. And the hope is not only that the game will be played by others, but that the player base/community actually gets involved in improving the game, or even making rule variations for custom games, and etc. In short: "an open source, player contributed game, absolutely free and accessible for everyone"
+
+- - -
 ### A Personal Note:
 I’ve been working on this board game on and off for many years, but I’ve never managed to get a working digital version up and running that others could easily play online. This repository is my latest attempt to finally make that happen.
 

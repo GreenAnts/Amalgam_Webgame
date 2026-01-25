@@ -51,7 +51,7 @@ export class AlphaBetaSearch extends SearchStrategy {
 		this.nodesSearched++;
 		
 		// SAFEGUARD: Increased limit for complex positions
-		const MAX_NODES = 100000; // Increased from 50000
+		const MAX_NODES = 200000; // Increased from 50000
 		if (this.nodesSearched > MAX_NODES) {
 			console.warn(`Search stopped at ${this.nodesSearched} nodes (limit: ${MAX_NODES})`);
 			return this.evaluator.evaluate(node.simulationState, context);
