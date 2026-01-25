@@ -110,17 +110,25 @@ export class ActionGenerator {
         if (!used.has('LAUNCH')) {
             const jadeSystem = gl.getJadeLaunchSystem();
             if (jadeSystem.checkLaunch(movedCoord)) {
+                console.log(`[ActionGen] Launch available! Options: ${jadeSystem.launchOptions.length}`);
+                
                 for (const option of jadeSystem.launchOptions) {
+                    console.log(`[ActionGen] Launch option: piece ${option.pieceCoord}, ${option.targets.length} targets`);
+                    
                     for (const target of option.targets) {
                         abilities.push({
                             type: 'ABILITY_LAUNCH',
                             pieceCoord: option.pieceCoord,
                             target: target,
-                            formationData: option, // Jade pair data
+                            formationData: option,
                             desc: `Launch ${option.pieceCoord} to ${target}`
                         });
                     }
                 }
+                
+                console.log(`[ActionGen] Generated ${abilities.filter(a => a.type === 'ABILITY_LAUNCH').length} launch actions`);
+            } else {
+                console.log(`[ActionGen] Launch NOT available (movedCoord: ${movedCoord})`);
             }
         }
     

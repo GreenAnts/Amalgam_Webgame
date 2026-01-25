@@ -1490,7 +1490,6 @@ window.onload = function() {
                                         const abilityCoords = aiController.convertMoveToCoordinates(bestAbility);
                                         abilityUsed = await executeAIAbility(abilityCoords);
                                         
-                                        // Check for win after each ability
                                         if (checkForWin()) {
                                             drawBoard();
                                             canvas.style.pointerEvents = 'auto';
@@ -1498,7 +1497,15 @@ window.onload = function() {
                                             return;
                                         }
                                     } else {
-                                        abilityUsed = false; // No more good abilities
+                                        abilityUsed = false;
+                                    }
+                                }
+                                
+                                // ✅ COMMIT ALL ACTIONS (move + abilities) ONCE
+                                if (window.matchHistoryTracker) {
+                                    window.matchHistoryTracker.commitTurnActions();
+                                    if (window.updateLogDisplay) {
+                                        window.updateLogDisplay();
                                     }
                                 }
                             }
@@ -1567,7 +1574,7 @@ window.onload = function() {
                         movedToCoord
                     );
                     
-                    // FIX: Use actual elimination data from result, same as human player
+                    // Track eliminations from move
                     if (result.eliminated && result.eliminated.length > 0) {
                         const eliminatedSet = new Set();
                         result.eliminated.forEach(elim => {
@@ -1580,11 +1587,7 @@ window.onload = function() {
                     }
                 }
                 
-                // Commit and display
-                window.matchHistoryTracker.commitTurnActions();
-                if (window.updateLogDisplay) {
-                    window.updateLogDisplay();
-                }
+                // ✅ DON'T COMMIT YET - wait for abilities
             }
             
             return true;
@@ -1604,8 +1607,10 @@ window.onload = function() {
         const amberAvail = amberSapSystem.checkSap(movedPiece);
         const jadeAvail = !launchUsedThisTurn && jadeLaunchSystem.checkLaunch(movedPiece);
         
+        console.log(`[FindAbility] Available: Ruby=${rubyAvail}, Pearl=${pearlAvail}, Amber=${amberAvail}, Jade=${jadeAvail}`);
+        
         if (!rubyAvail && !pearlAvail && !amberAvail && !jadeAvail) {
-            return null; // No abilities available
+            return null;
         }
         
         // Generate all available abilities
@@ -1629,6 +1634,9 @@ window.onload = function() {
             a.type && a.type.startsWith('ABILITY_')
         );
         
+        console.log(`[FindAbility] Generated ${abilityActions.length} ability actions:`, 
+                    abilityActions.map(a => a.type));
+        
         if (abilityActions.length === 0) return null;
         
         // Evaluate each ability by simulating it
@@ -1643,11 +1651,17 @@ window.onload = function() {
         
         let bestAbility = null;
         let bestScore = -Infinity;
+        let eliminatesPieces = false;
         
         for (const ability of abilityActions) {
             // Simulate this ability
             const simState = new SimulatedGameState(currentState, currentPlayer, 0, null, null);
             const afterAbility = simState.applyAction(ability);
+            
+            // Check if ability eliminates pieces
+            const beforePieceCount = Object.keys(simState.getPieces()).length;
+            const afterPieceCount = Object.keys(afterAbility.getPieces()).length;
+            const eliminatesEnemy = afterPieceCount < beforePieceCount;
             
             // Evaluate resulting position
             const score = evaluator.evaluate(afterAbility, {
@@ -1655,14 +1669,19 @@ window.onload = function() {
                 playerManager: playerManager
             });
             
+            console.log(`[FindAbility] ${ability.type} at ${ability.target || ability.pieceCoord}: score=${score}, eliminates=${eliminatesEnemy}`);
+            
             if (score > bestScore) {
                 bestScore = score;
                 bestAbility = ability;
+                eliminatesPieces = eliminatesEnemy;
             }
         }
         
-        // Only use ability if it improves position
-        if (bestScore > 0 && bestAbility) {
+        console.log(`[FindAbility] Best: ${bestAbility?.type}, score=${bestScore}, eliminates=${eliminatesPieces}`);
+        
+        // Use ability if it eliminates pieces OR improves position
+        if ((eliminatesPieces || bestScore > 50) && bestAbility) {  // ✅ Raised threshold from 0 to 50
             return bestAbility;
         }
         
@@ -1673,10 +1692,6 @@ window.onload = function() {
         console.log("[Main] Executing AI Ability:", coords); // Debug log
 
         const currentPlayer = playerManager.getCurrentPlayer();
-        if (window.matchHistoryTracker) {
-            const turnCount = playerManager.getTurnCount();
-            window.matchHistoryTracker.startTurn(turnCount, currentPlayer.name);
-        }
         
         let result = { success: false, message: "Unknown Ability Type" };
         
@@ -1819,12 +1834,6 @@ window.onload = function() {
             default:
                 console.error("Unknown Ability Type in Main:", type);
                 break;
-        }
-    
-        // Finalize Turn if successful
-        if (result.success) {
-            matchHistoryTracker.commitTurnActions();
-            if (window.updateLogDisplay) window.updateLogDisplay();
         }
     
         return result.success;

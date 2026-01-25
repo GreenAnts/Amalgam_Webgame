@@ -22,26 +22,27 @@ export class AlphaBetaSearch extends SearchStrategy {
      * Execute alpha-beta search (SearchStrategy interface implementation)
      */
     search(gameLogic, playerManager, depth, constraints = {}) {
-        this.logger.info('Alpha-beta search starting', { depth });
-        this.resetStats();
-        
-        const { rng, turnContext } = constraints;
-        const gameState = gameLogic.getState();
-        const currentPlayer = playerManager.getCurrentPlayer().name;
-        
-        const rootSimState = new SimulatedGameState(gameState, currentPlayer, 0, null, null);
-        const rootNode = new SearchNode(rootSimState, null, null, 0);
-        
-        const context = { 
-            gameLogic, 
-            playerManager, 
-            rng, 
-            turnContext: turnContext || { movedPieceCoord: null, usedAbilities: new Set() }
-        };
-        
-        this.bestMove = null;
-        const score = this.alphaBeta(rootNode, depth, -Infinity, +Infinity, true, context);
-        
+		this.logger.info('Alpha-beta search starting', { depth });
+		this.resetStats();
+		
+		const { rng, turnContext, nodeLimit } = constraints;  // ✅ EXTRACT nodeLimit
+		const gameState = gameLogic.getState();
+		const currentPlayer = playerManager.getCurrentPlayer().name;
+		
+		const rootSimState = new SimulatedGameState(gameState, currentPlayer, 0, null, null);
+		const rootNode = new SearchNode(rootSimState, null, null, 0);
+		
+		const context = { 
+			gameLogic, 
+			playerManager, 
+			rng, 
+			nodeLimit,  // ✅ PASS TO CONTEXT
+			turnContext: turnContext || { movedPieceCoord: null, usedAbilities: new Set() }
+		};
+		
+		this.bestMove = null;
+		const score = this.alphaBeta(rootNode, depth, -Infinity, +Infinity, true, context);
+		
         this.logger.info('Search complete', { move: this.bestMove, score, nodes: this.nodesSearched });
         
         return { move: this.bestMove, score, stats: this.getStats() };
@@ -50,10 +51,14 @@ export class AlphaBetaSearch extends SearchStrategy {
 	alphaBeta(node, depth, alpha, beta, maximizingPlayer, context) {
 		this.nodesSearched++;
 		
-		// SAFEGUARD: Increased limit for complex positions
-		const MAX_NODES = 200000; // Increased from 50000
+		// SAFEGUARD: Use configured node limit (SINGLE WARNING + IMMEDIATE RETURN)
+		const MAX_NODES = context.nodeLimit || 100000;
 		if (this.nodesSearched > MAX_NODES) {
-			console.warn(`Search stopped at ${this.nodesSearched} nodes (limit: ${MAX_NODES})`);
+			// ✅ Only log ONCE when limit is first exceeded
+			if (this.nodesSearched === MAX_NODES + 1) {
+				console.warn(`Search stopped at ${MAX_NODES} nodes (limit reached)`);
+			}
+			// Return evaluation immediately (don't recurse further)
 			return this.evaluator.evaluate(node.simulationState, context);
 		}
 		

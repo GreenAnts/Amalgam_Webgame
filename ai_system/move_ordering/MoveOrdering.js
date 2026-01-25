@@ -54,6 +54,11 @@ export class MoveOrdering {
         if (move.type && move.type.startsWith('ABILITY_')) {
             score += 10000;
             
+            // ✅ EXTRA BONUS for launch (often creates multi-elimination combos)
+            if (move.type === 'ABILITY_LAUNCH') {
+                score += 2000;
+            }
+            
             // Bonus for abilities targeting enemy pieces
             if (move.target && position.pieces && position.pieces[move.target]) {
                 const targetPiece = position.pieces[move.target];

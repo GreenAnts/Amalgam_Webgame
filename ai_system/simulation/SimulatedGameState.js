@@ -90,8 +90,11 @@ export class SimulatedGameState {
 			
 		} else if (action.type === 'ABILITY_LAUNCH') {
 			if (childPieces[action.pieceCoord]) {
+				console.log(`[SimLaunch] Launching ${action.pieceCoord} → ${action.target}`);
+				
 				// Remove piece at landing position (collision)
 				if (childPieces[action.target]) {
+					console.log(`[SimLaunch] Collision with ${childPieces[action.target].type} at ${action.target}`);
 					delete childPieces[action.target];
 				}
 				
@@ -101,7 +104,11 @@ export class SimulatedGameState {
 				
 				// Apply attacks from landing position
 				const attackedPieces = this._computeAttacks(action.target, childPieces);
-				attackedPieces.forEach(coord => delete childPieces[coord]);
+				console.log(`[SimLaunch] Attacks from ${action.target}: ${attackedPieces.length} pieces`);
+				attackedPieces.forEach(coord => {
+					console.log(`[SimLaunch] Eliminated ${childPieces[coord]?.type} at ${coord}`);
+					delete childPieces[coord];
+				});
 			}
 		}
 	
@@ -168,13 +175,73 @@ export class SimulatedGameState {
 			}
 		}
 		
-		// If portal, check golden line attacks
+		// ✅ NEW: If portal, check golden line attacks
 		if (isPortal) {
-			// We need golden line data - for now, skip this
-			// This is an optimization we can add later
+			const connections = this._getGoldenLineConnections(coordStr);
+			for (const conn of connections) {
+				const targetCoord = `${conn.x},${conn.y}`;
+				const targetPiece = pieces[targetCoord];
+				
+				if (!targetPiece) continue;
+				
+				const targetPlayer = targetPiece.type.includes('Square') ? 'player1' : 'player2';
+				if (targetPlayer === attackingPlayer) continue;
+				
+				const targetIsPortal = targetPiece.type.includes('portal');
+				
+				// Portal attacks enemy portals via golden lines
+				if (targetIsPortal) {
+					eliminated.push(targetCoord);
+				}
+			}
 		}
 		
 		return eliminated;
+	}
+
+	/**
+	 * Get golden line connections for a coordinate
+	 * Simplified version - uses hardcoded golden lines from Constants
+	 * @private
+	 */
+	_getGoldenLineConnections(coordStr) {
+		// Hardcoded golden line connections (from GOLDEN_LINES_DICT)
+		const GOLDEN_LINES = {
+			"-12,0": [{x: -11, y: 5}, {x: -11, y: -5}, {x: -8, y: 3}, {x: -8, y: -3}, {x: 12, y: 0}],
+			"-11,5": [{x: -12, y: 0}, {x: -9, y: 8}],
+			"-9,8": [{x: -11, y: 5}, {x: -8, y: 3}, {x: -6, y: 6}, {x: -8, y: 9}],
+			"-8,9": [{x: -9, y: 8}, {x: -5, y: 11}, {x: -6, y: 6}],
+			"-5,11": [{x: -8, y: 9}, {x: 0, y: 12}, {x: 0, y: 6}],
+			"0,12": [{x: -5, y: 11}, {x: 5, y: 11}, {x: 0, y: -12}],
+			"5,11": [{x: 0, y: 12}, {x: 8, y: 9}, {x: 0, y: 6}],
+			"8,9": [{x: 5, y: 11}, {x: 9, y: 8}, {x: 6, y: 6}],
+			"9,8": [{x: 11, y: 5}, {x: 8, y: 3}, {x: 6, y: 6}, {x: 8, y: 9}],
+			"11,5": [{x: 12, y: 0}, {x: 9, y: 8}],
+			"12,0": [{x: 11, y: 5}, {x: 11, y: -5}, {x: 8, y: 3}, {x: 8, y: -3}, {x: -12, y: 0}],
+			"11,-5": [{x: 12, y: 0}, {x: 9, y: -8}],
+			"9,-8": [{x: 11, y: -5}, {x: 8, y: -3}, {x: 6, y: -6}, {x: 8, y: -9}],
+			"8,-9": [{x: 9, y: -8}, {x: 5, y: -11}, {x: 6, y: -6}],
+			"5,-11": [{x: 8, y: -9}, {x: 0, y: -12}, {x: 0, y: -6}],
+			"0,-12": [{x: 5, y: -11}, {x: -5, y: -11}, {x: 0, y: 12}],
+			"-5,-11": [{x: 0, y: -12}, {x: -8, y: -9}],
+			"-8,-9": [{x: -5, y: -11}, {x: -9, y: -8}, {x: -6, y: -6}],
+			"-9,-8": [{x: -11, y: -5}, {x: -8, y: -3}, {x: -6, y: -6}, {x: -8, y: -9}],
+			"-11,-5": [{x: -12, y: 0}, {x: -9, y: -8}],
+			"6,6": [{x: 8, y: 9}, {x: 9, y: 8}, {x: 6, y: -6}, {x: -6, y: 6}, {x: 0, y: 0}],
+			"6,-6": [{x: 8, y: -9}, {x: 9, y: -8}, {x: 6, y: 6}, {x: -6, y: -6}, {x: 0, y: 0}],
+			"-6,-6": [{x: -8, y: -9}, {x: -9, y: -8}, {x: -6, y: 6}, {x: 6, y: -6}, {x: 0, y: 0}],
+			"-6,6": [{x: -8, y: 9}, {x: -9, y: 8}, {x: -6, y: -6}, {x: 6, y: 6}, {x: 0, y: 0}],
+			"6,0": [{x: 8, y: 3}, {x: 8, y: -3}, {x: 0, y: 6}, {x: 0, y: -6}],
+			"-6,0": [{x: -8, y: 3}, {x: -8, y: -3}, {x: 0, y: 6}, {x: 0, y: -6}],
+			"0,6": [{x: 6, y: 0}, {x: -6, y: 0}, {x: 5, y: 11}, {x: -5, y: 11}],
+			"0,-6": [{x: 6, y: 0}, {x: -6, y: 0}, {x: 5, y: -11}, {x: -5, y: -11}],
+			"-8,3": [{x: -6, y: 0}, {x: -12, y: 0}, {x: -9, y: 8}],
+			"-8,-3": [{x: -6, y: 0}, {x: -12, y: 0}, {x: -9, y: -8}],
+			"8,3": [{x: 6, y: 0}, {x: 12, y: 0}, {x: 9, y: 8}],
+			"8,-3": [{x: 6, y: 0}, {x: 12, y: 0}, {x: 9, y: -8}]
+		};
+		
+		return GOLDEN_LINES[coordStr] || [];
 	}
 
 	/* ---- Compatibility / Introspection ---- */
