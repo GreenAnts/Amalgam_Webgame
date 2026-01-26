@@ -12,21 +12,20 @@ export class ActionGenerator {
         const actions = [];
         const isStartOfTurn = !movedPieceCoord;
         const currentPlayer = pm.getCurrentPlayer();
-
+    
         // 1. Standard Moves (Only if no piece has moved yet)
         if (isStartOfTurn) {
             actions.push(...this._generateMoveActions(gl, currentPlayer));
         }
-
+    
         // 2. Abilities (Check systems based on movedPieceCoord)
         actions.push(...this._generateAbilityActions(gl, pm, movedPieceCoord, usedAbilities));
         
-        // 3. PASS Action (Allows AI to end turn instead of being forced to use an ability)
-        // Only valid if we've already moved (start of turn PASS is illegal unless stuck)
-        if (!isStartOfTurn && actions.length > 0) {
+        // 3. PASS Action - ✅ ALWAYS available after a move (allows turn to end)
+        if (!isStartOfTurn) {
             actions.push({ type: 'PASS' });
         }
-
+    
         return actions;
     }
 

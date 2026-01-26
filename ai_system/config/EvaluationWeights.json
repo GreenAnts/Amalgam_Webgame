@@ -4,44 +4,37 @@
   
   "terminal": {
     "WIN_SCORE": 10000,
-    "LOSS_SCORE": -10000,
-    "description": "Terminal state scores - must be >> all other scores"
+    "LOSS_SCORE": -10000
   },
   
   "material": {
-    "description": "Piece values for material evaluation (Phase 2)",
     "void": 1000,
     "amalgam": 500,
     "portal": 300,
-    "ruby": 100,
-    "pearl": 100,
-    "amber": 100,
-    "jade": 100,
-    "note": "These are placeholders - will be tuned via Arena testing"
+    "ruby": 200,
+    "pearl": 200,
+    "amber": 200,
+    "jade": 200,
+    "note": "Increased gem values to 200 so eliminations outweigh void progress"
   },
   
   "position": {
-    "description": "Positional evaluation weights (Phase 2)",
-    "voidGoalDistance": -50,
+    "voidGoalDistance": -30,
     "centerControl": 20,
     "portalCentralization": 30,
-    "note": "Negative voidGoalDistance = penalty for being far from goal"
+    "note": "Reduced void goal penalty from -50 to -30 to prevent over-prioritizing rush"
   },
   
   "tactical": {
-    "description": "Tactical evaluation weights (Phase 3 - future)",
     "abilityReady": 200,
     "formationPotential": 50,
-    "pieceHanging": -200,
-    "note": "Not yet implemented"
+    "pieceHanging": -200
   },
   
   "layer_weights": {
-    "description": "Relative importance of evaluation layers",
     "terminal": 1.0,
     "material": 1.0,
     "position": 0.5,
-    "tactical": 0.3,
-    "note": "Terminal is checked first, others are weighted sums"
+    "tactical": 0.3
   }
 }

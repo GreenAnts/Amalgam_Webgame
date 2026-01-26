@@ -1685,7 +1685,7 @@ window.onload = function() {
         console.log(`[FindAbility] Best: ${bestAbility?.type}, score=${bestScore}, eliminates=${eliminatesPieces}`);
         
         // Use ability if it eliminates pieces OR improves position
-        if ((eliminatesPieces || bestScore > 50) && bestAbility) {  // ✅ Raised threshold from 0 to 50
+        if ((eliminatesPieces || bestScore > 150) && bestAbility) {  // ✅ Raised threshold from 50 to 150
             return bestAbility;
         }
         

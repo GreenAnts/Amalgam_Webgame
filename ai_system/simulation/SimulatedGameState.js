@@ -52,7 +52,6 @@ export class SimulatedGameState {
 			}
 			
 		} else if (action.type === 'ABILITY_FIREBALL') {
-			// Remove ALL targets in the fireball's path
 			if (action.formationData && action.formationData.targets) {
 				action.formationData.targets.forEach(target => {
 					if (childPieces[target]) {
@@ -60,12 +59,10 @@ export class SimulatedGameState {
 					}
 				});
 			} else if (childPieces[action.target]) {
-				// Fallback: just remove primary target
 				delete childPieces[action.target];
 			}
 			
 		} else if (action.type === 'ABILITY_TIDALWAVE') {
-			// Remove ALL targets in the wave AOE
 			if (action.formationData && action.formationData.targets) {
 				action.formationData.targets.forEach(target => {
 					if (childPieces[target]) {
@@ -77,7 +74,6 @@ export class SimulatedGameState {
 			}
 			
 		} else if (action.type === 'ABILITY_SAP') {
-			// Remove ALL targets along the sap line
 			if (action.formationData && action.formationData.targets) {
 				action.formationData.targets.forEach(target => {
 					if (childPieces[target]) {
@@ -90,30 +86,36 @@ export class SimulatedGameState {
 			
 		} else if (action.type === 'ABILITY_LAUNCH') {
 			if (childPieces[action.pieceCoord]) {
-				console.log(`[SimLaunch] Launching ${action.pieceCoord} → ${action.target}`);
-				
-				// Remove piece at landing position (collision)
 				if (childPieces[action.target]) {
-					console.log(`[SimLaunch] Collision with ${childPieces[action.target].type} at ${action.target}`);
 					delete childPieces[action.target];
 				}
 				
-				// Move launched piece
 				childPieces[action.target] = childPieces[action.pieceCoord];
 				delete childPieces[action.pieceCoord];
 				
-				// Apply attacks from landing position
 				const attackedPieces = this._computeAttacks(action.target, childPieces);
-				console.log(`[SimLaunch] Attacks from ${action.target}: ${attackedPieces.length} pieces`);
 				attackedPieces.forEach(coord => {
-					console.log(`[SimLaunch] Eliminated ${childPieces[coord]?.type} at ${coord}`);
 					delete childPieces[coord];
 				});
 			}
 		}
 	
-		// Determine next player
-		const nextPlayer = (this.currentPlayer === 'Player 1' ? 'Player 2 (AI)' : 'Player 1');
+		// ✅ FIX: Determine next player based on Amalgam's turn structure
+		let nextPlayer;
+		
+		if (action.type === 'MOVE') {
+			// After MOVE: Same player (can use ability or pass)
+			nextPlayer = this.currentPlayer;
+		} else if (action.type === 'PASS') {
+			// After PASS: Switch player (turn ends)
+			nextPlayer = (this.currentPlayer === 'Player 1' ? 'Player 2 (AI)' : 'Player 1');
+		} else if (action.type && action.type.startsWith('ABILITY_')) {
+			// After ABILITY: Switch player (turn ends)
+			nextPlayer = (this.currentPlayer === 'Player 1' ? 'Player 2 (AI)' : 'Player 1');
+		} else {
+			// Fallback: switch player
+			nextPlayer = (this.currentPlayer === 'Player 1' ? 'Player 2 (AI)' : 'Player 1');
+		}
 	
 		return new SimulatedGameState(
 			{ pieces: childPieces },
