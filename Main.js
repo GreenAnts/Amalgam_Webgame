@@ -11,6 +11,7 @@ import { SetupUI } from './ui/SetupUI.js';
 import { MatchHistoryTracker } from './systems/MatchHistoryTracker.js';
 import { AIController } from './ai_system/controller/AIController.js';  //AI System
 import { getProjectRoot } from './paths.js';
+import { AnimationManager } from './ui/AnimationManager.js';
 
 window.onload = function() {
     // Get canvas and UI elements
@@ -37,6 +38,7 @@ window.onload = function() {
     const setupManager = new SetupManager(gameLogic.getGameState(), playerManager);
     const setupUI = new SetupUI(canvas, ctx);
     const matchHistoryTracker = new MatchHistoryTracker();
+    const animationManager = new AnimationManager(canvas, ctx, boardRenderer, pieceRenderer);
 
     // Policy mode state
     let currentPolicyMode = 'DEFAULT'; // 'DEFAULT' or policy name
@@ -312,10 +314,16 @@ window.onload = function() {
             setupUI.renderPlacementRegions(setupManager, originX, originY, boardRenderer.scale);
         }
         
-        // Draw all pieces
+        // Draw all pieces (skip hidden pieces being animated)
         for (const coordStr in gameState.pieces) {
+            // Skip pieces being animated
+            if (animationManager.isHidden(coordStr)) continue;
+            
             pieceRenderer.drawPiece(coordStr, gameState.pieces[coordStr]);
         }
+
+        // Render active animations on top
+        animationManager.render();
         
         // If in setup phase, show setup tray
         if (setupManager.isSetupPhase) {
@@ -863,6 +871,53 @@ window.onload = function() {
                         });
                     }
                     
+                    // === ANIMATION INTEGRATION ===
+                    canvas.style.pointerEvents = 'none';
+                    
+                    const animationSequence = [];
+                    
+                    // Swap animation - pieces are already swapped in state
+                    // piece1 (portal position) now contains what was at piece2 (target position)
+                    // piece2 (target position) now contains what was at piece1 (portal position)
+                    const piece1Current = gameState.pieces[swapPortalCoord];
+                    const piece2Current = gameState.pieces[swapTargetCoord];
+
+                    animationSequence.push({
+                        type: 'SWAP',
+                        piece1: { coord: swapPortalCoord, pieceData: { ...piece1Current } },
+                        piece2: { coord: swapTargetCoord, pieceData: { ...piece2Current } },
+                        amplified: false
+                    });
+                    
+                    // Attack animations (if eliminations from swap)
+                    if (result.eliminated && result.eliminated.length > 0) {
+                        // Attacks happen at BOTH swap positions
+                        animationSequence.push({
+                            type: 'ATTACK',
+                            attackerCoord: swapPortalCoord,
+                            eliminated: result.eliminated.filter(e => 
+                                // Filter eliminations adjacent to portal position
+                                boardUtils.isAdjacent(swapPortalCoord, e.coord)
+                            ),
+                            amplified: false
+                        });
+                        
+                        animationSequence.push({
+                            type: 'ATTACK',
+                            attackerCoord: swapTargetCoord,
+                            eliminated: result.eliminated.filter(e => 
+                                // Filter eliminations adjacent to target position
+                                boardUtils.isAdjacent(swapTargetCoord, e.coord)
+                            ),
+                            amplified: false
+                        });
+                    }
+                    
+                    await animationManager.playSequence(animationSequence);
+                    
+                    canvas.style.pointerEvents = 'auto';
+                    // === END ANIMATION ===
+                    
                     moveMadeThisTurn = true;
                     
                     // Check for abilities on BOTH swapped pieces
@@ -948,6 +1003,20 @@ window.onload = function() {
                 matchHistoryTracker.commitTurnActions();
                 updateLogDisplay();
                 
+                // === ANIMATION INTEGRATION ===
+                canvas.style.pointerEvents = 'none';
+                
+                await animationManager.playSequence([{
+                    type: 'FIREBALL',
+                    from: fireballData.ruby2, // Foremost ruby
+                    to: targetCoordStr,
+                    amplified: fireballData.amplified,
+                    eliminated: eliminated
+                }]);
+                
+                canvas.style.pointerEvents = 'auto';
+                // === END ANIMATION ===
+                
                 abilityButtons.setButtonState('rubyFireball', 'disabled');
                 
                 if (checkForWin()) {
@@ -993,6 +1062,21 @@ window.onload = function() {
                 matchHistoryTracker.commitTurnActions();
                 updateLogDisplay();
                 
+                // === ANIMATION INTEGRATION ===
+                canvas.style.pointerEvents = 'none';
+                
+                await animationManager.playSequence([{
+                    type: 'TIDALWAVE',
+                    from: tidalwaveData.pearl2, // Foremost pearl
+                    direction: tidalwaveData.direction,
+                    amplified: tidalwaveData.amplified,
+                    coverageArea: tidalwaveData.coverageArea,
+                    eliminated: eliminated
+                }]);
+                
+                canvas.style.pointerEvents = 'auto';
+                // === END ANIMATION ===
+                
                 abilityButtons.setButtonState('pearlTidalwave', 'disabled');
                 
                 if (checkForWin()) {
@@ -1037,6 +1121,20 @@ window.onload = function() {
                 
                 matchHistoryTracker.commitTurnActions();
                 updateLogDisplay();
+                
+                // === ANIMATION INTEGRATION ===
+                canvas.style.pointerEvents = 'none';
+                
+                await animationManager.playSequence([{
+                    type: 'SAP',
+                    amber1: sapData.amber1,
+                    amber2: sapData.amber2,
+                    amplified: sapData.amplified,
+                    eliminated: eliminated
+                }]);
+                
+                canvas.style.pointerEvents = 'auto';
+                // === END ANIMATION ===
                 
                 abilityButtons.setButtonState('amberSap', 'disabled');
                 
@@ -1149,6 +1247,19 @@ window.onload = function() {
                         eliminated
                     });
                     
+                    // === ANIMATION INTEGRATION ===
+                    canvas.style.pointerEvents = 'none';
+                    
+                    await animationManager.playSequence([{
+                        type: 'LAUNCH',
+                        from: launchedPieceCoord,
+                        to: targetCoordStr,
+                        piece: launchedPiece,  // Full piece object
+                        amplified: isAmplified
+                    }]);
+                    
+                    canvas.style.pointerEvents = 'auto';
+                    // === END ANIMATION ===
                     // DON'T commit yet - might have follow-up abilities
                     // matchHistoryTracker.commitTurnActions();  // REMOVE THIS LINE
                     // updateLogDisplay();  // REMOVE THIS LINE
@@ -1211,6 +1322,15 @@ window.onload = function() {
         drawBoard();
 
         if (result.moveMade) {
+            // === CAPTURE PIECE DATA BEFORE MOVE ===
+            const movedPiece = gameLogic.getState().pieces[`${gameX},${gameY}`];
+            
+            // Sanity check
+            if (!movedPiece) {
+                console.error('[Animation] Piece not found at destination:', `${gameX},${gameY}`);
+                return;
+            }
+            
             moveMadeThisTurn = true;
             lastMovedPieceCoord = `${gameX},${gameY}`;
             
@@ -1218,8 +1338,7 @@ window.onload = function() {
                 playerManager.getTurnCount(),
                 playerManager.getCurrentPlayer().name
             );
-
-            const movedPiece = gameLogic.getState().pieces[`${gameX},${gameY}`];
+        
             matchHistoryTracker.trackMove(
                 movedPiece.type,
                 result.fromCoord,
@@ -1238,8 +1357,37 @@ window.onload = function() {
                 });
             }
             
+            // === ANIMATION INTEGRATION ===
+            canvas.style.pointerEvents = 'none';
+            
+            const animationSequence = [];
+            
+            // Move animation (use captured piece data)
+            animationSequence.push({
+                type: 'MOVE',
+                from: result.fromCoord,
+                to: `${gameX},${gameY}`,
+                piece: { ...movedPiece },  // Clone to preserve data
+                amplified: false
+            });
+            
+            // Attack animation (if eliminations occurred)
+            if (result.eliminated && result.eliminated.length > 0) {
+                animationSequence.push({
+                    type: 'ATTACK',
+                    attackerCoord: `${gameX},${gameY}`,
+                    eliminated: result.eliminated,
+                    amplified: false
+                });
+            }
+            
+            await animationManager.playSequence(animationSequence);
+            
+            canvas.style.pointerEvents = 'auto'; // Re-enable input
+            // === END ANIMATION ===
+            
             drawBoard();
-
+        
             updateAbilityButtonStates();
             
             if (checkForWin()) {
@@ -1386,6 +1534,9 @@ window.onload = function() {
     // End the current turn
     async function endTurn() {
         // PRESERVE FIX: Keep commitTurnActions() out of here to prevent "Double Commit" errors.
+    
+        // Reset animation skip flag (was set for AI, needs reset for human)
+        // animationManager.skipNext = false;
         
         // 1. Reset Turn State
         moveMadeThisTurn = false;
@@ -1420,6 +1571,8 @@ window.onload = function() {
             canvas.style.cursor = 'wait';
             // Invalidate any pending clicks from human turn
             clickEpoch++;
+            // Skip animations for AI moves (instant execution)
+            animationManager.skipNext = true;
 
             setTimeout(async () => {
                 // 1. Ensure we have an RNG
@@ -1561,12 +1714,13 @@ window.onload = function() {
         result = gameLogic.handleClick(coords.moveX, coords.moveY);
         
         if (result.success && result.moveMade) {
+            // === CAPTURE DATA BEFORE TRACKING ===
+            const movedToCoord = gameLogic.boardUtils.coordToString(coords.moveX, coords.moveY);
+            const movedFromCoord = result.fromCoord;
+            const movedPiece = gameLogic.getState().pieces[movedToCoord];
+            
             // --- TRACK AFTER MOVE ---
             if (window.matchHistoryTracker) {
-                const movedToCoord = gameLogic.boardUtils.coordToString(coords.moveX, coords.moveY);
-                const movedFromCoord = result.fromCoord;
-                const movedPiece = gameLogic.getState().pieces[movedToCoord];
-                
                 if (movedPiece) {
                     window.matchHistoryTracker.trackMove(
                         movedPiece.type,
@@ -1586,13 +1740,38 @@ window.onload = function() {
                         });
                     }
                 }
-                
-                // ✅ DON'T COMMIT YET - wait for abilities
             }
+            
+            // === ANIMATION INTEGRATION FOR AI ===
+            const animationSequence = [];
+
+            // Move animation
+            if (movedPiece) {
+                animationSequence.push({
+                    type: 'MOVE',
+                    from: movedFromCoord,
+                    to: movedToCoord,
+                    piece: { ...movedPiece },
+                    amplified: false
+                });
+            }
+
+            // Attack animation (if eliminations occurred)
+            if (result.eliminated && result.eliminated.length > 0) {
+                animationSequence.push({
+                    type: 'ATTACK',
+                    attackerCoord: movedToCoord,
+                    eliminated: result.eliminated,
+                    amplified: false
+                });
+            }
+
+            await animationManager.playSequence(animationSequence);
+            // === END ANIMATION ===
             
             // ✅ CRITICAL FIX: Set turn state variables so abilities can be detected
             moveMadeThisTurn = true;
-            lastMovedPieceCoord = gameLogic.boardUtils.coordToString(coords.moveX, coords.moveY);
+            lastMovedPieceCoord = movedToCoord;
             
             return true;
         } else {
@@ -1715,38 +1894,56 @@ window.onload = function() {
     
         switch (type) {
             case 'PORTAL_SWAP':
-                // 1. Setup: Select the portal
-                if (gl.getPortalSwapSystem().selectPortal(coords.portalCoord)) {
-                    
-                    // CRITICAL FIX: Fetch the piece type BEFORE executing the swap
-                    // The AI is swapping the Portal with the piece at 'coords.target'
-                    const targetPiece = gl.getState().pieces[coords.target];
-                    const swappedPieceType = targetPiece ? targetPiece.type : "Unknown";
-    
-                    // 2. Execute
-                    result = gl.getPortalSwapSystem().executeSwap(coords.target);
-                    
-                    // 3. Track
-                    if (result.success) {
-                        // Use our pre-fetched type (swappedPieceType)
-                        // This prevents the "pieceType is undefined" error
-                        matchHistoryTracker.trackSwap(
-                            coords.portalCoord, 
-                            swappedPieceType, 
-                            coords.target
-                        );
-    
-                        // Track any side-effect eliminations (telefrags)
-                        if (result.eliminated) {
-                             result.eliminated.forEach(e => matchHistoryTracker.trackElimination(e.type, e.coord));
-                        }
+            // 1. Setup: Select the portal
+            if (gl.getPortalSwapSystem().selectPortal(coords.portalCoord)) {
+                
+                const targetPiece = gl.getState().pieces[coords.target];
+                const swappedPieceType = targetPiece ? targetPiece.type : "Unknown";
+
+                // 2. Execute
+                result = gl.getPortalSwapSystem().executeSwap(coords.target);
+                
+                // 3. Track
+                if (result.success) {
+                    matchHistoryTracker.trackSwap(
+                        coords.portalCoord, 
+                        swappedPieceType, 
+                        coords.target
+                    );
+
+                    if (result.eliminated) {
+                        result.eliminated.forEach(e => matchHistoryTracker.trackElimination(e.type, e.coord));
                     }
+                    
+                    // === ANIMATION ===
+                    const gameState = gl.getState();
+                    const piece1Current = gameState.pieces[coords.portalCoord];
+                    const piece2Current = gameState.pieces[coords.target];
+                    
+                    const animSeq = [{
+                        type: 'SWAP',
+                        piece1: { coord: coords.portalCoord, pieceData: { ...piece1Current } },
+                        piece2: { coord: coords.target, pieceData: { ...piece2Current } },
+                        amplified: false
+                    }];
+                    
+                    if (result.eliminated && result.eliminated.length > 0) {
+                        animSeq.push({
+                            type: 'ATTACK',
+                            attackerCoord: coords.portalCoord,
+                            eliminated: result.eliminated,
+                            amplified: false
+                        });
+                    }
+                    
+                    await animationManager.playSequence(animSeq);
+                    // === END ANIMATION ===
                 }
-                break;
+            }
+            break;
     
             case 'FIREBALL':
                 const rubySys = gl.getRubyFireballSystem();
-                // Re-validate ability state before execution
                 rubySys.checkFireball(null);
                 const fireballData = rubySys.fireballTargets.find(f => f.targets.includes(coords.target));
                 
@@ -1763,6 +1960,16 @@ window.onload = function() {
                             amplified: fireballData.amplified,
                             eliminated: eliminatedPieces
                         });
+                        
+                        // === ANIMATION ===
+                        await animationManager.playSequence([{
+                            type: 'FIREBALL',
+                            from: fireballData.ruby2,
+                            to: coords.target,
+                            amplified: fireballData.amplified,
+                            eliminated: eliminatedPieces
+                        }]);
+                        // === END ANIMATION ===
                     }
                 } else {
                     console.error("AI tried Fireball but target validation failed", coords);
@@ -1771,29 +1978,39 @@ window.onload = function() {
     
             case 'LAUNCH':
                 const jadeSys = gl.getJadeLaunchSystem();
-                // Re-validate ability state before execution
                 jadeSys.checkLaunch(null);
                 jadeSys.activate();
                 jadeSys.selectedPiece = coords.pieceCoord;
                 
+                const launchedPieceData = gl.getState().pieces[coords.pieceCoord];
+                
                 result = jadeSys.executeLaunch(coords.target, gl.attackSystem);
                 
                 if (result.success) {
-                     matchHistoryTracker.trackAbility('launch', {
-                        jade1: "AI_JADE", // Simplified for AI
+                    matchHistoryTracker.trackAbility('launch', {
+                        jade1: "AI_JADE",
                         jade2: "AI_JADE",
                         amplified: false,
                         launchedPieceType: result.launchedPieceType || "Unknown",
                         fromCoord: coords.pieceCoord,
                         toCoord: coords.target,
-                        eliminated: [] // AI secondary elims are hard to track perfectly here
+                        eliminated: []
                     });
+                    
+                    // === ANIMATION ===
+                    await animationManager.playSequence([{
+                        type: 'LAUNCH',
+                        from: coords.pieceCoord,
+                        to: coords.target,
+                        piece: launchedPieceData,
+                        amplified: false
+                    }]);
+                    // === END ANIMATION ===
                 }
                 break;
     
             case 'SAP':
                 const amberSys = gl.getAmberSapSystem();
-                // Re-validate ability state before execution
                 amberSys.checkSap(null);
                 const sapData = amberSys.isCoordInSap(coords.target);
                 
@@ -1809,13 +2026,22 @@ window.onload = function() {
                             amplified: sapData.amplified,
                             eliminated: eliminatedPieces
                         });
+                        
+                        // === ANIMATION ===
+                        await animationManager.playSequence([{
+                            type: 'SAP',
+                            amber1: sapData.amber1,
+                            amber2: sapData.amber2,
+                            amplified: sapData.amplified,
+                            eliminated: eliminatedPieces
+                        }]);
+                        // === END ANIMATION ===
                     }
                 }
                 break;
     
             case 'TIDALWAVE':
                 const pearlSys = gl.getPearlTidalwaveSystem();
-                // Re-validate ability state before execution
                 pearlSys.checkTidalwave(null);
                 const tidalData = pearlSys.isCoordInTidalwave(coords.target);
                 
@@ -1825,12 +2051,23 @@ window.onload = function() {
                     result = pearlSys.executeTidalwave(coords.target);
                     
                     if (result.success) {
-                         matchHistoryTracker.trackAbility('tidalwave', {
+                        matchHistoryTracker.trackAbility('tidalwave', {
                             pearl1: tidalData.pearl1,
                             pearl2: tidalData.pearl2,
                             amplified: tidalData.amplified,
                             eliminated: eliminatedPieces
                         });
+                        
+                        // === ANIMATION ===
+                        await animationManager.playSequence([{
+                            type: 'TIDALWAVE',
+                            from: tidalData.pearl2,
+                            direction: tidalData.direction,
+                            amplified: tidalData.amplified,
+                            coverageArea: tidalData.coverageArea,
+                            eliminated: eliminatedPieces
+                        }]);
+                        // === END ANIMATION ===
                     }
                 }
                 break;
