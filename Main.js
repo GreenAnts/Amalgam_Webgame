@@ -1572,7 +1572,7 @@ window.onload = function() {
             // Invalidate any pending clicks from human turn
             clickEpoch++;
             // Skip animations for AI moves (instant execution)
-            animationManager.skipNext = true;
+            //animationManager.skipNext = true;
 
             setTimeout(async () => {
                 // 1. Ensure we have an RNG

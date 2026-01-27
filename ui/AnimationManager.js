@@ -148,11 +148,10 @@ export class AnimationManager {
                 const deltaTime = (timestamp - this.lastTimestamp) * this.speedMultiplier;
                 this.lastTimestamp = timestamp;
                 
-                // Update animation
+                // Update animation state
                 this.currentAnimation.update(deltaTime);
                 
-                // Render animation (CRITICAL FIX)
-                this.currentAnimation.render();
+                // DON'T render here - main loop handles all rendering via animationManager.render()
                 
                 // Check if complete
                 if (this.currentAnimation.isComplete()) {
