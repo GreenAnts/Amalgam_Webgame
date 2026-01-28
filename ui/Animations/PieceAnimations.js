@@ -612,11 +612,22 @@ export class LaunchAnimation extends BaseAnimation {
         const scale = this.boardRenderer.scale;
         this.arcHeight = 2 * scale;
         
-        // Calculate midpoint
+        // Determine launch direction
+        const dx = Math.abs(this.toPixel.x - this.fromPixel.x);
+        const dy = Math.abs(this.toPixel.y - this.fromPixel.y);
+        const isVertical = dx < scale * 0.5; // Threshold for "vertical"
+        
+        // Calculate midpoint with perpendicular offset for vertical launches
         this.midPixel = {
             x: (this.fromPixel.x + this.toPixel.x) / 2,
             y: (this.fromPixel.y + this.toPixel.y) / 2 - this.arcHeight
         };
+        
+        // For vertical launches, add horizontal offset to create visible arc
+        if (isVertical) {
+            // Offset to the right (creates sideways arc for depth illusion)
+            this.midPixel.x += this.arcHeight;
+        }
         
         // Current position
         this.currentPixel = { ...this.fromPixel };

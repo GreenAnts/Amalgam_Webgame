@@ -1,5 +1,6 @@
 // main.js - Main game orchestrator
 import { GameLogic } from './GameLogic.js';
+import { VictoryNotification } from './ui/Overlays/victoryNotification.js';
 import { PlayerManager } from './systems/PlayerManager.js';
 import { BoardRenderer } from './ui/BoardRenderer.js';
 import { PieceRenderer } from './ui/PieceRenderer.js';
@@ -39,6 +40,12 @@ window.onload = function() {
     const setupUI = new SetupUI(canvas, ctx);
     const matchHistoryTracker = new MatchHistoryTracker();
     const animationManager = new AnimationManager(canvas, ctx, boardRenderer, pieceRenderer);
+    const victoryModal = new VictoryNotification(matchHistoryTracker);
+
+    victoryModal.onReset = handleResetClick;
+    victoryModal.onClose = () => {
+        updateActionButtonStates();
+    };
 
     // Policy mode state
     let currentPolicyMode = 'DEFAULT'; // 'DEFAULT' or policy name
@@ -297,7 +304,6 @@ window.onload = function() {
     let moveMadeThisTurn = false;
     let lastMovedPieceCoord = null;
     let launchUsedThisTurn = false;
-    let gameEnded = false; // Tracks if victory popup was dismissed (not via Play Again)
     let pendingAIStrategy = null; // Stores AI strategy selected after game end
     
     function drawBoard() {
@@ -536,7 +542,7 @@ window.onload = function() {
         const forfeitBtn = document.getElementById('forfeitBtn');
         const requestTakebackBtn = document.getElementById('requestTakebackBtn');
 
-        if (gameEnded) {
+        if (victoryModal.isGameEnded()) {
             offerDrawBtn.classList.add('disabled');
             forfeitBtn.classList.add('disabled');
             requestTakebackBtn.classList.add('disabled');
@@ -689,7 +695,7 @@ window.onload = function() {
 
     async function handleCanvasClick(event) {
         // GUARD: Block all interactions if game has ended
-        if (gameEnded) return;
+        if (victoryModal.isGameEnded()) return;
     
         // GUARD: Block all clicks during AI's turn
         const currentPlayerTurn = playerManager.getCurrentPlayer();
@@ -1413,7 +1419,7 @@ window.onload = function() {
     // Handle ability button clicks
     async function handleAbilityButtonClick(buttonKey) {
         // GUARD: Block all ability interactions if game has ended
-        if (gameEnded) return;
+        if (victoryModal.isGameEnded()) return;
 
         if (buttonKey === 'endTurn') {
             await endTurn();
@@ -2082,6 +2088,17 @@ window.onload = function() {
 
     // Handle reset click
     async function handleResetClick() {
+        // Close victory modal if open
+        victoryModal.hide();
+        victoryModal.resetGameEndedState();
+        updateActionButtonStates();
+
+        // Apply pending AI strategy if any
+        if (pendingAIStrategy) {
+            await applyAIStrategyChange(pendingAIStrategy);
+            pendingAIStrategy = null;
+        }
+
         const result = gameLogic.resetGame();
         matchHistoryTracker.reset();
         moveMadeThisTurn = false;
@@ -2117,100 +2134,15 @@ window.onload = function() {
         abilityButtons.updateEndTurnHover(mouseX, mouseY);
     }
     
-    // --- VICTORY SYSTEM UI HANDLERS ---
-    const victoryOverlay = document.getElementById('victoryOverlay');
-    const victoryCard = document.getElementById('victoryCard');
-    const victoryTitle = document.getElementById('victoryTitle');
-    const victoryMessage = document.getElementById('victoryMessage');
-    const victoryIcon = document.getElementById('victoryIcon');
-    const victoryResetBtn = document.getElementById('victoryResetBtn');
-
     function checkForWin() {
         const result = winConditionSystem.checkWin();
         if (result) {
-            // 1. Stop Game Interactions
             abilityButtons.resetAll();
-            
-            // 2. Determine if Player Won or Lost
-            // Assumption: 'Player 1' is human (Square), 'Player 2' is AI (Circle)
-            const humanPlayer = 'Player 1'; 
-            const isVictory = result.winner === humanPlayer;
-
-            // 3. Apply Theme Classes
-            victoryCard.classList.remove('is-victory', 'is-defeat');
-            victoryCard.classList.add(isVictory ? 'is-victory' : 'is-defeat');
-
-            // 4. Set Content & Icons
-            if (isVictory) {
-                victoryTitle.textContent = "Victory";
-                // Crown Icon
-                victoryIcon.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>`;
-            } else {
-                victoryTitle.textContent = "Defeat";
-                // Broken Heart / Skull Icon
-                victoryIcon.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 12L6 12M6 12L12 6M6 12L12 18"/></svg>`; // Arrow pointing back/defeat, or you can use a skull
-            }
-
-            victoryMessage.innerHTML = `
-                ${result.winner} wins<br>
-                via ${result.method}
-            `;
-            
-            // 5. Show Modal
-            victoryOverlay.classList.add('active');
+            victoryModal.show(result, 'Player 1');
             return true;
         }
         return false;
     }
-
-    victoryResetBtn.addEventListener('click', () => {
-        victoryOverlay.classList.remove('active');
-        handleResetClick();
-    });
-
-    // Close button - just close the popup without resetting
-    victoryCloseBtn.addEventListener('click', () => {
-        victoryOverlay.classList.remove('active');
-        gameEnded = true; // Enter "game ended" state - disable most interactions
-        updateActionButtonStates(); // Update button styling
-    });
-
-    // Copy history button - copy match notation to clipboard
-    victoryCopyBtn.addEventListener('click', async () => {
-        const text = matchHistoryTracker.getRawHistory().join('\n');
-
-        try {
-            await navigator.clipboard.writeText(text);
-
-            // Visual feedback - same as sidebar copy button
-            victoryCopyBtn.style.transform = 'scale(0.9)';
-            setTimeout(() => victoryCopyBtn.style.transform = '', 120);
-
-            // Play notification sound if available
-            if (typeof playNotificationSound === 'function') {
-                playNotificationSound();
-            }
-        } catch (err) {
-            console.error('Clipboard copy failed', err);
-        }
-    });
-
-    // Update handleResetClick to ensure modal is closed if triggered via sidebar
-    const originalResetClick = handleResetClick;
-    handleResetClick = async function() {
-        // Ensure victory modal is closed if user clicked "Restart" on sidebar during win state
-        victoryOverlay.classList.remove('active');
-        gameEnded = false; // Reset game ended state
-        updateActionButtonStates(); // Update button styling
-
-        // Apply any pending AI strategy change from after game end
-        if (pendingAIStrategy) {
-            await applyAIStrategyChange(pendingAIStrategy);
-            pendingAIStrategy = null; // Clear after application
-        }
-
-        await originalResetClick();
-    };
 
     function updateLogDisplay() {
         const history = matchHistoryTracker.getRawHistory();
@@ -2281,7 +2213,7 @@ window.onload = function() {
 
     window.addEventListener('keydown', (event) => {
         // GUARD: Block all hotkey interactions if game has ended
-        if (gameEnded) return;
+        if (victoryModal.isGameEnded()) return;
 
         // --- SETUP PHASE HOTKEYS ---
         if (setupManager.isSetupPhase) {
