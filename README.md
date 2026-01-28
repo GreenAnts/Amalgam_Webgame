@@ -39,3 +39,5 @@ I’ve decided to open source the project and release the game under Creative Co
 I’m very aware that this kind of “vibe coding” isn’t the most efficient or maintainable way forward, but for now it’s the best option I have. If you’re a capable programmer, software engineer, or someone who enjoys untangling and improving early-stage projects, I would genuinely love your help in getting this game up and running. Any contributions, big or small, would be hugely appreciated.
 
 And if coding isn’t your thing, or you’re not in a position to contribute code right now, that’s completely okay too. I’d still love it if you’d check out the game, share it with others who might be interested, or offer feedback on the gameplay and rules. Even just knowing what works, what doesn’t, or what feels confusing is incredibly helpful.
+- - -
+![Amalgam Flyer Image](assets/Rulebook/Page0.png)
