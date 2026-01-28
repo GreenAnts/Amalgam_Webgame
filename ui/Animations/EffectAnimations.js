@@ -150,6 +150,7 @@ export class AttackAnimation extends BaseEffectAnimation {
     constructor(data, context) {
         super(data, context);
         this.duration = data.duration || 300;
+        this.piecesHidden = false;
     }
     
     start() {
@@ -174,6 +175,16 @@ export class AttackAnimation extends BaseEffectAnimation {
         
         // Sweep from 0 to 360 degrees
         this.currentAngle = this.progress * Math.PI * 2;
+        
+        // At 70% progress, hide eliminated pieces (visual "hit")
+        if (this.progress >= 0.7 && !this.piecesHidden) {
+            this.piecesHidden = true;
+            if (this.data.eliminated) {
+                this.data.eliminated.forEach(elim => {
+                    this.animationManager.hidePiece(elim.coord);
+                });
+            }
+        }
     }
     
     render() {

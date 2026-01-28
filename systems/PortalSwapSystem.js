@@ -203,6 +203,13 @@ export class PortalSwapSystem {
         const portalPiece = this.gameState.getPiece(portalCoord);
         const targetPiece = this.gameState.getPiece(targetCoord);
         
+        // Validation: Both pieces must exist
+        if (!portalPiece || !targetPiece) {
+            console.warn('[PortalSwapSystem] Cannot predict swap - pieces not found:', 
+                         { portalCoord, targetCoord, portalPiece: !!portalPiece, targetPiece: !!targetPiece });
+            return eliminated;
+        }
+        
         // After swap:
         // - targetPiece will be at portalCoord
         // - portalPiece will be at targetCoord

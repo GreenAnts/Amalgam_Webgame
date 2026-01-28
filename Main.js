@@ -1,6 +1,8 @@
 // main.js - Main game orchestrator
 import { GameLogic } from './GameLogic.js';
 import { VictoryNotification } from './ui/Overlays/victoryNotification.js';
+import { HotkeyHandler } from './ui/Controls/hotkeyHandler.js';
+import { AIDifficultyManager } from './ui/Controls/aiDifficultyManager.js';
 import { PlayerManager } from './systems/PlayerManager.js';
 import { BoardRenderer } from './ui/BoardRenderer.js';
 import { PieceRenderer } from './ui/PieceRenderer.js';
@@ -47,250 +49,40 @@ window.onload = function() {
         updateActionButtonStates();
     };
 
-    // Policy mode state
-    let currentPolicyMode = 'DEFAULT'; // 'DEFAULT' or policy name
-    let currentPolicy = null; // Policy instance when in policy mode
+    // Initialize hotkey handler
+    const hotkeyHandler = new HotkeyHandler(setupManager, playerManager, gameLogic);
+    hotkeyHandler.isGameEnded = () => victoryModal.isGameEnded();
+    hotkeyHandler.onPieceSelected = () => {
+        updateAbilityButtonStates();
+        drawBoard();
+    };
+
+    // Initialize AI difficulty manager
+    const aiDifficultyManager = new AIDifficultyManager(
+        aiController,
+        document.getElementById('aiDifficultyDropdown'),
+        {
+            overlay: document.getElementById('aiStrategyConfirmOverlay'),
+            confirmBtn: document.getElementById('confirmAIStrategy'),
+            cancelBtn: document.getElementById('cancelAIStrategy'),
+            dontAskCheckbox: document.getElementById('aiStrategyDontAskAgain')
+        }
+    );
+    aiDifficultyManager.isGameEnded = () => victoryModal.isGameEnded();
+    aiDifficultyManager.onStrategyChanged = () => {
+        // Any UI updates needed after strategy change
+    };
+    
+    // Load difficulties on startup
+    aiDifficultyManager.initialize();
+
     let clickEpoch = 0;
     let currentClickEpoch = 0;
 
     // Make these available to AILogic
     window.matchHistoryTracker = matchHistoryTracker;
 
-    // --- AI STRATEGY SELECTOR ---
-    const aiDifficultyDropdown = document.getElementById('aiDifficultyDropdown');
 
-    // Load available AI difficulties (stable + dynamic with proper ordering)
-    async function loadAIDifficulties() {
-        try {
-            // 🔒 STABLE OPTIONS (positioned for ordering)
-            const stableOptions = [
-                { value: 'DEFAULT', text: 'Current (Full Search)', position: 0 }, // Top/default
-                { value: 'RANDOM_MODE', text: 'Random', position: -1 }, // Second to last
-                { value: 'DUMMY_MODE', text: 'Practice Dummy', position: -2 } // Last
-            ];
-
-            // 🔄 DYNAMIC OPTIONS (anchors sorted by date, newest first)
-            const response = await fetch(`${root}arena/ArenaConfig.json`);
-            // console.log(response);
-            const arenaConfig = await response.json();
-            const activeAnchors = arenaConfig.active_anchors
-                .filter(a => a.status !== 'validation_only' || a.competency_level === 'experimental') // Include experimental policies
-                .sort((a, b) => new Date(b.date_established) - new Date(a.date_established)); // Newest first
-
-            const dynamicOptions = activeAnchors.map(anchor => ({
-                value: anchor.policy_name,
-                text: anchor.competency_level === 'experimental'
-                    ? `⚠️ ${anchor.id.replace('ANCHOR_', '').replace('_', ' ')} (${anchor.competency_level})`
-                    : `${anchor.id.replace('ANCHOR_', '').replace('_', ' ')} (${anchor.competency_level})`,
-                position: 1, // All anchors go after Current
-                isExperimental: anchor.competency_level === 'experimental' // Flag for styling
-            }));
-
-            // 🎯 COMBINE WITH PROPER ORDERING
-            const allOptions = [...stableOptions, ...dynamicOptions]
-                .sort((a, b) => {
-                    // Position-based sorting: negative positions go to end
-                    if (a.position >= 0 && b.position >= 0) return a.position - b.position;
-                    if (a.position >= 0) return -1; // a before b
-                    if (b.position >= 0) return 1;  // b before a
-                    return b.position - a.position; // More negative positions last
-                });
-
-            // Build dropdown
-            aiDifficultyDropdown.innerHTML = '';
-            allOptions.forEach(opt => {
-                const option = document.createElement('option');
-                option.value = opt.value;
-                option.textContent = opt.text;
-                if (opt.isExperimental) {
-                    option.classList.add('experimental-ai-option');
-                }
-                aiDifficultyDropdown.appendChild(option);
-            });
-
-            // Set default selection
-            aiDifficultyDropdown.value = 'DEFAULT';
-        } catch (error) {
-            console.error('Failed to load difficulties:', error);
-            // Fallback with basic ordering
-            aiDifficultyDropdown.innerHTML = `
-                <option value="DEFAULT">Current (Full Search)</option>
-                <option value="VOID_OBJECTIVE">Void Rush (baseline)</option>
-                <option value="RANDOM_MODE">Random</option>
-                <option value="DUMMY_MODE">Practice Dummy</option>
-            `;
-            aiDifficultyDropdown.value = 'DEFAULT';
-        }
-    }
-
-    // Handle dropdown changes with confirmation
-    aiDifficultyDropdown.addEventListener('change', async (e) => {
-        const selectedValue = e.target.value;
-        const previousValue = aiDifficultyDropdown.dataset.previousValue || 'DEFAULT';
-
-        if (gameEnded) {
-            // After game end: Store for later application, no confirmation needed
-            pendingAIStrategy = selectedValue;
-            return;
-        }
-
-        // During active game: Show confirmation (existing logic)
-        // Check if user wants to skip confirmation
-        const skipConfirmation = localStorage.getItem('aiStrategySkipConfirmation') === 'true';
-
-        if (!skipConfirmation) {
-            // Store the attempted change
-            aiDifficultyDropdown.dataset.pendingValue = selectedValue;
-
-            // Show confirmation dialog
-            showAIStrategyConfirmation(selectedValue, previousValue);
-            return;
-        }
-
-        // Skip confirmation - apply change directly
-        await applyAIStrategyChange(selectedValue);
-    });
-
-    // Show AI strategy confirmation dialog
-    function showAIStrategyConfirmation(newStrategy, previousStrategy) {
-        const overlay = document.getElementById('aiStrategyConfirmOverlay');
-        const dontAskCheckbox = document.getElementById('aiStrategyDontAskAgain');
-        const confirmBtn = document.getElementById('confirmAIStrategy');
-        const cancelBtn = document.getElementById('cancelAIStrategy');
-
-        // Reset checkbox
-        dontAskCheckbox.checked = false;
-
-        // Position the dialog (similar to restart confirmation)
-        const callout = overlay.querySelector('.confirm-callout');
-        const canvasContainer = document.querySelector('.canvas-container');
-
-        function positionDialog() {
-            const calloutRect = callout.getBoundingClientRect();
-            const viewportHeight = window.innerHeight;
-
-            const verticalCenter = (viewportHeight / 2) - (calloutRect.height / 2);
-
-            callout.style.setProperty('--callout-offset', `${Math.max(verticalCenter, 0)}px`);
-
-            const canvasRect = canvasContainer.getBoundingClientRect();
-            const calloutWidth = 360;
-
-            callout.style.width = calloutWidth + 'px';
-            callout.style.left = canvasRect.left + (canvasRect.width / 2) - (calloutWidth / 2) + 'px';
-        }
-
-        positionDialog();
-        overlay.classList.add('active');
-        callout.style.top = '-300px';
-
-        requestAnimationFrame(() => {
-            callout.style.top = getComputedStyle(callout).getPropertyValue('--callout-offset');
-        });
-
-        // Handle confirm
-        const handleConfirm = async () => {
-            // Save preference if checkbox is checked
-            if (dontAskCheckbox.checked) {
-                localStorage.setItem('aiStrategySkipConfirmation', 'true');
-            }
-
-            // Apply the change
-            const pendingValue = aiDifficultyDropdown.dataset.pendingValue;
-            await applyAIStrategyChange(pendingValue);
-
-            // Close dialog
-            closeDialog();
-        };
-
-        // Handle cancel
-        const handleCancel = () => {
-            // Revert dropdown to previous value
-            aiDifficultyDropdown.value = previousStrategy;
-            aiDifficultyDropdown.dataset.previousValue = previousStrategy;
-
-            // Close dialog
-            closeDialog();
-        };
-
-        const closeDialog = () => {
-            callout.style.top = '-300px';
-            setTimeout(() => {
-                overlay.classList.remove('active');
-                // Clean up event listeners
-                confirmBtn.removeEventListener('click', handleConfirm);
-                cancelBtn.removeEventListener('click', handleCancel);
-            }, 300);
-        };
-
-        // Attach event listeners
-        confirmBtn.addEventListener('click', handleConfirm);
-        cancelBtn.addEventListener('click', handleCancel);
-
-        // Handle window resize
-        const handleResize = () => {
-            if (overlay.classList.contains('active')) {
-                positionDialog();
-            }
-        };
-
-        window.addEventListener('resize', handleResize);
-
-        // Clean up resize listener when dialog closes
-        const originalClose = closeDialog;
-        const cleanupCloseDialog = () => {
-            window.removeEventListener('resize', handleResize);
-            originalClose();
-        };
-    }
-
-    // Apply AI strategy change
-    async function applyAIStrategyChange(selectedValue) {
-        // 🔒 STABLE OPTIONS (hardcoded routing)
-        if (selectedValue === 'DEFAULT') {
-            currentPolicyMode = 'DEFAULT';
-            currentPolicy = null;
-            aiController.setMode('trace');
-            console.log('Switched to Current (Full Search)');
-        } else if (selectedValue === 'RANDOM_MODE') {
-            currentPolicyMode = 'DEFAULT';
-            currentPolicy = null;
-            aiController.setMode('fallback');
-            console.log('Switched to Random (fallback mode)');
-        } else if (selectedValue === 'DUMMY_MODE') {
-            currentPolicyMode = 'DEFAULT';
-            currentPolicy = null;
-            aiController.setMode('debug_idle');
-            console.log('Switched to Practice Dummy (debug_idle mode)');
-        } else {
-            // 🔄 DYNAMIC OPTIONS (arena anchors)
-            try {
-                currentPolicyMode = 'POLICY';
-                await aiController.setPolicy(selectedValue);
-                currentPolicy = aiController.currentPolicy;
-                console.log(`Switched to ${selectedValue} policy`);
-            } catch (error) {
-                console.error(`Failed to init ${selectedValue} policy:`, error);
-                // Fallback to default
-                currentPolicyMode = 'DEFAULT';
-                currentPolicy = null;
-                aiController.setMode('trace');
-                aiDifficultyDropdown.value = 'DEFAULT';
-            }
-        }
-
-        // Rebuild dropdown to preserve experimental styling
-        await loadAIDifficulties();
-
-        // Restore the selected value after rebuilding
-        aiDifficultyDropdown.value = selectedValue;
-
-        // Store current value for next change
-        aiDifficultyDropdown.dataset.previousValue = selectedValue;
-    }
-
-    // Initialize difficulties
-    loadAIDifficulties();
 
     // Ability system references
     const portalSwapSystem = gameLogic.getPortalSwapSystem();
@@ -841,16 +633,32 @@ window.onload = function() {
                 swapPortalCoord = targetCoordStr;
                 swapTargetCoord = portalSwapSystem.selectedTarget;
                 targetPiece = gameState.pieces[swapTargetCoord];
-                result = portalSwapSystem.executeSwap(targetCoordStr);
             } else {
                 // Normal mode: clicking on target to complete swap
                 swapPortalCoord = portalSwapSystem.selectedPortal;
                 swapTargetCoord = targetCoordStr;
                 targetPiece = gameState.pieces[targetCoordStr];
-                result = portalSwapSystem.executeSwap(targetCoordStr);
             }
             
+            // Store eliminated pieces BEFORE swap (they're still in gameState)
+            const predictedEliminations = portalSwapSystem.predictSwapEliminations(swapPortalCoord, swapTargetCoord);
+            const eliminatedPieceData = [];
+            predictedEliminations.forEach(elim => {
+                const piece = gameState.pieces[elim.coord];
+                if (piece) {
+                    eliminatedPieceData.push({ coord: elim.coord, piece: { ...piece } });
+                }
+            });
+            
+            // Execute swap (removes pieces from gameState immediately)
+            result = portalSwapSystem.executeSwap(portalSwapSystem.reverseMode ? targetCoordStr : targetCoordStr);
+
             if (result.success) {
+                // Restore eliminated pieces to ACTUAL gameState (not local copy)
+                const actualGameState = gameLogic.getGameState();
+                eliminatedPieceData.forEach(ep => {
+                    actualGameState.addPiece(ep.coord, ep.piece);
+                });
                 // CRITICAL: Use the GameState method to properly deselect
                 gameLogic.getGameState().deselectPiece();
                 abilityButtons.setButtonState('portalSwap', 'disabled');
@@ -903,7 +711,7 @@ window.onload = function() {
                             attackerCoord: swapPortalCoord,
                             eliminated: result.eliminated.filter(e => 
                                 // Filter eliminations adjacent to portal position
-                                boardUtils.isAdjacent(swapPortalCoord, e.coord)
+                                gameLogic.boardUtils.isAdjacent(swapPortalCoord, e.coord)
                             ),
                             amplified: false
                         });
@@ -913,16 +721,22 @@ window.onload = function() {
                             attackerCoord: swapTargetCoord,
                             eliminated: result.eliminated.filter(e => 
                                 // Filter eliminations adjacent to target position
-                                boardUtils.isAdjacent(swapTargetCoord, e.coord)
+                                gameLogic.boardUtils.isAdjacent(swapTargetCoord, e.coord)
                             ),
                             amplified: false
                         });
                     }
                     
                     await animationManager.playSequence(animationSequence);
-                    
+                
                     canvas.style.pointerEvents = 'auto';
                     // === END ANIMATION ===
+                    
+                    // Cleanup: Remove eliminated pieces from actual gameState
+                    const actualGameState = gameLogic.getGameState();
+                    eliminatedPieceData.forEach(ep => {
+                        actualGameState.removePiece(ep.coord);
+                    });
                     
                     moveMadeThisTurn = true;
                     
@@ -1595,7 +1409,7 @@ window.onload = function() {
                 let move = null;
                 
                 // POLICY MODE vs DEFAULT AI MODE
-                if (aiController.currentPolicyMode !== 'DEFAULT' && aiController.currentPolicy) {
+                if (aiDifficultyManager.getCurrentPolicyMode() !== 'DEFAULT' && aiDifficultyManager.getCurrentPolicy()) {
                     // === POLICY MODE: Use Arena policy ===
                     const gameState = gameLogic.getState();
                     const context = {
@@ -1605,7 +1419,7 @@ window.onload = function() {
                     };
                     
                     try {
-                        move = await aiController.currentPolicy.selectMove(gameState, context);
+                        move = await aiDifficultyManager.getCurrentPolicy().selectMove(gameState, context);
                     } catch (error) {
                         console.error('Policy error:', error);
                         move = null;
@@ -1627,6 +1441,10 @@ window.onload = function() {
                     await endTurn();
                     updateAbilityButtonStates();
                     drawBoard();
+                    
+                    // CRITICAL: Re-enable canvas before returning
+                    canvas.style.pointerEvents = 'auto';
+                    canvas.style.cursor = 'default';
                     return;
                 }
                 
@@ -2087,17 +1905,15 @@ window.onload = function() {
     }
 
     // Handle reset click
+    // Handle reset click
     async function handleResetClick() {
         // Close victory modal if open
         victoryModal.hide();
         victoryModal.resetGameEndedState();
         updateActionButtonStates();
-
-        // Apply pending AI strategy if any
-        if (pendingAIStrategy) {
-            await applyAIStrategyChange(pendingAIStrategy);
-            pendingAIStrategy = null;
-        }
+        
+        // Apply any pending AI strategy change from after game end
+        await aiDifficultyManager.applyPendingStrategy();
 
         const result = gameLogic.resetGame();
         matchHistoryTracker.reset();
@@ -2110,6 +1926,7 @@ window.onload = function() {
         amberSapSystem.reset();
         jadeLaunchSystem.reset();
         abilityButtons.resetAll();
+        hotkeyHandler.reset();
         setupManager.reset();
         uiManager.updatePlayerInfo(
             playerManager.getTurnCount(),
@@ -2193,112 +2010,7 @@ window.onload = function() {
         boardRenderer.updateCanvasSize();
         drawBoard();
     });
-    
-    // Add these variables inside window.onload if not already there
-    let hotkeyCycleIndex = 0;
-    let lastHotkeyType = null;
-    
-    function isTypingInInput() {
-	    const el = document.activeElement;
-	    if (!el) return false;
 
-	    const tag = el.tagName.toLowerCase();
-	    return (
-		    tag === 'input' ||
-		    tag === 'textarea' ||
-		    el.isContentEditable === true
-	    );
-    }
-
-
-    window.addEventListener('keydown', (event) => {
-        // GUARD: Block all hotkey interactions if game has ended
-        if (victoryModal.isGameEnded()) return;
-
-        // --- SETUP PHASE HOTKEYS ---
-        if (setupManager.isSetupPhase) {
-	        const currentPlayer = setupManager.getCurrentPlayer();
-
-	        // Only human setup uses hotkeys
-	        if (currentPlayer === 'square') {
-		        const setupKeyMap = {
-			        '1': 'ruby',
-			        '2': 'pearl',
-			        '3': 'amber',
-			        '4': 'jade'
-		        };
-
-		        const pieceType = setupKeyMap[event.key];
-		        if (pieceType) {
-			        const counts = setupManager.getPieceCounts(currentPlayer);
-
-			        if (counts[pieceType] < 2) {
-				        setupManager.selectPiece(pieceType);
-				        drawBoard();
-			        }
-
-			        event.preventDefault();
-			        return; // stop here, do NOT fall into game hotkeys
-		        }
-	        }
-
-	        // If setup phase but key wasn't a setup hotkey, do nothing
-	        return;
-        }
-
-        // Do not trigger hotkeys while typing in chat or inputs
-        if (isTypingInInput()) return;
-
-        const hotkeyMap = {
-            '1': 'ruby',
-            '2': 'pearl',
-            '3': 'amber',
-            '4': 'jade',
-            '5': 'portal',
-            '6': 'amalgam',
-            '7': 'void'
-        };
-
-        const targetType = hotkeyMap[event.key];
-        if (!targetType) return;
-
-        const gameState = gameLogic.getState();
-        const currentPlayer = playerManager.getCurrentPlayer();
-        
-        // Find pieces belonging to the current player
-        const playerPieces = Object.entries(gameState.pieces)
-            .filter(([coord, piece]) => {
-                const isCorrectType = piece.type.toLowerCase().includes(targetType);
-                const isSquare = piece.type.includes('Square');
-                const isCircle = piece.type.includes('Circle');
-                const isOwned = (currentPlayer.name === 'Player 1' && isSquare) ||
-                                (currentPlayer.name === 'Player 2' && isCircle);
-                return isCorrectType && isOwned;
-            });
-
-        if (playerPieces.length === 0) return;
-
-        // Cycling logic
-        if (lastHotkeyType === targetType) {
-            hotkeyCycleIndex = (hotkeyCycleIndex + 1) % playerPieces.length;
-        } else {
-            hotkeyCycleIndex = 0;
-            lastHotkeyType = targetType;
-        }
-
-        // Get the coordinates of the chosen piece
-        const [coordStr] = playerPieces[hotkeyCycleIndex];
-        const [x, y] = coordStr.split(',').map(Number);
-
-        // FIX: Use handleClick to trigger game logic/selection indicators
-        // We pass the coordinates directly to simulate a click on that piece
-        gameLogic.handleClick(x, y);
-
-        // Sync UI components
-        updateAbilityButtonStates();
-        drawBoard();
-        
-    });
 
     // Animation loop for button pulsing
     function animate() {
