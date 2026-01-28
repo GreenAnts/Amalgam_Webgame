@@ -1142,13 +1142,21 @@ window.onload = function() {
         drawBoard();
 
         if (result.moveMade) {
-            // === CAPTURE PIECE DATA BEFORE MOVE ===
+            // === CAPTURE PIECE DATA ===
             const movedPiece = gameLogic.getState().pieces[`${gameX},${gameY}`];
             
             // Sanity check
             if (!movedPiece) {
                 console.error('[Animation] Piece not found at destination:', `${gameX},${gameY}`);
                 return;
+            }
+            
+            // Restore eliminated pieces for animation (they were removed by handleClick)
+            const actualGameState = gameLogic.getGameState();
+            if (result.eliminated && result.eliminated.length > 0) {
+                result.eliminated.forEach(elim => {
+                    actualGameState.addPiece(elim.coord, elim.piece);
+                });
             }
             
             moveMadeThisTurn = true;
@@ -1182,12 +1190,12 @@ window.onload = function() {
             
             const animationSequence = [];
             
-            // Move animation (use captured piece data)
+            // Move animation
             animationSequence.push({
                 type: 'MOVE',
                 from: result.fromCoord,
                 to: `${gameX},${gameY}`,
-                piece: { ...movedPiece },  // Clone to preserve data
+                piece: { ...movedPiece },
                 amplified: false
             });
             
@@ -1203,7 +1211,14 @@ window.onload = function() {
             
             await animationManager.playSequence(animationSequence);
             
-            canvas.style.pointerEvents = 'auto'; // Re-enable input
+            // Remove eliminated pieces after animation completes
+            if (result.eliminated && result.eliminated.length > 0) {
+                result.eliminated.forEach(elim => {
+                    actualGameState.removePiece(elim.coord);
+                });
+            }
+            
+            canvas.style.pointerEvents = 'auto';
             // === END ANIMATION ===
             
             drawBoard();
@@ -1567,6 +1582,14 @@ window.onload = function() {
             }
             
             // === ANIMATION INTEGRATION FOR AI ===
+            // Restore eliminated pieces for animation
+            const actualGameState = gameLogic.getGameState();
+            if (result.eliminated && result.eliminated.length > 0) {
+                result.eliminated.forEach(elim => {
+                    actualGameState.addPiece(elim.coord, elim.piece);
+                });
+            }
+
             const animationSequence = [];
 
             // Move animation
@@ -1591,6 +1614,13 @@ window.onload = function() {
             }
 
             await animationManager.playSequence(animationSequence);
+
+            // Remove eliminated pieces after animation completes
+            if (result.eliminated && result.eliminated.length > 0) {
+                result.eliminated.forEach(elim => {
+                    actualGameState.removePiece(elim.coord);
+                });
+            }
             // === END ANIMATION ===
             
             // ✅ CRITICAL FIX: Set turn state variables so abilities can be detected

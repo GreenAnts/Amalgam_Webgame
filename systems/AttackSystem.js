@@ -105,7 +105,7 @@ export class AttackSystem {
         }
     }
     
-    // Execute attack and return list of eliminated pieces
+    // Execute attack and return list of eliminated pieces (with full piece data)
     executeAttackAndReturnEliminated(coordStr) {
         const eliminated = [];
         const piece = this.gameState.getPiece(coordStr);
@@ -124,7 +124,12 @@ export class AttackSystem {
                 if (this.boardUtils.isOnBoard(targetCoordStr)) {
                     const targetPiece = this.gameState.getPiece(targetCoordStr);
                     if (targetPiece && this.getPlayerOfPiece(targetPiece) !== attackingPlayer) {
-                        eliminated.push({ type: targetPiece.type, coord: targetCoordStr });
+                        // Store FULL piece data for animation restoration
+                        eliminated.push({ 
+                            type: targetPiece.type, 
+                            coord: targetCoordStr,
+                            piece: { ...targetPiece }
+                        });
                     }
                 }
             }
@@ -140,7 +145,11 @@ export class AttackSystem {
                     if (targetPiece && 
                         this.isPortalPiece(targetPiece) && 
                         this.getPlayerOfPiece(targetPiece) !== attackingPlayer) {
-                        eliminated.push({ type: targetPiece.type, coord: targetCoordStr });
+                        eliminated.push({ 
+                            type: targetPiece.type, 
+                            coord: targetCoordStr,
+                            piece: { ...targetPiece }
+                        });
                     }
                 }
             }
@@ -155,7 +164,11 @@ export class AttackSystem {
                     if (targetPiece && 
                         this.isPortalPiece(targetPiece) && 
                         this.getPlayerOfPiece(targetPiece) !== attackingPlayer) {
-                        eliminated.push({ type: targetPiece.type, coord: targetCoordStr });
+                        eliminated.push({ 
+                            type: targetPiece.type, 
+                            coord: targetCoordStr,
+                            piece: { ...targetPiece }
+                        });
                     }
                 }
             }
@@ -171,13 +184,17 @@ export class AttackSystem {
                     if (targetPiece && 
                         !this.isPortalPiece(targetPiece) && 
                         this.getPlayerOfPiece(targetPiece) !== attackingPlayer) {
-                        eliminated.push({ type: targetPiece.type, coord: targetCoordStr });
+                        eliminated.push({ 
+                            type: targetPiece.type, 
+                            coord: targetCoordStr,
+                            piece: { ...targetPiece }
+                        });
                     }
                 }
             }
         }
         
-        // Now actually execute the attack
+        // Now actually execute the attack (removes pieces from gameState)
         this.executeAttack(coordStr);
         
         return eliminated;
