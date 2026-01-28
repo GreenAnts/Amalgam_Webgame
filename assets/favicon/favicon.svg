@@ -2,9 +2,9 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="210mm"
-   height="297mm"
-   viewBox="0 0 210 297"
+   width="128.54248mm"
+   height="128.54248mm"
+   viewBox="0 0 128.54248 128.54248"
    version="1.1"
    id="svg1"
    inkscape:version="1.4.3 (0d15f75042, 2025-12-25)"
@@ -31,22 +31,39 @@
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
-     inkscape:current-layer="layer1" />
+     inkscape:current-layer="layer1">
+    <inkscape:page
+       x="1.8281251e-20"
+       y="1.2641771e-20"
+       width="128.5425"
+       height="128.5425"
+       id="page2"
+       margin="0"
+       bleed="0" />
+  </sodipodi:namedview>
   <defs
      id="defs1" />
   <g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
-     id="layer1">
-    <circle
-       style="fill:#e7e7e7;fill-opacity:1;stroke:none;stroke-width:0.461115;stroke-opacity:1"
-       id="path10"
-       cx="105"
-       cy="148.5"
-       r="68.193619"
-       inkscape:export-filename="favicon.png"
-       inkscape:export-xdpi="81.644951"
-       inkscape:export-ydpi="81.644951" />
+     id="layer1"
+     transform="translate(-40.728758,-84.228763)">
+    <path
+       d="M 169.27125,148.50001 H 105 v 64.27124 a 64.271055,64.271055 0 0 0 64.27125,-64.27124 z"
+       style="fill:#f5b927;fill-opacity:1;stroke:none;stroke-width:0.545976"
+       id="path1" />
+    <path
+       d="m 105,84.228762 v 64.271248 h 64.27125 A 64.271055,64.271055 0 0 0 105,84.228762 Z"
+       style="fill:#96e269;fill-opacity:1;stroke:none;stroke-width:0.545976"
+       id="path2" />
+    <path
+       d="M 40.728761,148.50001 H 105 V 84.228762 A 64.271055,64.271055 0 0 0 40.728761,148.50001 Z"
+       style="fill:#de1c48;fill-opacity:1;stroke:none;stroke-width:0.545976"
+       id="path3" />
+    <path
+       d="M 105,212.77125 V 148.50001 H 40.728761 A 64.271055,64.271055 0 0 0 105,212.77125 Z"
+       style="fill:#f5eec2;fill-opacity:1;stroke:none;stroke-width:0.545976"
+       id="path4" />
     <g
        id="g10"
        transform="translate(-0.53981,24.01716)">
@@ -67,10 +84,6 @@
          style="fill:#f8f6da;fill-opacity:1;stroke:none;stroke-width:0.499999"
          id="path8" />
     </g>
-    <path
-       d="m 130.08715,85.088863 a 68.193619,68.193619 0 0 1 43.10641,63.411117 68.193619,68.193619 0 0 1 -68.19377,68.19377 68.193619,68.193619 0 0 1 -45.691782,-17.57154 70.107155,70.107155 0 0 0 52.628312,23.79028 70.107155,70.107155 0 0 0 70.10735,-70.10683 70.107155,70.107155 0 0 0 -51.95652,-67.716797 z"
-       style="fill-opacity:1;stroke-width:0.474054;fill:#979797"
-       id="path11" />
     <rect
        style="fill:#000000;fill-opacity:0;stroke:none;stroke-width:0.499999;stroke-opacity:1"
        id="rect11"
