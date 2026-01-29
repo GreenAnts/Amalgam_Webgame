@@ -247,42 +247,51 @@ export class JadeLaunchSystem {
         return false;
     }
 
-    // Execute launch
-    executeLaunch(targetCoordStr, attackSystem) {
-        if (!this.selectedPiece || !this.selectedTargets.includes(targetCoordStr)) {
-            return {
-                success: false,
-                message: 'Invalid launch target.'
-            };
-        }
-        
-        const launchedPiece = this.gameState.getPiece(this.selectedPiece);
-        const targetPiece = this.gameState.getPiece(targetCoordStr);
-        
-        // Remove enemy piece if landing on one
-        if (targetPiece) {
-            const isEnemy = !this.playerManager.canMovePiece(targetPiece.type);
-            if (isEnemy) {
-                this.gameState.removePiece(targetCoordStr);
-            }
-        }
-        
-        // Move the piece
-        this.gameState.movePiece(this.selectedPiece, targetCoordStr);
-        
-        // Execute attacks from new position
-        attackSystem.executeAttack(targetCoordStr);
-        
-        const pieceName = launchedPiece.name;
-        this.reset();
-        
+    // Execute launch and return eliminated pieces data
+executeLaunch(targetCoordStr, attackSystem) {
+    if (!this.selectedPiece || !this.selectedTargets.includes(targetCoordStr)) {
         return {
-            success: true,
-            message: `Launched ${pieceName} to ${targetCoordStr}!`,
-            moveMade: true,
-            launchedPieceCoord: targetCoordStr
+            success: false,
+            message: 'Invalid launch target.'
         };
     }
+    
+    const launchedPiece = this.gameState.getPiece(this.selectedPiece);
+    const targetPiece = this.gameState.getPiece(targetCoordStr);
+    
+    // Track landing elimination (piece at destination)
+    let landingElimination = null;
+    if (targetPiece) {
+        const isEnemy = !this.playerManager.canMovePiece(targetPiece.type);
+        if (isEnemy) {
+            // Store full piece data before removal
+            landingElimination = {
+                type: targetPiece.type,
+                coord: targetCoordStr,
+                piece: { ...targetPiece }
+            };
+            this.gameState.removePiece(targetCoordStr);
+        }
+    }
+    
+    // Move the piece
+    this.gameState.movePiece(this.selectedPiece, targetCoordStr);
+    
+    // Execute attacks from new position and get attacked pieces
+    const attackedPieces = attackSystem.executeAttackAndReturnEliminated(targetCoordStr);
+    
+    const pieceName = launchedPiece.name;
+    this.reset();
+    
+    return {
+        success: true,
+        message: `Launched ${pieceName} to ${targetCoordStr}!`,
+        moveMade: true,
+        launchedPieceCoord: targetCoordStr,
+        landingElimination: landingElimination,  // Piece landed on (if any)
+        attackedPieces: attackedPieces           // Pieces eliminated by attack
+    };
+}
 
     // Activate launch mode
     activate() {

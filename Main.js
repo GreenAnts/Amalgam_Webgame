@@ -976,7 +976,7 @@ window.onload = function() {
                 if (jadeLaunchSystem.selectPieceToLaunch(targetCoordStr)) {
                     drawBoard();
                 }
-           } else if (jadeLaunchSystem.isTargetSelectionPhase()) {
+            } else if (jadeLaunchSystem.isTargetSelectionPhase()) {
                 // Find which launch option this belongs to
                 const launchOption = jadeLaunchSystem.launchOptions.find(opt => 
                     opt.pieceCoord === jadeLaunchSystem.selectedPiece &&
@@ -995,54 +995,36 @@ window.onload = function() {
                     return;
                 }
                 
-                // Collect pieces that will be eliminated on landing
-                const eliminated = [];
-                const landingPiece = gameLogic.getState().pieces[targetCoordStr];
-                if (landingPiece) {
-                    eliminated.push({ type: landingPiece.type, coord: targetCoordStr });
-                }
-                
-                // BEFORE executing launch, predict what will be eliminated by attack
-                const coord = gameLogic.boardUtils.stringToCoord(targetCoordStr);
-                const directions = [
-                    {x: 1, y: 0}, {x: 1, y: 1}, {x: 0, y: 1}, {x: -1, y: 1},
-                    {x: -1, y: 0}, {x: -1, y: -1}, {x: 0, y: -1}, {x: 1, y: -1}
-                ];
-                
-                const attackingPlayer = launchedPiece.type.includes('Square') ? 'player1' : 'player2';
-                const isVoid = launchedPiece.type.includes('void');
-                const isPortal = launchedPiece.type.includes('portal');
-                
-                // Predict attack eliminations
-                for (const dir of directions) {
-                    const adjX = coord.x + dir.x;
-                    const adjY = coord.y + dir.y;
-                    const adjCoordStr = gameLogic.boardUtils.coordToString(adjX, adjY);
-                    const adjPiece = gameLogic.getState().pieces[adjCoordStr];
-                    
-                    if (adjPiece) {
-                        const targetPlayer = adjPiece.type.includes('Square') ? 'player1' : 'player2';
-                        const targetIsPortal = adjPiece.type.includes('portal');
-                        
-                        if (targetPlayer !== attackingPlayer) {
-                            // Check if this piece will be eliminated based on attack rules
-                            if (isVoid || 
-                                (isPortal && targetIsPortal) || 
-                                (!isPortal && !targetIsPortal)) {
-                                eliminated.push({ type: adjPiece.type, coord: adjCoordStr });
-                            }
-                        }
-                    }
-                }
-                
                 const attackSystem = gameLogic.attackSystem;
                 const result = jadeLaunchSystem.executeLaunch(targetCoordStr, attackSystem);
-
+            
                 if (result.success) {
+                    // Restore eliminated pieces for animation
+                    const actualGameState = gameLogic.getGameState();
+                    
+                    // Restore landing piece (if any)
+                    if (result.landingElimination) {
+                        actualGameState.addPiece(
+                            result.landingElimination.coord, 
+                            result.landingElimination.piece
+                        );
+                    }
+                    
+                    // Restore attacked pieces (if any)
+                    if (result.attackedPieces && result.attackedPieces.length > 0) {
+                        result.attackedPieces.forEach(elim => {
+                            actualGameState.addPiece(elim.coord, elim.piece);
+                        });
+                    }
+                    
                     // Check if amplified
                     let isAmplified = false;
                     const jade1Coord = gameLogic.boardUtils.stringToCoord(launchOption.jade1);
                     const jade2Coord = gameLogic.boardUtils.stringToCoord(launchOption.jade2);
+                    const directions = [
+                        {x: 1, y: 0}, {x: 1, y: 1}, {x: 0, y: 1}, {x: -1, y: 1},
+                        {x: -1, y: 0}, {x: -1, y: -1}, {x: 0, y: -1}, {x: 1, y: -1}
+                    ];
                     
                     for (const dir of directions) {
                         const check1 = gameLogic.boardUtils.coordToString(jade1Coord.x + dir.x, jade1Coord.y + dir.y);
@@ -1055,6 +1037,20 @@ window.onload = function() {
                             isAmplified = true;
                             break;
                         }
+                    }
+                    
+                    // Build eliminated list for tracking
+                    const eliminated = [];
+                    if (result.landingElimination) {
+                        eliminated.push({
+                            type: result.landingElimination.type,
+                            coord: result.landingElimination.coord
+                        });
+                    }
+                    if (result.attackedPieces && result.attackedPieces.length > 0) {
+                        result.attackedPieces.forEach(elim => {
+                            eliminated.push({ type: elim.type, coord: elim.coord });
+                        });
                     }
                     
                     matchHistoryTracker.trackAbility('launch', {
@@ -1070,13 +1066,38 @@ window.onload = function() {
                     // === ANIMATION INTEGRATION ===
                     canvas.style.pointerEvents = 'none';
                     
-                    await animationManager.playSequence([{
+                    const animationSequence = [];
+                    
+                    // Launch animation (piece flies to destination)
+                    animationSequence.push({
                         type: 'LAUNCH',
                         from: launchedPieceCoord,
                         to: targetCoordStr,
-                        piece: launchedPiece,  // Full piece object
+                        piece: launchedPiece,
                         amplified: isAmplified
-                    }]);
+                    });
+                    
+                    // Attack animation (if pieces were attacked, not just landed on)
+                    if (result.attackedPieces && result.attackedPieces.length > 0) {
+                        animationSequence.push({
+                            type: 'ATTACK',
+                            attackerCoord: targetCoordStr,
+                            eliminated: result.attackedPieces,
+                            amplified: false
+                        });
+                    }
+                    
+                    await animationManager.playSequence(animationSequence);
+                    
+                    // Remove ALL eliminated pieces after animation completes
+                    if (result.landingElimination) {
+                        actualGameState.removePiece(result.landingElimination.coord);
+                    }
+                    if (result.attackedPieces && result.attackedPieces.length > 0) {
+                        result.attackedPieces.forEach(elim => {
+                            actualGameState.removePiece(elim.coord);
+                        });
+                    }
                     
                     canvas.style.pointerEvents = 'auto';
                     // === END ANIMATION ===
@@ -1830,38 +1851,93 @@ window.onload = function() {
                 }
                 break;
     
-            case 'LAUNCH':
-                const jadeSys = gl.getJadeLaunchSystem();
-                jadeSys.checkLaunch(null);
-                jadeSys.activate();
-                jadeSys.selectedPiece = coords.pieceCoord;
-                
-                const launchedPieceData = gl.getState().pieces[coords.pieceCoord];
-                
-                result = jadeSys.executeLaunch(coords.target, gl.attackSystem);
-                
-                if (result.success) {
-                    matchHistoryTracker.trackAbility('launch', {
-                        jade1: "AI_JADE",
-                        jade2: "AI_JADE",
-                        amplified: false,
-                        launchedPieceType: result.launchedPieceType || "Unknown",
-                        fromCoord: coords.pieceCoord,
-                        toCoord: coords.target,
-                        eliminated: []
-                    });
+                case 'LAUNCH':
+                    const jadeSys = gl.getJadeLaunchSystem();
+                    jadeSys.checkLaunch(null);
+                    jadeSys.activate();
+                    jadeSys.selectedPiece = coords.pieceCoord;
                     
-                    // === ANIMATION ===
-                    await animationManager.playSequence([{
-                        type: 'LAUNCH',
-                        from: coords.pieceCoord,
-                        to: coords.target,
-                        piece: launchedPieceData,
-                        amplified: false
-                    }]);
-                    // === END ANIMATION ===
-                }
-                break;
+                    const launchedPieceData = gl.getState().pieces[coords.pieceCoord];
+                    
+                    result = jadeSys.executeLaunch(coords.target, gl.attackSystem);
+                    
+                    if (result.success) {
+                        // Restore eliminated pieces for animation
+                        const actualGameState = gl.getGameState();
+                        
+                        if (result.landingElimination) {
+                            actualGameState.addPiece(
+                                result.landingElimination.coord,
+                                result.landingElimination.piece
+                            );
+                        }
+                        
+                        if (result.attackedPieces && result.attackedPieces.length > 0) {
+                            result.attackedPieces.forEach(elim => {
+                                actualGameState.addPiece(elim.coord, elim.piece);
+                            });
+                        }
+                        
+                        // Build eliminated list for tracking
+                        const eliminated = [];
+                        if (result.landingElimination) {
+                            eliminated.push({
+                                type: result.landingElimination.type,
+                                coord: result.landingElimination.coord
+                            });
+                        }
+                        if (result.attackedPieces && result.attackedPieces.length > 0) {
+                            result.attackedPieces.forEach(elim => {
+                                eliminated.push({ type: elim.type, coord: elim.coord });
+                            });
+                        }
+                        
+                        matchHistoryTracker.trackAbility('launch', {
+                            jade1: "AI_JADE",
+                            jade2: "AI_JADE",
+                            amplified: false,
+                            launchedPieceType: result.launchedPieceType || "Unknown",
+                            fromCoord: coords.pieceCoord,
+                            toCoord: coords.target,
+                            eliminated: eliminated
+                        });
+                        
+                        // === ANIMATION ===
+                        const animSeq = [];
+                        
+                        // Launch animation
+                        animSeq.push({
+                            type: 'LAUNCH',
+                            from: coords.pieceCoord,
+                            to: coords.target,
+                            piece: launchedPieceData,
+                            amplified: false
+                        });
+                        
+                        // Attack animation (if attacked pieces exist)
+                        if (result.attackedPieces && result.attackedPieces.length > 0) {
+                            animSeq.push({
+                                type: 'ATTACK',
+                                attackerCoord: coords.target,
+                                eliminated: result.attackedPieces,
+                                amplified: false
+                            });
+                        }
+                        
+                        await animationManager.playSequence(animSeq);
+                        
+                        // Remove eliminated pieces after animation
+                        if (result.landingElimination) {
+                            actualGameState.removePiece(result.landingElimination.coord);
+                        }
+                        if (result.attackedPieces && result.attackedPieces.length > 0) {
+                            result.attackedPieces.forEach(elim => {
+                                actualGameState.removePiece(elim.coord);
+                            });
+                        }
+                        // === END ANIMATION ===
+                    }
+                    break;
     
             case 'SAP':
                 const amberSys = gl.getAmberSapSystem();
