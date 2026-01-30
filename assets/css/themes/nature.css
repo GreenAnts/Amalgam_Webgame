@@ -1,0 +1,79 @@
+:root {
+	/* --- Nature Theme (Organic & Calming) --- */
+	--bg-body: #ffffff;
+	--bg-panel: #ffffff;
+	--bg-input: #f8fbf5;
+
+	/* Nature-inspired Colors */
+	--primary-color: #2d5a27;
+	--primary-hover: #1f3d1a;
+	--primary-soft: #c8e6c9;
+	
+	--secondary-color: #8d6e63;
+	--secondary-hover: #5d4037;
+	
+	--accent-color: #ff9800;
+	--accent-soft: #ffe0b2;
+
+	--text-main: #2e3a23;
+	--text-muted: #5d6952;
+	--text-contrast: #ffffff;
+
+	/* Board colors - Natural wood/stone */
+	--board-light: #f0f4eb;
+	--board-dark: #d7e1cd;
+
+	/* Elevation - subtle and functional */
+	--shadow-color: rgba(45, 90, 39, 0.1);
+	--shadow-sm: 0 1px 2px var(--shadow-color);
+	--shadow-md: 0 4px 6px var(--shadow-color);
+	--shadow-lg: 0 10px 15px var(--shadow-color);
+
+	--border-color: rgba(45, 90, 39, 0.1);
+
+	/* Nature Theme Enhancements */
+	--font-heading: "Crimson Text", "Georgia", serif;
+	--font-body: "Noto Serif", "Georgia", serif;
+	--font-mono: "Inconsolata", "Courier New", monospace;
+	
+	/* Organic button styles */
+	--btn-border-radius: 12px;
+	--btn-border-width: 1px;
+	--btn-texture: none;
+	
+	/* Leaf/organic shadow effects */
+	--nature-effect: drop-shadow(0 2px 4px rgba(45, 90, 39, 0.2));
+	
+	/* Organic texture patterns */
+	--leaf-pattern: repeating-linear-gradient(45deg, rgba(45, 90, 39, 0.03) 0, rgba(45, 90, 39, 0.03) 10px, transparent 10px, transparent 20px);
+}
+
+[data-theme="nature-dark"] {
+	/* --- Nature Dark Theme --- */
+	--bg-body: #0f1712;
+	--bg-panel: #142018;
+	--bg-input: #1a2a20;
+
+	/* Dark nature theme */
+	--primary-color: #81c784;
+	--primary-hover: #66bb6a;
+	--primary-soft: #2d5a27;
+	
+	--secondary-color: #d7ccc8;
+	--secondary-hover: #efebe9;
+	
+	--accent-color: #ffb74d;
+	--accent-soft: #2d5a27;
+
+	--text-main: #e8f5e9;
+	--text-muted: #a5d6a7;
+	--text-contrast: #0f1712;
+
+	/* Board colors for dark theme */
+	--board-light: #1a2a20;
+	--board-dark: #142018;
+
+	/* Dark theme shadows and borders */
+	--shadow-color: rgba(0, 0, 0, 0.4);
+	--border-color: rgba(255, 255, 255, 0.08);
+}

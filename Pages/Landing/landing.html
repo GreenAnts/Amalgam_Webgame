@@ -3,83 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="apple-touch-icon" sizes="57x57" href="../../assets/assets/favicon/apple-icon-57x57.png">
-    <link rel="apple-touch-icon" sizes="60x60" href="../../assets/favicon/apple-icon-60x60.png">
-    <link rel="apple-touch-icon" sizes="72x72" href="../../assets/favicon/apple-icon-72x72.png">
-    <link rel="apple-touch-icon" sizes="76x76" href="../../assets/favicon/apple-icon-76x76.png">
-    <link rel="apple-touch-icon" sizes="114x114" href="../../assets/favicon/apple-icon-114x114.png">
-    <link rel="apple-touch-icon" sizes="120x120" href="../../assets/favicon/apple-icon-120x120.png">
-    <link rel="apple-touch-icon" sizes="144x144" href="../../assets/favicon/apple-icon-144x144.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="../../assets/favicon/apple-icon-152x152.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="../../assets/favicon/apple-icon-180x180.png">
-    <link rel="icon" type="image/png" sizes="192x192"  href="../../assets/favicon/android-icon-192x192.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="../../assets/favicon/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="96x96" href="../../assets/favicon/favicon-96x96.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="../../assets/favicon/favicon-16x16.png">
-    <link rel="manifest" href="../../assets/favicon/manifest.json">
-    <meta name="msapplication-TileColor" content="#ffffff">
-    <meta name="msapplication-TileImage" content="/ms-icon-144x144.png">
-    <meta name="theme-color" content="#ffffff">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Amalgam Board Game</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&family=Montserrat:wght@100;300&display=swap" rel="stylesheet">
+    <title>Amalgam - Welcome</title>
+    <link rel="stylesheet" href="../../assets/css/themes/default.css">
+    <link rel="stylesheet" href="../../assets/css/global.css">
     <link rel="stylesheet" href="landing.css">
 </head>
 <body>
-    <canvas id="bg-canvas"></canvas>
-    <div id="flash-overlay"></div>
+    
+    <header class="landing-header">
+        <div class="container nav-flex">
+            <div class="logo">Amalgam</div>
+            <nav class="nav-links hide-mobile">
+                <a href="../About/about.html">About</a>
+                <a href="../Learn/learn.html">How to Play</a>
+            </nav>
+        </div>
+    </header>
 
-    <div id="intro-stage">
-        <div class="intro-sigil s-ruby">⦿</div>
-        <div class="intro-sigil s-jade">⦿</div>
-        <div class="intro-sigil s-pearl">⦿</div>
-        <div class="intro-sigil s-amber">⦿</div>
-        <div class="intro-portal p1">⦿</div>
-        <div class="intro-portal p2">⦿</div>
-        <div class="intro-sigil s-void-sigil">⦿</div>
-        <div class="intro-void"></div>
+    <!-- Discreet theme controls in corner -->
+    <div class="theme-controls-corner">
+        <div class="theme-dropdown">
+            <div class="theme-toggle-group">
+                <button class="theme-toggle" id="landingThemeToggle" aria-label="Toggle theme">
+                    <i class="fas fa-sun"></i>
+                </button>
+                <button class="theme-dropdown-toggle" id="landingDropdownToggle" aria-label="Open theme menu">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+            </div>
+            <div class="theme-dropdown-menu" id="landingThemeDropdown">
+                <div class="dropdown-header">Select Theme</div>
+                <button class="dropdown-item" data-theme="default">
+                    Default
+                </button>
+                <button class="dropdown-item" data-theme="classic">
+                    Classic
+                </button>
+                <button class="dropdown-item" data-theme="nature">
+                    Forrest Green
+                </button>
+            </div>
+        </div>
     </div>
 
-    <main id="ui-layer">
-        <div id="ui-parallax-wrapper">
-            <div class="ui-content">
-                <div class="title-card-base">
-                    <h1 class="main-title">Amalgam</h1>
-                    <p class="main-tagline">an abstract board game</p>
+    <main class="container">
+        <div class="hero-section">
+            <div class="hero-text">
+                <h1>A new home for abstract strategy.</h1>
+                <p>Simple rules, deep strategy. An open-source project built for those who love the game, not the gamification.</p>
+                <div class="cta-group">
+                    <a href="../Dashboard/dashboard.html" class="btn btn-primary">
+                        <i class="fas fa-play"></i> Play Now
+                    </a>
+                    <a href="../Learn/learn.html" class="btn btn-outline">
+                        <i class="fas fa-book"></i> Learn Rules
+                    </a>
                 </div>
             </div>
-
-            <button id="login-btn" class="nav-btn left-btn" onmouseover="setPointer('left')" onmouseout="clearPointer()">Login</button>
-
-            <div class="piece-container">
-                <div class="compass-ring"></div>
-                <div class="piece-base">
-                    <div class="amalgam-piece">
-                        <div class="q ruby"></div>
-                        <div class="q jade"></div>
-                        <div class="q amber"></div>
-                        <div class="q pearl"></div>
-                    </div>
+            <div class="hero-image">
+                <div class="board-preview">
+                    <div class="preview-piece piece-1"></div>
+                    <div class="preview-piece piece-2"></div>
+                    <div class="preview-piece piece-3"></div>
                 </div>
             </div>
-
-            <button id="guest-btn" class="nav-btn right-btn" onmouseover="setPointer('right')" onmouseout="clearPointer()">Guest</button>
         </div>
+
+        <section class="features">
+            <div class="card feature-card">
+                <h3>Open Source</h3>
+                <p>Community-driven development. No pay-to-win, no dark patterns. Released under GPL-3.0.</p>
+            </div>
+            <div class="card feature-card">
+                <h3>Pure Focus</h3>
+                <p>A distraction-free interface designed to help you think clearly about your strategy.</p>
+            </div>
+            <div class="card feature-card">
+                <h3>Deep Strategy</h3>
+                <p>Master gem abilities, golden line movement, and tactical positioning to outplay your opponent.</p>
+            </div>
+        </section>
     </main>
 
-    <div id="login-modal-overlay">
-        <div class="login-modal-card">
-            <h2>Development Notice</h2>
-            <p>The login feature is not yet developed.<br>We apologize for the inconvenience.</p>
-            <button id="close-login-btn">Dismiss</button>
-        </div>
-    </div>
+    <footer class="footer">
+        <p>© 2026 Amalgam Board Game by Anthony Davis. Licensed under CC-BY 4.0 and GPL-3.0.</p>
+    </footer>
 
-    <div id="transition-curtain"></div>
-
+    <script src="../../assets/js/theme-manager.js"></script>
     <script src="landing.js"></script>
 </body>
 </html>

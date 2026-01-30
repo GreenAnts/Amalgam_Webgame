@@ -1,0 +1,743 @@
+/* Font Awesome Icons */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css');
+
+/* Google Fonts - Inter */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* JetBrains Mono for code elements */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+/* Default Theme (Pen/Ink) */
+@import url('themes/default.css');
+
+/* Reset */
+* {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+/* Base */
+body {
+	background-color: var(--bg-body);
+	color: var(--text-main);
+	font-family: var(--font-body);
+	line-height: 1.6;
+	transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Typography */
+h1, h2, h3, h4 {
+	font-family: var(--font-heading);
+	color: var(--text-main);
+	font-weight: 700;
+	margin-bottom: 0.5rem;
+}
+
+a {
+	color: inherit;
+	text-decoration: none;
+	transition: color 0.2s ease;
+}
+
+a:hover {
+	color: var(--accent-color);
+}
+
+/* Layout */
+.container {
+	max-width: var(--container-width);
+	margin: 0 auto;
+	padding: 0 1.5rem;
+}
+
+/* Cards */
+.card {
+	background-color: var(--bg-panel);
+	padding: 1.25rem;
+	border-radius: var(--border-radius);
+	border: 1px solid var(--border-color);
+	box-shadow: var(--shadow-sm);
+	transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+/* Buttons */
+.btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	padding: 0.625rem 1.25rem;
+	border-radius: var(--btn-border-radius, var(--border-radius));
+	font-family: var(--font-heading);
+	font-weight: 600;
+	font-size: 0.95rem;
+	text-transform: none;
+	letter-spacing: 0.02em;
+	cursor: pointer;
+	border: var(--btn-border-width, 1px) solid transparent;
+	transition: all 0.2s ease;
+	background: var(--btn-texture, none);
+}
+
+.btn-primary {
+	background-color: var(--primary-color);
+	color: var(--text-contrast);
+	box-shadow: 0 1px 0 var(--primary-hover);
+	filter: var(--ink-effect, none);
+}
+
+.btn-primary:hover {
+	background-color: var(--primary-hover);
+	transform: translateY(-1px);
+	filter: var(--ink-effect, none);
+}
+
+.btn-primary:active {
+	transform: translateY(0);
+	box-shadow: none;
+}
+
+.btn-outline {
+	background: transparent;
+	color: var(--primary-color);
+	border: var(--btn-border-width, 1px) solid var(--primary-color);
+}
+
+.btn-outline:hover {
+	background-color: var(--bg-input);
+	border-color: var(--primary-hover);
+	color: var(--primary-hover);
+}
+
+/* Theme-specific enhancements */
+[data-theme="default"] .btn,
+[data-theme="default-dark"] .btn {
+	font-family: var(--font-body);
+}
+
+[data-theme="classic"] .btn,
+[data-theme="classic-dark"] .btn {
+	font-family: var(--font-body);
+	box-shadow: var(--chess-effect);
+}
+
+[data-theme="nature"] .btn,
+[data-theme="nature-dark"] .btn {
+	font-family: var(--font-body);
+	box-shadow: var(--nature-effect);
+}
+
+[data-theme="minimal"] .btn,
+[data-theme="minimal-dark"] .btn {
+	font-family: var(--font-body);
+	box-shadow: var(--minimal-shadow);
+}
+
+/* Theme Toggle */
+.theme-toggle {
+	background: var(--bg-input);
+	color: var(--text-main);
+	border: none;
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 1.2rem;
+	transition: transform 0.2s ease;
+	position: relative;
+}
+
+.theme-toggle:hover {
+	transform: rotate(15deg) scale(1.1);
+}
+
+/* Theme Dropdown Toggle */
+.theme-dropdown-toggle {
+	background: var(--bg-input);
+	color: var(--text-muted);
+	border: 1px solid var(--border-color);
+	border-radius: 4px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 0.8rem;
+	transition: all 0.2s ease;
+	padding: 0.25rem 0.5rem;
+	margin-left: 0.25rem;
+}
+
+.theme-dropdown-toggle:hover {
+	background-color: var(--bg-input);
+	color: var(--text-main);
+	border-color: var(--primary-color);
+}
+
+/* Theme Toggle Group */
+.theme-toggle-group {
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
+}
+
+/* Corner Theme Controls */
+.theme-controls-corner {
+	position: fixed;
+	top: 20px;
+	right: 20px;
+	z-index: 1000;
+	opacity: 0.8;
+	transition: opacity 0.3s ease;
+}
+
+.theme-controls-corner:hover {
+	opacity: 1;
+}
+
+/* Dashboard Theme Toggle */
+.dashboard-theme-toggle {
+	position: fixed;
+	top: 20px;
+	right: 20px;
+	z-index: 1000;
+}
+
+.theme-controls-group {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.theme-btn {
+	background: var(--bg-input);
+	color: var(--text-main);
+	border: 1px solid var(--border-color);
+	border-radius: 50%;
+	width: 32px;
+	height: 32px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 1rem;
+	transition: all 0.2s ease;
+	box-shadow: var(--shadow-sm);
+	opacity: 0.8;
+}
+
+/* Ensure Font Awesome icons inherit button color */
+.theme-btn i {
+	color: inherit;
+}
+
+/* Override base background for dark mode themes to prevent bluish appearance */
+[data-theme="nature-dark"] .theme-btn,
+[data-theme="classic-dark"] .theme-btn,
+[data-theme="minimal-dark"] .theme-btn {
+	background: var(--bg-input);
+}
+
+
+/* Theme-specific base background colors */
+[data-theme="nature"] .theme-btn,
+[data-theme="nature-dark"] .theme-btn {
+	background: var(--bg-input);
+}
+
+[data-theme="classic"] .theme-btn,
+[data-theme="classic-dark"] .theme-btn {
+	background: var(--bg-input);
+}
+
+[data-theme="minimal"] .theme-btn,
+[data-theme="minimal-dark"] .theme-btn {
+	background: var(--bg-input);
+}
+
+/* Theme-specific hover background colors */
+[data-theme="nature"] .theme-btn:hover,
+[data-theme="nature-dark"] .theme-btn:hover {
+	background: var(--nature-color, #166534);
+	color: var(--text-contrast);
+	border-color: var(--nature-color, #166534);
+}
+
+[data-theme="classic"] .theme-btn:hover,
+[data-theme="classic-dark"] .theme-btn:hover {
+	background: var(--classic-color, #2d3748);
+	color: var(--text-contrast);
+	border-color: var(--classic-color, #2d3748);
+}
+
+[data-theme="minimal"] .theme-btn:hover,
+[data-theme="minimal-dark"] .theme-btn:hover {
+	background: var(--text-muted);
+	color: var(--text-contrast);
+	border-color: var(--text-muted);
+}
+
+.theme-btn:active {
+	transform: scale(0.95);
+}
+
+/* Theme-specific button styling */
+[data-theme="nature"] .theme-btn,
+[data-theme="nature-dark"] .theme-btn {
+	border-color: var(--nature-color, #166534);
+}
+
+[data-theme="nature"] .theme-btn:hover,
+[data-theme="nature-dark"] .theme-btn:hover {
+	background: var(--nature-color, #166534);
+	border-color: var(--nature-color, #166534);
+}
+
+[data-theme="classic"] .theme-btn,
+[data-theme="classic-dark"] .theme-btn {
+	border-color: var(--classic-color, #2d3748);
+}
+
+[data-theme="classic"] .theme-btn:hover,
+[data-theme="classic-dark"] .theme-btn:hover {
+	background: var(--classic-color, #2d3748);
+	border-color: var(--classic-color, #2d3748);
+}
+
+[data-theme="minimal"] .theme-btn,
+[data-theme="minimal-dark"] .theme-btn {
+	border-color: var(--text-muted);
+}
+
+[data-theme="minimal"] .theme-btn:hover,
+[data-theme="minimal-dark"] .theme-btn:hover {
+	background: var(--text-muted);
+	border-color: var(--text-muted);
+}
+
+/* Hide theme toggle on mobile to prevent overlap */
+@media (max-width: 768px) {
+	.dashboard-theme-toggle {
+		display: none;
+	}
+}
+
+/* Theme Dropdown */
+.theme-dropdown {
+	position: relative;
+}
+
+.theme-dropdown-toggle {
+	background: var(--bg-input);
+	color: var(--text-muted);
+	border: 1px solid var(--border-color);
+	border-radius: 4px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 0.8rem;
+	transition: all 0.2s ease;
+	padding: 0.25rem 0.5rem;
+}
+
+.theme-dropdown-toggle:hover {
+	background-color: var(--bg-input);
+	color: var(--text-main);
+	border-color: var(--primary-color);
+}
+
+.theme-dropdown-menu {
+	position: absolute;
+	top: 100%;
+	right: 0;
+	background: var(--bg-panel);
+	border: 1px solid var(--border-color);
+	border-radius: var(--border-radius);
+	box-shadow: var(--shadow-lg);
+	min-width: 160px;
+	padding: 0.25rem 0;
+	display: none;
+	z-index: 1000;
+	animation: fadeIn 0.2s ease-out;
+	font-family: var(--font-body);
+}
+
+.theme-dropdown-menu.show {
+	display: block;
+}
+
+.dropdown-header {
+	padding: 0.5rem 0.75rem;
+	font-size: 0.8rem;
+	color: var(--text-muted);
+	font-weight: 600;
+	border-bottom: 1px solid var(--border-color);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.dropdown-item {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.625rem 0.75rem;
+	color: var(--text-main);
+	cursor: pointer;
+	border: none;
+	background: transparent;
+	width: 100%;
+	text-align: left;
+	transition: all 0.2s ease;
+	font-family: var(--font-body);
+	font-size: 0.9rem;
+	font-weight: 500;
+}
+
+.dropdown-item:hover {
+	background-color: var(--bg-input);
+	color: var(--text-main);
+}
+
+.dropdown-item[data-theme="nature"],
+.dropdown-item[data-theme="classic"],
+.dropdown-item[data-theme="default"] {
+	color: var(--text-main);
+}
+
+.dropdown-item[data-theme="nature"]:hover,
+.dropdown-item[data-theme="classic"]:hover,
+.dropdown-item[data-theme="default"]:hover {
+	background-color: var(--bg-input);
+	color: var(--text-main);
+}
+
+/* Mobile responsiveness for dashboard theme toggle */
+@media (max-width: 768px) {
+	.dashboard-theme-toggle {
+		top: 10px;
+		right: 60px; /* Move left to avoid settings icon */
+	}
+}
+
+@media (max-width: 480px) {
+	.dashboard-theme-toggle {
+		top: 8px;
+		right: 50px; /* Move further left on smaller screens */
+	}
+}
+
+/* Tablet and small desktop adjustments */
+@media (max-width: 1024px) and (min-width: 769px) {
+	.dashboard-theme-toggle {
+		top: 15px;
+		right: 15px;
+	}
+}
+
+/* Mobile responsiveness for corner controls */
+@media (max-width: 768px) {
+	.theme-controls-corner {
+		top: 10px;
+		right: 60px; /* Move left to avoid settings icon */
+	}
+}
+
+@media (max-width: 480px) {
+	.theme-controls-corner {
+		top: 8px;
+		right: 50px; /* Move further left on smaller screens */
+	}
+}
+
+/* Tablet and small desktop adjustments */
+@media (max-width: 1024px) and (min-width: 769px) {
+	.theme-controls-corner {
+		top: 15px;
+		right: 15px;
+	}
+}
+
+/* Ensure theme controls don't overlap with navigation on mobile */
+@media (max-width: 768px) {
+	.top-nav {
+		position: relative;
+		z-index: 900; /* Lower than theme controls */
+	}
+	
+	.theme-controls-corner {
+		/* Add some spacing to prevent overlap with nav elements */
+		margin-top: 10px;
+	}
+}
+
+
+/* Color mode toggle enhancements */
+.color-mode-toggle {
+	display: flex;
+	align-items: center;
+}
+
+.color-mode-toggle .btn {
+	padding: 0.5rem 1rem;
+	font-size: 0.9rem;
+}
+
+.color-mode-toggle .btn.dark-mode {
+	background-color: var(--primary-color);
+	color: var(--text-contrast);
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(-5px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* Utility */
+.hide-mobile {
+	display: block;
+}
+
+/* Removed theme-toggle hiding rules to allow dashboard theme controls to work */
+
+@keyframes pulse {
+	0% {
+		transform: scale(1);
+	}
+	50% {
+		transform: scale(1.05);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+
+@keyframes slideInLeft {
+	from {
+		opacity: 0;
+		transform: translateX(-20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+/* Animation Classes */
+.fade-in {
+	animation: fadeIn 0.4s ease-out;
+}
+
+.pulse-hover {
+	transition: transform 0.2s ease;
+}
+
+.pulse-hover:hover {
+	animation: pulse 0.3s ease-in-out;
+}
+
+.slide-in {
+	animation: slideInLeft 0.4s ease-out;
+}
+
+/* Loading States */
+.loading-spinner {
+	display: inline-block;
+	width: 20px;
+	height: 20px;
+	border: 2px solid var(--border-color);
+	border-top: 2px solid var(--primary-color);
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+	0% { transform: rotate(0deg); }
+	100% { transform: rotate(360deg); }
+}
+
+/* Focus States */
+button:focus,
+input:focus,
+select:focus {
+	outline: 2px solid var(--primary-color);
+	outline-offset: 2px;
+}
+
+/* Smooth Transitions */
+* {
+	transition-property: background-color, border-color, color, box-shadow, transform;
+	transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Responsive Design Improvements */
+@media (max-width: 1024px) {
+	.container {
+		padding: 0 1rem;
+	}
+	
+	.hero-section {
+		grid-template-columns: 1fr;
+		text-align: center;
+		gap: 2rem;
+	}
+	
+	.features {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+@media (max-width: 768px) {
+	.container {
+		padding: 0 1rem;
+	}
+	
+	/* Landing Page */
+	.hero-text h1 {
+		font-size: 2.5rem;
+	}
+	
+	.board-preview {
+		width: 240px;
+		height: 240px;
+	}
+	
+	.features {
+		grid-template-columns: 1fr;
+	}
+	
+	/* Dashboard */
+	.dashboard-grid {
+		grid-template-columns: 1fr;
+	}
+	
+	.actions-row {
+		grid-template-columns: 1fr;
+	}
+	
+	.lobby-header-row {
+		display: none;
+	}
+	
+	.lobby-row {
+		grid-template-columns: 1fr auto;
+		gap: 0.5rem;
+		padding: 1rem;
+	}
+	
+	.lobby-row > *:not(:first-child):not(:last-child) {
+		display: none;
+	}
+	
+	.form-grid {
+		grid-template-columns: 1fr;
+	}
+	
+	/* About & Learn Pages */
+	.links-grid {
+		grid-template-columns: 1fr;
+	}
+	
+	.logo-large {
+		font-size: 2.5rem;
+	}
+	
+	.about-hero {
+		padding: 2rem 1rem;
+	}
+	
+	.rule-grid,
+	.ability-grid {
+		grid-template-columns: 1fr;
+	}
+	
+	.action-area {
+		flex-direction: column;
+		align-items: stretch;
+	}
+	
+	.action-area .btn {
+		width: 100%;
+	}
+}
+
+@media (max-width: 480px) {
+	/* Extra small screens */
+	.hero-text h1 {
+		font-size: 2rem;
+	}
+	
+	.board-preview {
+		width: 200px;
+		height: 200px;
+	}
+	
+	.card {
+		padding: 1rem;
+	}
+	
+	.btn {
+		padding: 0.5rem 1rem;
+		font-size: 0.9rem;
+	}
+	
+	.nav-inner {
+		padding: 0 1rem;
+		min-height: 56px;
+	}
+	
+	.logo {
+		font-size: 1.4rem;
+	}
+	
+	.user-pill {
+		padding: 0.4rem 0.8rem;
+		font-size: 0.85rem;
+		gap: 0.5rem;
+	}
+	
+	.avatar-circle {
+		width: 28px;
+		height: 28px;
+		font-size: 0.75rem;
+	}
+}
+
+/* High DPI/Retina displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+	.card,
+	.btn {
+		border-width: 0.5px;
+	}
+}
+
+/* Print styles */
+@media print {
+	body {
+		background: white !important;
+		color: black !important;
+	}
+	
+	.hide-mobile {
+		display: block !important;
+	}
+	
+	.top-nav,
+	.theme-toggle {
+		display: none !important;
+	}
+	
+	.card {
+		box-shadow: none !important;
+		border: 1px solid #000 !important;
+	}
+}

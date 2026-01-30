@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Amalgam</title>
+    <link rel="stylesheet" href="../../assets/css/themes/default.css">
+    <link rel="stylesheet" href="../../assets/css/global.css">
+    <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+
+    <header class="page-header">
+        <div class="container nav-flex">
+            <a href="../Dashboard/dashboard.html" class="back-link">← Return to Dashboard</a>
+            <h1>Settings</h1>
+        </div>
+    </header>
+
+    <main class="container settings-container">
+        
+        <!-- Tab Navigation -->
+        <div class="settings-tabs">
+            <button class="tab-btn active" data-tab="appearance">
+                <i class="fas fa-palette"></i>
+                Appearance
+            </button>
+            <button class="tab-btn" data-tab="gameplay">
+                <i class="fas fa-chess-board"></i>
+                Gameplay
+            </button>
+            <button class="tab-btn" data-tab="audio">
+                <i class="fas fa-volume-up"></i>
+                Audio
+            </button>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="settings-content">
+            
+            <!-- Appearance Tab -->
+            <div id="appearance" class="tab-panel active">
+                <div class="card settings-section">
+                    <h2>Appearance Settings</h2>
+                    
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h3>Theme</h3>
+                            <p>Choose your preferred color scheme</p>
+                        </div>
+                        <div class="setting-control">
+                            <select id="themeSelect" class="settings-select">
+                                <option value="default">Default</option>
+                                <option value="classic">Classic</option>
+                                <option value="nature">Forrest Green</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h3>Color Mode</h3>
+                            <p>Switch between light and dark themes</p>
+                        </div>
+                        <div class="setting-control">
+                            <div class="color-mode-toggle">
+                                <button class="btn btn-outline small" id="colorModeToggle" aria-label="Toggle color mode">
+                                    <i class="fas fa-sun"></i>
+                                    <span class="toggle-label">Light</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h3>Animations</h3>
+                            <p>Enable smooth transitions and effects</p>
+                        </div>
+                        <div class="setting-control">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="animationsToggle" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gameplay Tab -->
+            <div id="gameplay" class="tab-panel">
+                <div class="card settings-section">
+                    <h2>Gameplay Settings</h2>
+                    
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h3>Show Legal Moves</h3>
+                            <p>Highlight valid moves for selected pieces</p>
+                        </div>
+                        <div class="setting-control">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="legalMovesToggle" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h3>Confirm Actions</h3>
+                            <p>Require confirmation for game-ending moves</p>
+                        </div>
+                        <div class="setting-control">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="confirmActionsToggle" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h3>Notation Format</h3>
+                            <p>Display move history in English or algebraic notation</p>
+                        </div>
+                        <div class="setting-control">
+                            <select id="notationFormat" class="settings-select">
+                                <option value="english" selected>English</option>
+                                <option value="algebraic">Algebraic</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audio Tab -->
+            <div id="audio" class="tab-panel">
+                <div class="card settings-section">
+                    <h2>Audio Settings</h2>
+                    
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h3>Sound Effects</h3>
+                            <p>Play sounds for moves and captures</p>
+                        </div>
+                        <div class="setting-control">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="soundEffectsToggle" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h3>Ambient Effects</h3>
+                            <p>Enable background ambient particles</p>
+                        </div>
+                        <div class="setting-control">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="ambientToggle" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+
+        <!-- Sticky Save Button -->
+        <div class="sticky-save">
+            <div class="save-container">
+                <button class="btn btn-outline" onclick="resetSettings()">Reset to Defaults</button>
+                <button class="btn btn-primary" onclick="saveSettings()">Save Changes</button>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="../../assets/js/theme-manager.js"></script>
+    <script src="settings.js"></script>
+</body>
+</html>

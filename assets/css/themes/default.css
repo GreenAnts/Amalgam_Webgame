@@ -1,0 +1,88 @@
+:root {
+	/* --- Light Theme (Day Mode) --- */
+	--bg-body: #ffffff;
+	--bg-panel: #ffffff;
+	--bg-input: #fafafa;
+
+	/* Pen/Ink color palette */
+	--primary-color: #2d3748;
+	--primary-hover: #1a202c;
+	--primary-soft: #e2e8f0;
+	
+	--secondary-color: #8b5a2b;
+	--secondary-hover: #5d4037;
+	
+	--accent-color: #8b5a2b;
+	--accent-soft: #d2b48c;
+
+	--text-main: #1a1a1a;
+	--text-muted: #666666;
+	--text-contrast: #ffffff;
+
+	/* Board colors - parchment/wood inspired */
+	--board-light: #f7f7f5;
+	--board-dark: #e8e8e0;
+
+	/* Elevation - subtle and functional */
+	--shadow-color: rgba(26, 26, 26, 0.1);
+	--shadow-sm: 0 1px 2px var(--shadow-color);
+	--shadow-md: 0 4px 6px var(--shadow-color);
+	--shadow-lg: 0 10px 15px var(--shadow-color);
+
+	--border-color: rgba(26, 26, 26, 0.1);
+
+	/* Pen/Ink Theme Enhancements */
+	--font-heading: "Cormorant Garamond", "Times New Roman", serif;
+	--font-body: "Libre Baskerville", Georgia, serif;
+	--font-mono: "Cutive Mono", "Courier New", monospace;
+	
+	/* Unique button styles */
+	--btn-border-radius: 4px;
+	--btn-border-width: 1px;
+	--btn-texture: none;
+	
+	/* Ink bleed effect for hover states */
+	--ink-effect: drop-shadow(0 0 2px rgba(45, 55, 72, 0.3));
+}
+
+[data-theme="default-dark"] {
+	/* --- Dark Theme (Night Mode) --- */
+	--bg-body: #0b0d12;
+	--bg-panel: #121620;
+	--bg-input: #1a1f2a;
+
+	/* Dark theme - Ink/Parchment inspired */
+	--primary-color: #cbd5e1;
+	--primary-hover: #94a3b8;
+	--primary-soft: #334155;
+	
+	--secondary-color: #d9a77a;
+	--secondary-hover: #f5e0c3;
+	
+	--accent-color: #d9a77a;
+	--accent-soft: #8b5a2b;
+
+	--text-main: #e5e7eb;
+	--text-muted: #9ca3af;
+	--text-contrast: #0b0d12;
+
+	/* Board colors for dark theme - aged parchment */
+	--board-light: #1a1f2a;
+	--board-dark: #121620;
+
+	/* Dark theme shadows and borders */
+	--shadow-color: rgba(0, 0, 0, 0.4);
+	--border-color: rgba(255, 255, 255, 0.08);
+}
+
+:root {
+	/* Shared Structural Variables */
+	--font-heading: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+	--font-body: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+	--font-mono: JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+	--border-radius: 6px;
+	--border-radius-lg: 8px;
+	--box-shadow: var(--shadow-sm), var(--shadow-md);
+	--container-width: 1200px;
+}

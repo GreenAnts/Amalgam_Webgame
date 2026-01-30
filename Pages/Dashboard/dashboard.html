@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Amalgam</title>
+    <link rel="stylesheet" href="../../assets/css/themes/default.css">
+    <link rel="stylesheet" href="../../assets/css/global.css">
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+    <nav class="top-nav">
+        <div class="container nav-inner">
+            <div class="nav-left">
+                <a href="../Landing/landing.html" class="logo">Amalgam</a>
+                <div class="nav-links hide-mobile">
+                    <a href="../Learn/learn.html">How to Play</a>
+                    <a href="../About/about.html">About</a>
+                </div>
+            </div>
+            <div class="nav-right">
+                <div class="user-pill hide-mobile">
+                    <div class="avatar-circle">G</div>
+                    <span>Guest</span>
+                </div>
+                <a href="../Settings/settings.html" class="settings-link" title="Settings">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Clean theme toggle with dropdown -->
+    <div class="dashboard-theme-toggle" id="dashboardThemeToggle" title="Toggle Light/Dark Mode">
+        <div class="theme-controls-group">
+            <button class="theme-btn" id="themeToggleBtn" aria-label="Toggle theme">
+                <i class="fas fa-sun"></i>
+            </button>
+            <div class="theme-dropdown">
+                <button class="theme-dropdown-toggle" id="themeDropdownToggle" aria-label="Open theme menu">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="theme-dropdown-menu" id="themeDropdown">
+                    <div class="dropdown-header">Select Theme</div>
+                    <button class="dropdown-item" data-theme="default">
+                        Default
+                    </button>
+                    <button class="dropdown-item" data-theme="classic">
+                        Classic
+                    </button>
+                    <button class="dropdown-item" data-theme="nature">
+                        Forrest Green
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main class="container">
+        <div class="game-room-header">
+            <h2>Game Room</h2>
+        </div>
+
+        <div class="dashboard-grid">
+            
+            <section class="main-column">
+                
+                <div class="actions-row">
+                    <div class="card action-card ranked">
+                        <div class="card-icon">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Ranked Match</h3>
+                            <p>Auto-match based on skill level</p>
+                            <button class="btn btn-primary" onclick="findRankedMatch()">Find Match</button>
+                        </div>
+                    </div>
+
+                    <div class="card action-card bot">
+                        <div class="card-icon">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Vs Computer</h3>
+                            <div class="select-wrapper">
+                                <select id="bot-difficulty" class="game-select">
+                                    <option value="easy">Easy</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="hard">Hard</option>
+                                    <option value="expert">Expert</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-outline" onclick="startBotMatch()">Start</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lobby-section">
+                    <div class="lobby-header">
+                        <h3>Casual Lobby</h3>
+                        <button class="btn btn-outline small" id="create-match-btn" onclick="toggleCreateForm()">+ Create Match</button>
+                    </div>
+
+                    <div class="card create-match-form" id="create-form" style="display: none;">
+                        <h4>Create Custom Game</h4>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Variant</label>
+                                <select class="game-select"><option>Standard</option><option>Blitz</option></select>
+                            </div>
+                            <div class="form-group">
+                                <label>Time</label>
+                                <select class="game-select"><option>10 min</option><option>30 min</option><option>Unlimited</option></select>
+                            </div>
+                            <div class="form-group">
+                                <label>Side</label>
+                                <select class="game-select"><option>Random</option><option>Circle</option><option>Square</option></select>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-primary small">Post Match</button>
+                            <button class="btn btn-outline small" onclick="toggleCreateForm()">Cancel</button>
+                        </div>
+                    </div>
+
+                    <div class="card lobby-list-container">
+                        <div class="lobby-header-row">
+                            <span>Player</span>
+                            <span>Variant</span>
+                            <span>Time</span>
+                            <span>Side</span>
+                            <span>Action</span>
+                        </div>
+                        <div id="lobby-matches" class="lobby-scroll">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="sidebar">
+                <div class="card stat-card">
+                    <h4>Your Profile</h4>
+                    <div class="stat-grid">
+                        <div class="stat-item">
+                            <span class="label">Rating</span>
+                            <span class="value">1200</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="label">Games</span>
+                            <span class="value">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card online-card">
+                    <div class="online-header">
+                        <h4>Players Online</h4>
+                        <span class="online-count" id="online-count">0</span>
+                    </div>
+                    <div class="online-list-scroll" id="online-list">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </aside>
+
+        </div>
+    </main>
+    
+    <script src="../../assets/js/theme-manager.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>

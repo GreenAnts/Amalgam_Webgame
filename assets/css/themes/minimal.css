@@ -1,0 +1,80 @@
+:root {
+	/* --- Minimal Theme (Modern & Clean) --- */
+	--bg-body: #ffffff;
+	--bg-panel: #ffffff;
+	--bg-input: #f8fafc;
+
+	/* Minimal Monochrome + Single Accent */
+	--primary-color: #000000;
+	--primary-hover: #1a1a1a;
+	--primary-soft: #e5e7eb;
+	
+	--secondary-color: #6b7280;
+	--secondary-hover: #4b5563;
+	
+	--accent-color: #ef4444;
+	--accent-soft: #fecaca;
+
+	--text-main: #0f172a;
+	--text-muted: #64748b;
+	--text-contrast: #ffffff;
+
+	/* Board colors - Clean minimal */
+	--board-light: #f1f5f9;
+	--board-dark: #e2e8f0;
+
+	/* Elevation - subtle and functional */
+	--shadow-color: rgba(15, 23, 42, 0.1);
+	--shadow-sm: 0 1px 2px var(--shadow-color);
+	--shadow-md: 0 4px 6px var(--shadow-color);
+	--shadow-lg: 0 10px 15px var(--shadow-color);
+
+	--border-color: rgba(15, 23, 42, 0.1);
+
+	/* Minimal Theme Enhancements */
+	--font-heading: "Inter", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+	--font-body: "Inter", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+	--font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	
+	/* Ultra-clean button styles */
+	--btn-border-radius: 0px;
+	--btn-border-width: 0px;
+	--btn-texture: none;
+	
+	/* Flat design effects */
+	--minimal-effect: none;
+	
+	/* Grid-based layout enhancements */
+	--grid-spacing: 8px;
+	--minimal-shadow: none;
+}
+
+[data-theme="minimal-dark"] {
+	/* --- Minimal Dark Theme --- */
+	--bg-body: #0b1020;
+	--bg-panel: #0f172a;
+	--bg-input: #111827;
+
+	/* Dark minimal theme */
+	--primary-color: #ffffff;
+	--primary-hover: #e5e7eb;
+	--primary-soft: #1f2937;
+	
+	--secondary-color: #9ca3af;
+	--secondary-hover: #d1d5db;
+	
+	--accent-color: #f87171;
+	--accent-soft: #1f2937;
+
+	--text-main: #f8fafc;
+	--text-muted: #94a3b8;
+	--text-contrast: #0b1020;
+
+	/* Board colors for dark theme */
+	--board-light: #111827;
+	--board-dark: #0f172a;
+
+	/* Dark theme shadows and borders */
+	--shadow-color: rgba(0, 0, 0, 0.4);
+	--border-color: rgba(255, 255, 255, 0.08);
+}
