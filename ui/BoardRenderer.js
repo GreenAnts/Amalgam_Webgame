@@ -14,22 +14,39 @@ export class BoardRenderer {
         this.boardDict = createBoardDict();
         this.goldenConnections = createGoldenConnectionsSet();
 
-        // Tea House Palette - Strictly flat colors with no background fill
+        // Board Colors
         this.colors = {
-            ink: '#7a6d60',
+            ink: '#A19F9F', // coordinates
             inkFaint: 'rgba(122, 109, 96, 0.3)',
-            waxSeal: '#8a622a',
-            stain1: '#d5c2ac',
-            stain2: '#b4aaa0',
-            stain3: '#a09682',
+            waxSeal: '#9b8d1e', // Golden Lines
+            stain1: '#383838', // Start Polygon Sections
+            stain2: '#5a5a5a', // Outer shapes and outer parts of the inner square
+            stain3: '#7d7d7d', // Center & outward facing ponted shapes
             // Added from SetupUI theme
             paperTop: '#fdfaf5',
             paperBottom: '#f3eadf',
             // Added from SetupUI theme
-            boardMatInner: '#fdfaf5',
-            boardMatOuter: '#f3eadf',
-            border: '#d6c6b2'
+            boardMatInner: '#704733',
+            boardMatOuter: '#6a4038',
+            border: '#402d1a'
         };
+
+        // Tea House Palette - Strictly flat colors with no background fill
+        // this.colors = {
+        //    ink: '#7a6d60',
+        //    inkFaint: 'rgba(122, 109, 96, 0.3)',
+        //    waxSeal: '#8a622a',
+        //    stain1: '#d5c2ac',
+        //    stain2: '#b4aaa0',
+        //    stain3: '#a09682',
+        //    // Added from SetupUI theme
+        //    paperTop: '#fdfaf5',
+        //    paperBottom: '#f3eadf',
+        //    // Added from SetupUI theme
+        //    boardMatInner: '#fdfaf5',
+        //    boardMatOuter: '#f3eadf',
+        //    border: '#d6c6b2'
+        //};
 
         // Offscreen shadow cache
         this.shadowCanvas = document.createElement('canvas');
