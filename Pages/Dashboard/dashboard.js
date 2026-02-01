@@ -20,9 +20,6 @@ const mockLobby = [
 document.addEventListener('DOMContentLoaded', () => {
     renderLobby();
     renderOnlinePlayers();
-    
-    // Initialize dashboard theme toggle
-    initDashboardThemeToggle();
 });
 
 // --- Theme Toggle Functionality ---

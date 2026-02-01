@@ -4,66 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Amalgam</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../../assets/css/themes/default.css">
     <link rel="stylesheet" href="../../assets/css/global.css">
+    <link rel="stylesheet" href="../../assets/css/navbar.css">
     <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
 
-    <nav class="top-nav">
-        <div class="container nav-inner">
-            <div class="nav-left">
-                <a href="../Landing/landing.html" class="logo">Amalgam</a>
-                <div class="nav-links hide-mobile">
-                    <a href="../Learn/learn.html">How to Play</a>
-                    <a href="../About/about.html">About</a>
-                </div>
-            </div>
-            <div class="nav-right">
-                <div class="user-pill hide-mobile">
-                    <div class="avatar-circle">G</div>
-                    <span>Guest</span>
-                </div>
-                <a href="../Settings/settings.html" class="settings-link" title="Settings">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="3"/>
-                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                    </svg>
-                </a>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Clean theme toggle with dropdown -->
-    <div class="dashboard-theme-toggle" id="dashboardThemeToggle" title="Toggle Light/Dark Mode">
-        <div class="theme-controls-group">
-            <button class="theme-btn" id="themeToggleBtn" aria-label="Toggle theme">
-                <i class="fas fa-sun"></i>
-            </button>
-            <div class="theme-dropdown">
-                <button class="theme-dropdown-toggle" id="themeDropdownToggle" aria-label="Open theme menu">
-                    <i class="fas fa-chevron-down"></i>
-                </button>
-                <div class="theme-dropdown-menu" id="themeDropdown">
-                    <div class="dropdown-header">Select Theme</div>
-                    <button class="dropdown-item" data-theme="default">
-                        Default
-                    </button>
-                    <button class="dropdown-item" data-theme="classic">
-                        Classic
-                    </button>
-                    <button class="dropdown-item" data-theme="nature">
-                        Forrest Green
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <div id="navbar-root"></div> 
 
     <main class="container">
-        <div class="game-room-header">
-            <h2>Game Room</h2>
-        </div>
 
         <div class="dashboard-grid">
             
@@ -172,6 +123,7 @@
         </div>
     </main>
     
+    <script src="../../assets/js/navbar.js"></script>
     <script src="../../assets/js/theme-manager.js"></script>
     <script src="dashboard.js"></script>
 </body>

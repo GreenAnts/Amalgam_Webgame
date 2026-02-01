@@ -4,47 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Amalgam - Welcome</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../../assets/css/themes/default.css">
     <link rel="stylesheet" href="../../assets/css/global.css">
+    <link rel="stylesheet" href="../../assets/css/navbar.css">
     <link rel="stylesheet" href="landing.css">
 </head>
 <body>
     
-    <header class="landing-header">
-        <div class="container nav-flex">
-            <div class="logo">Amalgam</div>
-            <nav class="nav-links hide-mobile">
-                <a href="../About/about.html">About</a>
-                <a href="../Learn/learn.html">How to Play</a>
-            </nav>
-        </div>
-    </header>
-
-    <!-- Discreet theme controls in corner -->
-    <div class="theme-controls-corner">
-        <div class="theme-dropdown">
-            <div class="theme-toggle-group">
-                <button class="theme-toggle" id="landingThemeToggle" aria-label="Toggle theme">
-                    <i class="fas fa-sun"></i>
-                </button>
-                <button class="theme-dropdown-toggle" id="landingDropdownToggle" aria-label="Open theme menu">
-                    <i class="fas fa-chevron-down"></i>
-                </button>
-            </div>
-            <div class="theme-dropdown-menu" id="landingThemeDropdown">
-                <div class="dropdown-header">Select Theme</div>
-                <button class="dropdown-item" data-theme="default">
-                    Default
-                </button>
-                <button class="dropdown-item" data-theme="classic">
-                    Classic
-                </button>
-                <button class="dropdown-item" data-theme="nature">
-                    Forrest Green
-                </button>
-            </div>
-        </div>
-    </div>
+    <div id="navbar-root"></div>
 
     <main class="container">
         <div class="hero-section">
@@ -90,6 +58,7 @@
         <p>Licensed under CC-BY 4.0 and GPL-3.0.</p>
     </footer>
 
+    <script src="../../assets/js/navbar.js"></script>
     <script src="../../assets/js/theme-manager.js"></script>
     <script src="landing.js"></script>
 </body>
