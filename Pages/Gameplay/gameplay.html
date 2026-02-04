@@ -1,246 +1,191 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<link rel="apple-touch-icon" sizes="57x57" href="../../assets/assets/favicon/apple-icon-57x57.png">
-<link rel="apple-touch-icon" sizes="60x60" href="../../assets/favicon/apple-icon-60x60.png">
-<link rel="apple-touch-icon" sizes="72x72" href="../../assets/favicon/apple-icon-72x72.png">
-<link rel="apple-touch-icon" sizes="76x76" href="../../assets/favicon/apple-icon-76x76.png">
-<link rel="apple-touch-icon" sizes="114x114" href="../../assets/favicon/apple-icon-114x114.png">
-<link rel="apple-touch-icon" sizes="120x120" href="../../assets/favicon/apple-icon-120x120.png">
-<link rel="apple-touch-icon" sizes="144x144" href="../../assets/favicon/apple-icon-144x144.png">
-<link rel="apple-touch-icon" sizes="152x152" href="../../assets/favicon/apple-icon-152x152.png">
-<link rel="apple-touch-icon" sizes="180x180" href="../../assets/favicon/apple-icon-180x180.png">
-<link rel="icon" type="image/png" sizes="192x192"  href="../../assets/favicon/android-icon-192x192.png">
-<link rel="icon" type="image/png" sizes="32x32" href="../../assets/favicon/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="96x96" href="../../assets/favicon/favicon-96x96.png">
-<link rel="icon" type="image/png" sizes="16x16" href="../../assets/favicon/favicon-16x16.png">
-<link rel="manifest" href="../../assets/favicon/manifest.json">
-<meta name="msapplication-TileColor" content="#ffffff">
-<meta name="msapplication-TileImage" content="/ms-icon-144x144.png">
-<meta name="theme-color" content="#ffffff">
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Amalgam Board Game</title>
-
-<script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=DM+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="gameplay.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Play - Amalgam</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="../../assets/css/themes/default.css">
+    <link rel="stylesheet" href="../../assets/css/global.css">
+    
+    <link rel="stylesheet" href="gameplay.css">
 </head>
-
 <body>
-<div class="paper-overlay"></div>
-<div class="ambient-container" id="ambientContainer"></div>
 
-<div class="canvas-container">
-	<canvas id="gameCanvas"></canvas>
-</div>
+    <div class="ambient-container" id="ambientContainer"></div>
 
-<div class="side-panel">
-	<div class="header">
-		<div>
-			<h1>Amalgam</h1>
-			<div class="subtitle">A Two Player Abstract Strategy Board Game</div>
-			<div class="subtitle">Open Source (GPLv3) · CC-BY 4.0</div>
-		</div>
-		<div style="display:flex;gap:8px;align-items:center;">
-			<div class="theme-slider" id="toggleTheme" >
-				<div class="theme-knob"></div>
-			</div>
-			<button class="icon-btn" id="openSettings" aria-label="Settings">
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<circle cx="12" cy="12" r="3"/>
-					<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-				</svg>
-			</button>
-		</div>
-	</div>
+    <div class="turn-bar top-bar" id="topTurnBar"></div>
+    <div class="turn-bar bottom-bar" id="bottomTurnBar"></div>
 
-  <div class="player-box">
-      <div class="player">
-          <svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>
-          <p id="squarePlayerDisplay">Alice</p>
-          <div class="turn-indicator active" id="squareIndicator">
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M16 5l-8 7 8 7V5z"/>
-              </svg>
-          </div>
-      </div>
-      <div id="turnCounterDisplay">Turn 1</div>
-      <div class="player" style="flex-direction: row-reverse;">
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/></svg>
-          <p id="circlePlayerDisplay">Bob</p>
-          <div class="turn-indicator" id="circleIndicator">
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 5l8 7-8 7V5z"/>
-              </svg>
-          </div>
-      </div>
-  </div>
-
-	<div class="section" style="flex:2;display:flex;flex-direction:column;min-height:0;">
-		<div class="header" style="margin-bottom: 8px;">
-	    <div class="section-title" style="margin-bottom: 0;">Log/Chat</div>
-
-	    <div id="historyControls" style="display:flex; gap:6px;">
-		    <button class="icon-btn" id="copyHistory" title="Copy Match History" style="width: 28px; height: 28px;">
-			    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-				    <rect x="9" y="9" width="13" height="13" rx="2"/>
-				    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-			    </svg>
-		    </button>
-
-		    <button class="icon-btn" id="toggleNotation" title="Toggle Notation" style="width: 28px; height: 28px;">
-			    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="toggleIcon">
-				    <path d="M16 18l6-6-6-6M8 6l-6 6 6 6" />
-			    </svg>
-		    </button>
-	    </div>
-    </div>
-
-		<div style="display:flex;gap:6px;margin-bottom:6px;">
-			<button class="tab-btn active" id="historyTab">History</button>
-			<button class="tab-btn" id="chatTab">Chat</button>
-		</div>
-		<div class="log" id="matchHistory"></div>
-		<div class="log" id="chatLog" style="display:none;"></div>
-		<div class="chat-input" id="chatInput" style="display:none;">
-			<input type="text" id="chatMessage" placeholder="Say something…">
-			<button id="sendChat">Send</button>
-		</div>
-	</div>
-
-	<div class="section">
-		<div class="section-title">Actions</div>
-		<div style="margin-bottom:10px;"><div class="actions"><button id="offerDrawBtn">Offer Draw</button><button id="forfeitBtn">Forfeit</button></div></div>
-		<div style="margin-bottom:10px;"><div class="actions" style="grid-template-columns:1fr;"><button id="requestTakebackBtn">Request Takeback</button></div></div>
-	</div>
-	
-	<div class="section">
-		<div class="section-title">AI Strategy</div>
-
-		<div class="difficulty-group" style="margin-bottom:10px;">
-			<select class="difficulty-dropdown" id="aiDifficultyDropdown">
-				<!-- All options loaded dynamically -->
-			</select>
-		</div>
-
-		<div id="resetButton" class="actions" style="grid-template-columns:1fr;">
-			<button class="danger-btn" id="restartGameBtn">Restart Game</button>
-		</div>
-	</div>
-  
-	<div class="footer"><a href="https://www.patreon.com/collection/787282?view=expanded" target="_blank" rel="noopener noreferrer">Amalgam Board Game</a> © 2026 by <a href="https://www.patreon.com/UnfinishedProjects" target="_blank" rel="noopener noreferrer">Anthony Davis</a> is licensed under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a><img src="https://mirrors.creativecommons.org/presskit/icons/cc.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;"><img src="https://mirrors.creativecommons.org/presskit/icons/by.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;"></div>
-	
-</div>
-
-<div class="settings-modal" id="settingsModal">
-	<div class="settings-header"><h2>Settings</h2></div>
-	<div class="settings-content">
-		<div class="settings-section">
-			<div class="section-title">Appearance</div>
-			<div class="settings-row"><span>Theme</span><select><option>Light Tea</option><option>Evening Ink</option></select></div>
-			<div class="settings-row"><span>Board Style</span><select><option>Wood</option><option>Stone</option><option>Paper</option></select></div>
-		</div>
-		<div class="settings-section">
-			<div class="section-title">Sound</div>
-			<div class="settings-row"><span>Ambient Tea Room</span><input type="checkbox" checked></div>
-			<div class="settings-row"><span>Click Clacks</span><input type="checkbox" checked id="soundToggle"></div>
-			<div class="settings-row"><span>Piece Placement</span><input type="checkbox" checked></div>
-		</div>
-		<div class="settings-section">
-			<div class="section-title">Gameplay</div>
-			<div class="settings-row"><span>Highlight Legal Moves</span><input type="checkbox" checked></div>
-			<div class="settings-row"><span>Golden Embers</span><input type="checkbox" checked id="particleToggle"></div>
-			<div class="settings-row"><span>Confirm Game-End Actions</span><input type="checkbox" checked></div>
-		</div>
-	</div>
-	<div class="settings-footer"><button class="close-btn" id="closeSettings">Close Settings</button></div>
-</div>
-
-<div class="confirm-overlay" id="restartConfirmOverlay">
-	<div class="confirm-callout">
-		<div class="confirm-title">Restart Game</div>
-
-		<div class="confirm-text">
-			This will abandon the current match<br>
-			and clear all progress.
-		</div>
-
-		<div class="confirm-actions">
-			<button class="close-btn" id="cancelRestart">
-				Continue Match
-			</button>
-			<button class="danger-btn" id="confirmRestart">
-				Restart
-			</button>
-		</div>
-	</div>
-</div>
-
-<div class="victory-overlay" id="victoryOverlay">
-    <div class="victory-card" id="victoryCard">
-        <div class="victory-inner">
-            <button class="victory-close-btn" id="victoryCloseBtn" aria-label="Close victory popup">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M18 6L6 18M6 6l12 12"/>
-                </svg>
-            </button>
-
-            <button class="victory-copy-btn" id="victoryCopyBtn" title="Copy Match History">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="9" y="9" width="13" height="13" rx="2"/>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                </svg>
-            </button>
-
-            <div class="victory-icon" id="victoryIcon">
-                </div>
-
-            <div class="victory-header" id="victoryTitle">
-                Match Complete
-            </div>
-
-            <div class="victory-details" id="victoryMessage">
-                Winner determined.
-            </div>
-
-            <button class="victory-btn" id="victoryResetBtn">
-                Play Again
+    <div class="settings-overlay" id="settingsOverlay"></div>
+    <div class="settings-drawer" id="settingsDrawer">
+        <div class="drawer-header">
+            <h3>Game Settings</h3>
+            <button class="drawer-close-btn" id="closeSettingsBtn" title="Close Settings">
+                <i class="fas fa-arrow-left"></i>
             </button>
         </div>
+        <div class="drawer-content">
+            <div class="setting-group">
+                <label>Appearance</label>
+                <div class="setting-row">
+                    <span>Dark Mode</span>
+                    <label class="switch">
+                        <input type="checkbox" id="darkModeSwitch">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-row column-row">
+                    <span>Theme Style</span>
+                    <div class="custom-select-container">
+                        <select id="themeSelect" class="custom-select full-width">
+                            <option value="default">Default (Ink)</option>
+                            <option value="classic">Classic (Wood)</option>
+                            <option value="nature">Nature (Green)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="setting-group">
+                <label>Audio & FX</label>
+                <div class="setting-row">
+                    <span>Sound Effects</span>
+                    <label class="switch">
+                        <input type="checkbox" id="soundToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <span>Ambient Particles</span>
+                    <label class="switch">
+                        <input type="checkbox" id="particleToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
 
-<!-- AI Strategy Change Confirmation -->
-<div class="confirm-overlay" id="aiStrategyConfirmOverlay">
-	<div class="confirm-callout">
-		<div class="confirm-title">Change AI Strategy</div>
+    <div class="game-layout">
+        
+        <main class="board-area">
+            <div class="corner-controls">
+                <button class="control-btn" id="openSettingsBtn" title="Settings">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <button class="control-btn" id="gameThemeToggle" title="Toggle Light/Dark Mode">
+                    <i class="fas fa-sun"></i>
+                </button>
+            </div>
 
-		<div class="confirm-text">
-			This will change the AI difficulty for the current game and take effect immediately. The AI will use the new strategy for all remaining turns.
-		</div>
+            <div class="canvas-container" id="canvasContainer">
+                <canvas id="gameCanvas"></canvas>
+            </div>
+        </main>
 
-		<div class="confirm-checkbox">
-			<label>
-				<input type="checkbox" id="aiStrategyDontAskAgain">
-				Don't ask me again
-			</label>
-		</div>
+        <aside class="game-sidebar">
+            
+            <div class="sidebar-section player-section">
+                <div class="player-card" id="squarePlayerRow">
+                    <div class="avatar square"><i class="fas fa-square"></i></div>
+                    <div class="p-info">
+                        <span class="p-name" id="squarePlayerDisplay">Player 1</span>
+                        <span class="turn-badge" id="squareBadge">YOUR TURN</span>
+                    </div>
+                </div>
+                
+                <div class="turn-counter" id="turnCounterDisplay">Turn 1</div>
 
-		<div class="confirm-actions">
-			<button class="close-btn" id="cancelAIStrategy">
-				Cancel
-			</button>
-			<button class="danger-btn" id="confirmAIStrategy">
-				Change Strategy
-			</button>
-		</div>
-	</div>
-</div>
+                <div class="player-card" id="circlePlayerRow">
+                    <div class="avatar circle"><i class="fas fa-circle"></i></div>
+                    <div class="p-info">
+                        <span class="p-name" id="circlePlayerDisplay">Player 2</span>
+                        <span class="turn-badge" id="circleBadge">YOUR TURN</span>
+                    </div>
+                </div>
+            </div>
 
+            <div class="sidebar-section log-section">
+                <div class="tab-header">
+                    <button class="tab-btn active" id="historyTab">Log</button>
+                    <button class="tab-btn" id="chatTab">Chat</button>
+                    <div class="tab-tools" id="historyControls">
+                        <button class="tool-btn" id="copyHistory" title="Copy Log"><i class="fas fa-copy"></i></button>
+                        <button class="tool-btn" id="toggleNotation" title="Toggle Notation Style"><i class="fas fa-code"></i></button>
+                    </div>
+                </div>
+                
+                <div class="log-viewport">
+                    <div class="log-content" id="matchHistory"></div>
+                    <div class="log-content" id="chatLog" style="display: none;"></div>
+                </div>
 
-<script src="gameplay.js"></script>
-<!-- Import as ES6 modules -->
-<script type="module" src="../../Main.js"></script>
+                <div class="chat-input-row" id="chatInput" style="display: none;">
+                    <input type="text" id="chatMessage" placeholder="Message...">
+                    <button id="sendChat"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+
+            <div class="sidebar-section actions-section">
+                
+                <div class="ai-controls-group">
+                    <label class="label-small">AI Strategy</label>
+                    <div class="custom-select-container">
+                        <select id="aiDifficultyDropdown" class="custom-select">
+                            </select>
+                    </div>
+                </div>
+
+                <div class="action-buttons-grid">
+                    <button class="btn btn-outline" id="offerDrawBtn">Draw</button>
+                    <button class="btn btn-outline" id="requestTakebackBtn">Undo</button>
+                    <button class="btn btn-outline danger" id="forfeitBtn">Resign</button>
+                </div>
+                
+                <button class="btn btn-primary full-width-btn" id="restartGameBtn">
+                    <i class="fas fa-redo"></i> Restart Match
+                </button>
+            </div>
+        </aside>
+    </div>
+
+    <div class="modal-backdrop" id="restartConfirmOverlay">
+        <div class="modal-card">
+            <div class="modal-icon warning"><i class="fas fa-exclamation-triangle"></i></div>
+            <h3>Restart Match?</h3>
+            <p>Current progress will be lost immediately.</p>
+            <div class="modal-actions">
+                <button class="btn btn-outline" id="cancelRestart">Cancel</button>
+                <button class="btn btn-primary danger" id="confirmRestart">Confirm Restart</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="victory-overlay" id="victoryOverlay">
+        <div class="victory-card" id="victoryCard">
+            <button class="victory-close" id="victoryCloseBtn"><i class="fas fa-times"></i></button>
+            
+            <div class="victory-icon-container">
+                <div class="victory-icon" id="victoryIcon"></div>
+            </div>
+            
+            <h2 id="victoryTitle">Game Over</h2>
+            <p id="victoryMessage">Result determined.</p>
+            
+            <div class="victory-actions">
+                <button class="btn btn-outline" id="victoryCopyBtn">
+                    <i class="fas fa-copy"></i> Copy Log
+                </button>
+                <button class="btn btn-primary" id="victoryResetBtn">
+                    Play Again
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../assets/js/theme-manager.js"></script>
+    <script src="gameplay.js"></script>
+    <script type="module" src="../../Main.js"></script>
 </body>
 </html>

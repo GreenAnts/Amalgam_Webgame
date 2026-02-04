@@ -43,6 +43,19 @@
 	
 	/* Ink bleed effect for hover states */
 	--ink-effect: drop-shadow(0 0 2px rgba(45, 55, 72, 0.3));
+
+    /* --- NOTATION & PIECE COLORS (Default) --- */
+    --color-square: #2d3748;
+    --color-circle: #8b5a2b;
+
+    --color-gem-ruby: #e53935;
+    --color-gem-pearl: #757575; /* Darker grey for visibility on white */
+    --color-gem-amber: #f57c00;
+    --color-gem-jade: #2e7d32;
+    
+    --color-piece-amalgam: #7b1fa2;
+    --color-piece-void: #283593;
+    --color-piece-portal: #0097a7;
 }
 
 [data-theme="default-dark"] {
@@ -73,6 +86,19 @@
 	/* Dark theme shadows and borders */
 	--shadow-color: rgba(0, 0, 0, 0.4);
 	--border-color: rgba(255, 255, 255, 0.08);
+
+    /* --- NOTATION & PIECE COLORS (Dark) --- */
+    --color-square: #cbd5e1;
+    --color-circle: #d9a77a;
+
+    --color-gem-ruby: #ff5252;
+    --color-gem-pearl: #e0e0e0;
+    --color-gem-amber: #ffb74d;
+    --color-gem-jade: #66bb6a;
+    
+    --color-piece-amalgam: #e040fb;
+    --color-piece-void: #536dfe;
+    --color-piece-portal: #18ffff;
 }
 
 :root {

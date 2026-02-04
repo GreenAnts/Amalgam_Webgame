@@ -46,6 +46,19 @@
 	
 	/* Wood grain texture for backgrounds */
 	--wood-texture: linear-gradient(135deg, rgba(0,0,0,0.02) 25%, transparent 25%, transparent 50%, rgba(0,0,0,0.02) 50%, rgba(0,0,0,0.02) 75%, transparent 75%, transparent);
+
+    /* --- NOTATION & PIECE COLORS (Classic) --- */
+    --color-square: #2c1810;
+    --color-circle: #8b5a2b;
+
+    --color-gem-ruby: #b71c1c;
+    --color-gem-pearl: #607d8b;
+    --color-gem-amber: #e65100;
+    --color-gem-jade: #1b5e20;
+    
+    --color-piece-amalgam: #4a148c;
+    --color-piece-void: #0d47a1;
+    --color-piece-portal: #006064;
 }
 
 [data-theme="classic-dark"] {
@@ -76,4 +89,17 @@
 	/* Dark theme shadows and borders */
 	--shadow-color: rgba(0, 0, 0, 0.4);
 	--border-color: rgba(255, 255, 255, 0.08);
+
+    /* --- NOTATION & PIECE COLORS (Classic Dark) --- */
+    --color-square: #d4af37;
+    --color-circle: #f0e68c;
+
+    --color-gem-ruby: #ef5350;
+    --color-gem-pearl: #90a4ae;
+    --color-gem-amber: #ff9800;
+    --color-gem-jade: #66bb6a;
+    
+    --color-piece-amalgam: #ab47bc;
+    --color-piece-void: #42a5f5;
+    --color-piece-portal: #26c6da;
 }

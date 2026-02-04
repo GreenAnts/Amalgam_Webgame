@@ -46,6 +46,19 @@
 	
 	/* Organic texture patterns */
 	--leaf-pattern: repeating-linear-gradient(45deg, rgba(45, 90, 39, 0.03) 0, rgba(45, 90, 39, 0.03) 10px, transparent 10px, transparent 20px);
+
+    /* --- NOTATION & PIECE COLORS (Nature) --- */
+    --color-square: #2d5a27;
+    --color-circle: #8d6e63;
+
+    --color-gem-ruby: #c62828;
+    --color-gem-pearl: #795548;
+    --color-gem-amber: #ef6c00;
+    --color-gem-jade: #1b5e20;
+    
+    --color-piece-amalgam: #6a1b9a;
+    --color-piece-void: #1565c0;
+    --color-piece-portal: #00838f;
 }
 
 [data-theme="nature-dark"] {
@@ -76,4 +89,17 @@
 	/* Dark theme shadows and borders */
 	--shadow-color: rgba(0, 0, 0, 0.4);
 	--border-color: rgba(255, 255, 255, 0.08);
+
+    /* --- NOTATION & PIECE COLORS (Nature Dark) --- */
+    --color-square: #81c784;
+    --color-circle: #d7ccc8;
+
+    --color-gem-ruby: #ff8a80;
+    --color-gem-pearl: #d7ccc8;
+    --color-gem-amber: #ffd180;
+    --color-gem-jade: #a5d6a7;
+    
+    --color-piece-amalgam: #ea80fc;
+    --color-piece-void: #82b1ff;
+    --color-piece-portal: #84ffff;
 }
