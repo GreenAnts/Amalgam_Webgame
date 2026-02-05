@@ -240,10 +240,20 @@ canvas {
 
 .log-viewport {
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden; /* IMPORTANT: Parent acts as a static frame */
+  position: relative;
+  display: flex;
+  flex-direction: column;
   padding: 1rem;
   background: var(--bg-panel);
-  scroll-behavior: smooth;
+}
+
+.log-content {
+  flex: 1;
+  overflow-y: auto; /* IMPORTANT: Children handle their own scrolling */
+  display: block;   /* Ensures dimensions are respected */
+  height: 100%;     /* Fills the parent frame */
+  padding-right: 5px; /* Prevent scrollbar covering text */
 }
 
 .log-turn {

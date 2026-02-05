@@ -142,43 +142,81 @@ function updateThemeUI() {
 const matchHistory = document.getElementById('matchHistory');
 const chatLog = document.getElementById('chatLog');
 
-const scrollObserver = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-        // Scroll to bottom if new nodes added
-        if (mutation.type === 'childList') {
-            const el = mutation.target;
-            el.scrollTop = el.scrollHeight;
-        }
-    });
-});
+class SmartScroller {
+    constructor(element) {
+        this.element = element;
+        this.isPinned = true; // Default to sticky
+        this.init();
+    }
 
-if(matchHistory) scrollObserver.observe(matchHistory, { childList: true });
-if(chatLog) scrollObserver.observe(chatLog, { childList: true });
+    init() {
+        if (!this.element) return;
+
+        // 1. Track User Intent
+        this.element.addEventListener('scroll', () => {
+            const { scrollTop, scrollHeight, clientHeight } = this.element;
+            // Tolerance of 10px allows for sub-pixel rendering differences
+            const isAtBottom = scrollHeight - scrollTop - clientHeight <= 10;
+            
+            // Only unpin if the user intentionally scrolls up (and isn't at bottom)
+            // We check this to prevent the auto-scroll itself from unpinning
+            if (!isAtBottom) {
+                this.isPinned = false;
+            } else {
+                this.isPinned = true;
+            }
+        });
+
+        // 2. Observer for new content
+        const observer = new MutationObserver(() => {
+            if (this.isPinned) {
+                this.scrollToBottom();
+            }
+        });
+
+        observer.observe(this.element, { childList: true, subtree: true });
+    }
+
+    scrollToBottom() {
+        requestAnimationFrame(() => {
+            this.element.scrollTo({
+                top: this.element.scrollHeight,
+                behavior: 'smooth' // This makes the transition fluid instead of a snap
+            });
+        });
+    }
+}
+
+// Initialize Scrollers
+const historyScroller = new SmartScroller(matchHistory);
+const chatScroller = new SmartScroller(chatLog);
 
 /* --- Tabs --- */
-const historyTab = document.getElementById('historyTab');
-const chatTab = document.getElementById('chatTab');
-const historyControls = document.getElementById('historyControls');
-const chatInput = document.getElementById('chatInput');
-
 historyTab.onclick = () => {
     historyTab.classList.add('active');
     chatTab.classList.remove('active');
     historyControls.style.display = 'flex';
-    matchHistory.style.display = 'block';
+    
     chatLog.style.display = 'none';
     chatInput.style.display = 'none';
-    matchHistory.scrollTop = matchHistory.scrollHeight;
+    
+    matchHistory.style.display = 'block';
+    // FORCE UPDATE: Restore scroll position if it was pinned
+    if (historyScroller.isPinned) historyScroller.scrollToBottom();
 };
 
 chatTab.onclick = () => {
     chatTab.classList.add('active');
     historyTab.classList.remove('active');
     historyControls.style.display = 'none';
+    
     matchHistory.style.display = 'none';
+    
     chatLog.style.display = 'block';
     chatInput.style.display = 'flex';
-    chatLog.scrollTop = chatLog.scrollHeight;
+    
+    // FORCE UPDATE: Restore scroll position if it was pinned
+    if (chatScroller.isPinned) chatScroller.scrollToBottom();
 };
 
 /* --- Chat Send --- */
